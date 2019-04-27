@@ -24,7 +24,41 @@ def plt_const(x, y):
     return [a, b, d_a, d_b]
 
 
-def plot_drawer(data_file,x_lb, y_lb, tit):
+def const_dev(x, y):
+    """
+    Функция рассчитывает погрешности коэффициентов прямой по полученным координатам точек
+    :param x: Массив абсцисс точек
+    :param y: Массив оридинат точек
+    :return:
+    """
+    return [plt_const(x, y)[2], plt_const(x, y)[3]]
+
+
+def plot_drawer(data_file, x_lb, y_lb, tit):
+    """
+    Функция считывает данные из таблицы и строит графики с МНК по этим данным
+    :param data_file: Название файла с данными
+    :param x_lb: подпись оси абсцисс
+    :param y_lb: оси ординат
+    :param tit: название графика
+    :return:
+    """
+    dataset = pd.read_excel(data_file, header=None)
+    dataset.head()
+    d = np.array(dataset)
+    x = d[:, 0]
+    y = d[:, 1]
+    a = const_dev(x, y)[0]
+    b = const_dev(x, y)[1]
+    plt.plot(x, y, 'ro')
+    plt.xlabel('Smarts')
+    plt.ylabel('Probability')
+    plt.title('Histogram of IQ')
+    plt.grid(True)
+    plt.show()
+
+
+def plots_drawer(data_file, x_lb, y_lb, tit):
     """
     Функция считывает данные из таблицы и строит графики с МНК по этим данным
     :param data_file: Название файла с данными
@@ -48,11 +82,10 @@ def plot_drawer(data_file,x_lb, y_lb, tit):
         b.append(r[1])
     print(len(x), len(a), len(b))
     for i in range(0, len(x)):
-        strk += 'x[{}], y[{}], \' ro \', np.array([min(x[{}]), max(x[{}])]),' \
-                ' a[{}]*np.array([min(x[{}]), max(x[{}])]) + b[{}],'.format(i, i, i, i, i, i, i, i)
+        strk += 'x[{}], y[{}], \' ro \', np.array([min(x[{}]) -1, max(x[{}]) + 1]),' \
+                ' a[{}]*np.array([min(x[{}]) - 1, max(x[{}]) + 1]) + b[{}],'.format(i, i, i, i, i, i, i, i)
         print(i)
     strk = strk[0:-1] + ')'
-    print(strk)
     eval(strk)
     plt.xlabel(x_lb)
     plt.ylabel(y_lb)
@@ -61,4 +94,5 @@ def plot_drawer(data_file,x_lb, y_lb, tit):
     plt.show()
 
 
+plots_drawer('data.xlsx', 'time', 'velocity', 'plot_testing')
 plot_drawer('data.xlsx', 'time', 'velocity', 'plot_testing')
