@@ -86,7 +86,8 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
                 ' a[{}]*np.array([min(x[{}]) - 1, max(x[{}]) + 1]) + b[{}],'.format(i, i, i, i, i, i, i, i)
         print(i)
     strk = strk[0:-1] + ')'
-    eval(strk)
+    with plt.style.context(('_classic_test')):
+        eval(strk)
     plt.xlabel(x_lb)
     plt.ylabel(y_lb)
     plt.title(tit)
@@ -95,4 +96,4 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
 
 
 plots_drawer('data.xlsx', 'time', 'velocity', 'plot_testing')
-plot_drawer('data.xlsx', 'time', 'velocity', 'plot_testing')
+
