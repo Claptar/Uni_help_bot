@@ -15,12 +15,11 @@ def plt_const(x, y):
     av_y = np.sum(y)/len(y)
     sigmas_x = np.sum(x*x)/len(x) - (np.sum(x)/len(x))**2
     sigmas_y = np.sum(y*y)/len(y) - (np.sum(y)/len(y))**2
-    R = np.sum(x*y)/len(x) - av_x*av_y
-    a = R/sigmas_x
+    r = np.sum(x*y)/len(x) - av_x*av_y
+    a = r/sigmas_x
     b = av_y - a*av_x
     d_a = 2*math.sqrt((sigmas_y/sigmas_x - a**2)/(len(x)-2))
     d_b = d_a*math.sqrt(sigmas_x + av_x**2)
-    x_ = range(0, x[len(x) -1]//1 + 2)
     return [a, b, d_a, d_b]
 
 
@@ -48,12 +47,10 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     d = np.array(dataset)
     x = d[:, 0]
     y = d[:, 1]
-    a = const_dev(x, y)[0]
-    b = const_dev(x, y)[1]
     plt.plot(x, y, 'ro')
-    plt.xlabel('Smarts')
-    plt.ylabel('Probability')
-    plt.title('Histogram of IQ')
+    plt.xlabel(x_lb)
+    plt.ylabel(y_lb)
+    plt.title(tit)
     plt.grid(True)
     plt.show()
 
@@ -86,7 +83,7 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
                 ' a[{}]*np.array([min(x[{}]) - 1, max(x[{}]) + 1]) + b[{}],'.format(i, i, i, i, i, i, i, i)
         print(i)
     strk = strk[0:-1] + ')'
-    with plt.style.context(('_classic_test')):
+    with plt.style.context('classic'):
         eval(strk)
     plt.xlabel(x_lb)
     plt.ylabel(y_lb)
@@ -96,4 +93,3 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
 
 
 plots_drawer('data.xlsx', 'time', 'velocity', 'plot_testing')
-
