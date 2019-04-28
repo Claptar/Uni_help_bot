@@ -4,6 +4,19 @@ import matplotlib.pyplot as plt
 import math
 
 
+def data_conv(data_file):
+    """
+    Программа, которая конвертирует данные из таблицы в массив [x,y]
+    :param data_file: название файла
+    :return: [x,y]
+    """
+    dataset = pd.read_excel(data_file, header=None)
+    d = np.array(dataset)
+    x = d[:, 0]
+    y = d[:, 1]
+    return [x, y]
+
+
 def plt_const(x, y):
     """
     Функция рассчитывает по МНК коэффициенты прямой по полученным координатам точек. Так же рассчитывает их погрешности.
@@ -43,7 +56,6 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     :return:
     """
     dataset = pd.read_excel(data_file, header=None)
-    dataset.head()
     d = np.array(dataset)
     x = d[:, 0]
     y = d[:, 1]
@@ -77,11 +89,9 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
         y.append(d[:, i + 1])
         a.append(r[0])
         b.append(r[1])
-    print(len(x), len(a), len(b))
     for i in range(0, len(x)):
         strk += 'x[{}], y[{}], \' ro \', np.array([min(x[{}]) -1, max(x[{}]) + 1]),' \
                 ' a[{}]*np.array([min(x[{}]) - 1, max(x[{}]) + 1]) + b[{}],'.format(i, i, i, i, i, i, i, i)
-        print(i)
     strk = strk[0:-1] + ')'
     with plt.style.context('classic'):
         eval(strk)
@@ -91,5 +101,3 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     plt.grid(True)
     plt.show()
 
-
-plots_drawer('data.xlsx', 'time', 'velocity', 'plot_testing')
