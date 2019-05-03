@@ -9,19 +9,21 @@ TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
 bot = telebot.TeleBot(TOKEN)
 
 
+@bot.message_handler(commands=['start'])
+def mnk_constants(message):
+    bot.send_message(message.chat.id, 'Привет-привет 🙃 Я очень люблю помогать людям,'
+                                      ' напиши /help чтобы узнать, что я умею ')
+
 @bot.message_handler(commands=['mnk_constants'])
-def send_welcome(message):
+def mnk_constants(message):
     bot.send_message(message.chat.id, 'Пришлите excel файл как в примере')
     with open('example.jpg', 'rb') as photo:
         bot.send_photo(message.chat.id, photo)
 
 
 @bot.message_handler(func=lambda message: True)
-def upper(message: Message):
-    if message.document is not None:
-        bot.send_message(message.chat.id, 'Это документ')
-    if message.text is not None:
-        bot.send_message(message.chat.id, 'Это текст')
+def text_mes(message: Message):
+    pass
 
 
 @bot.message_handler(func=lambda message: True, content_types='document')
