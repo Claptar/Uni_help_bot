@@ -92,4 +92,29 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     plt.show()
 
 
-plots_drawer('data.xlsx', 'time', 'velocity', 'plot_testing')
+def mnk_calc(data_file):
+    """
+    Функция считывает данные из таблицы и возвращает коэффициенты и погрешности
+    :param data_file: Название файла с данными
+    :return:
+    """
+    dataset = pd.read_excel(data_file, header=None)
+    d = np.array(dataset)
+    strk = 'plt.plot('
+    a = []
+    b = []
+    x = []
+    y = []
+    d_a = []
+    d_b = []
+    for i in range(0, len(d[1, :] - 1), 2):
+        r = plt_const(d[:, i], d[:, i + 1])
+        x.append(d[:, i])
+        y.append(d[:, i + 1])
+        a.append(r[0])
+        b.append(r[1])
+        d_a.append(r[2])
+        d_b.append(r[3])
+
+    return [a, b, d_a, d_b]
+
