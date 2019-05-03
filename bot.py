@@ -12,7 +12,7 @@ bot = telebot.TeleBot(TOKEN)
 @bot.message_handler(commands=['start'])
 def mnk_constants(message):
     bot.send_message(message.chat.id, 'Привет-привет 🙃 Я очень люблю помогать людям,'
-                                      ' напиши /help чтобы узнать, что я умею ')
+                                      ' напиши /help чтобы узнать, что я умею. ')
 
 @bot.message_handler(commands=['mnk_constants'])
 def mnk_constants(message):
