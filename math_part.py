@@ -3,6 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
+LABEL_X = ''
+LABEL_Y = ''
+TITLE = ''
+
 
 def plt_const(x, y):
     """
@@ -52,7 +56,8 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     plt.ylabel(y_lb)
     plt.title(tit)
     plt.grid(True)
-    plt.show()
+    plt.savefig('plot.jpg')
+    # plt.show()
 
 
 def plots_drawer(data_file, x_lb, y_lb, tit):
@@ -89,7 +94,8 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     plt.ylabel(y_lb)
     plt.title(tit)
     plt.grid(True)
-    plt.show()
+    plt.savefig('plot.jpg')
+    # plt.show()
 
 
 def mnk_calc(data_file):
