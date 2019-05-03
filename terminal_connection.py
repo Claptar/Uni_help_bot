@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
 import argparse
 import math_part
+import latex_table
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--figure",
@@ -7,6 +10,9 @@ parser.add_argument("-f", "--figure",
                     action="store_true")
 parser.add_argument("-s", "--sigma",
                     help="Argument induces function which counts the error",
+                    action="store_true")
+parser.add_argument("-t", "--table",
+                    help="Опция вызывает функцию, которая создает Latex таблицу",
                     action="store_true")
 
 args = parser.parse_args()
@@ -45,6 +51,12 @@ if args.sigma:
           'Погрешность свободного коэффициента:',
           math_part.const_dev(xy_list[0], xy_list[1])[1])
 
+if args.table:
+    print('Введите название файла:')
+    data_array = np.array(math_part.data_conv(input()))
+    print('Введите название таблицы:')
+    name = str(input())
+    latex_table.table_body_create(data_array, name)
 
 
 
