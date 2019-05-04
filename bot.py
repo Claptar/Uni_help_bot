@@ -17,7 +17,7 @@ def mnk_constants(message):
                                       '/figure - Хочешь построить график по точкам ? Не вопрос !\n'
                                       '/figure_mnk - Хочешь построить график линеаризованный по мнк ? Запросто !\n'
                                       '/mnk_constants - Нужно посчитать константы прямой по мнк ? Я помогу !\n'
-                                      '/schedule - Забыл расписание ?) Бывает, пиши, я помогу 😉📱📱📱 ')
+                                      '/schedule - Забыл расписание ?) Бывает, пиши, я помогу 😉📱📱📱')
 
 
 @bot.message_handler(commands=['start'])
@@ -90,7 +90,7 @@ def document_getter(message: Message):
     file_id = message.json.get('document').get('file_id')
     file_path = bot.get_file(file_id).file_path
     downloaded_file = bot.download_file(file_path)
-    src = '/home/claptar/PycharmProjects/MNK-Tool/down/' + message.document.file_name
+    src = message.document.file_name
     with open(src, 'wb') as new_file:
         new_file.write(downloaded_file)
     a, b, d_a, d_b = math_part.mnk_calc(src)
