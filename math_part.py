@@ -1,4 +1,5 @@
-import pandas as pd
+# -*- coding: utf-8 -*-
+#import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import math
@@ -6,6 +7,19 @@ import math
 LABEL_X = ''
 LABEL_Y = ''
 TITLE = ''
+
+
+def data_conv(data_file):
+    """
+    Программа, которая конвертирует данные из таблицы в массив [x,y]
+    :param data_file: название файла
+    :return: [x,y]
+    """
+    dataset = pd.read_excel(data_file, header=None)
+    d = np.array(dataset)
+    x = d[:, 0]
+    y = d[:, 1]
+    return [x, y]
 
 
 def plt_const(x, y):
@@ -47,7 +61,6 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     :return:
     """
     dataset = pd.read_excel(data_file, header=None)
-    dataset.head()
     d = np.array(dataset)
     x = d[:, 0]
     y = d[:, 1]
