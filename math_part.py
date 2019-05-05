@@ -4,6 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
+LABEL_X = ''
+LABEL_Y = ''
+TITLE = ''
+
 
 def data_conv(data_file):
     """
@@ -65,7 +69,8 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     plt.ylabel(y_lb)
     plt.title(tit)
     plt.grid(True)
-    plt.show()
+    plt.savefig('plot.png')
+    # plt.show()
 
 
 def plots_drawer(data_file, x_lb, y_lb, tit):
@@ -91,7 +96,7 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
         a.append(r[0])
         b.append(r[1])
     for i in range(0, len(x)):
-        strk += 'x[{}], y[{}], \' ro \', np.array([min(x[{}]) -1, max(x[{}]) + 1]),' \
+        strk += 'x[{}], y[{}], \' o \', np.array([min(x[{}]) -1, max(x[{}]) + 1]),' \
                 ' a[{}]*np.array([min(x[{}]) - 1, max(x[{}]) + 1]) + b[{}],'.format(i, i, i, i, i, i, i, i)
     strk = strk[0:-1] + ')'
     with plt.style.context('classic'):
@@ -100,5 +105,33 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     plt.ylabel(y_lb)
     plt.title(tit)
     plt.grid(True)
-    plt.show()
+    plt.savefig('plot.png')
+    # plt.show()
+
+
+def mnk_calc(data_file):
+    """
+    Функция считывает данные из таблицы и возвращает коэффициенты и погрешности
+    :param data_file: Название файла с данными
+    :return:
+    """
+    dataset = pd.read_excel(data_file, header=None)
+    d = np.array(dataset)
+    strk = 'plt.plot('
+    a = []
+    b = []
+    x = []
+    y = []
+    d_a = []
+    d_b = []
+    for i in range(0, len(d[1, :] - 1), 2):
+        r = plt_const(d[:, i], d[:, i + 1])
+        x.append(d[:, i])
+        y.append(d[:, i + 1])
+        a.append(r[0])
+        b.append(r[1])
+        d_a.append(r[2])
+        d_b.append(r[3])
+
+    return [a, b, d_a, d_b]
 
