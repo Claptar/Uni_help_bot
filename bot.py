@@ -99,24 +99,24 @@ def document_getter(message: Message):
 
         math_part.plots_drawer(src, math_part.LABEL_X, math_part.LABEL_Y, math_part.TITLE)
 
-        with open('plot.jpg', 'rb') as photo:
+        with open('plot.png', 'rb') as photo:
             bot.send_photo(message.chat.id, photo)
 
         for i in range(0, len(a)):
             bot.send_message(message.chat.id, f'Коэффициенты {i + 1}-ой прямой:\n'
             f' a = {round(a[i], 3)} +- {round(d_a[i], 3)}\n'
             f' b = {round(b[i], 3)} +- {round(d_b[i], 3)}')
-        os.remove('plot.jpg')
+        os.remove('plot.png')
 
     elif MESSAGE_COM == 'figure':
 
         math_part.plot_drawer(src, math_part.LABEL_X, math_part.LABEL_Y, math_part.TITLE)
 
-        with open('plot.jpg', 'rb') as photo:
+        with open('plot.png', 'rb') as photo:
 
             bot.send_photo(message.chat.id, photo)
 
-        os.remove('plot.jpg')
+        os.remove('plot.png')
 
     elif MESSAGE_COM == 'mnk_constants':
 

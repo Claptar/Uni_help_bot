@@ -56,7 +56,7 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     plt.ylabel(y_lb)
     plt.title(tit)
     plt.grid(True)
-    plt.savefig('plot.jpg')
+    plt.savefig('plot.png')
     # plt.show()
 
 
@@ -83,7 +83,7 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
         a.append(r[0])
         b.append(r[1])
     for i in range(0, len(x)):
-        strk += 'x[{}], y[{}], \' ro \', np.array([min(x[{}]) -1, max(x[{}]) + 1]),' \
+        strk += 'x[{}], y[{}], \' o \', np.array([min(x[{}]) -1, max(x[{}]) + 1]),' \
                 ' a[{}]*np.array([min(x[{}]) - 1, max(x[{}]) + 1]) + b[{}],'.format(i, i, i, i, i, i, i, i)
     strk = strk[0:-1] + ')'
     with plt.style.context('classic'):
@@ -92,7 +92,7 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     plt.ylabel(y_lb)
     plt.title(tit)
     plt.grid(True)
-    plt.savefig('plot.jpg')
+    plt.savefig('plot.png')
     # plt.show()
 
 
