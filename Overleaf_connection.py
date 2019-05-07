@@ -1,7 +1,7 @@
 from selenium import webdriver
 
 
-def ol_project_create():
+def ol_open():
     """
     Функция открывает Overleaf, вводит логин и пароль, нажимает кнопку входа
     :return:
