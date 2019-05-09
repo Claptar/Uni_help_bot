@@ -48,7 +48,7 @@ def start(message):
 
 def subject(message):
     global Q_NUM, PATH
-    if message.text == 'Матан':
+    if (message.text == 'Матан') or (message.text == 'Ещё'):
         Q_NUM = random.randint(0, 13)
         questions = pd.read_excel(f'{PATH}/flash_cards/math/flash_data.xlsx', header=None)
         d = np.array(questions)
@@ -57,14 +57,19 @@ def subject(message):
         keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи']])
         msg = bot.send_message(message.chat.id, question, reply_markup=keyboard)
         bot.register_next_step_handler(msg, answer)
+    if message.text == 'Всё, хватит':
+        keyboard = types.ReplyKeyboardRemove
+        bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
 
 
 def answer(message):
     global Q_NUM
-    keyboard = types.ReplyKeyboardRemove()
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё', 'Всё, хватит']])
     bot.send_message(message.chat.id, 'Правильный ответ:')
     with open(f'{PATH}/flash_cards/math/{Q_NUM + 1}.png', 'rb') as photo:
-        bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
+        msg = bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
+    bot.register_next_step_handler(msg, subject)
 
 
 @bot.message_handler(commands=['figure'])
