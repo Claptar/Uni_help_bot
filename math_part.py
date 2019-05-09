@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#import pandas as pd
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import math
@@ -106,7 +106,7 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     plt.title(tit)
     plt.grid(True)
     plt.savefig('plot.png')
-    # plt.show()
+    plt.show()
 
 
 def mnk_calc(data_file):
@@ -134,4 +134,3 @@ def mnk_calc(data_file):
         d_b.append(r[3])
 
     return [a, b, d_a, d_b]
-
