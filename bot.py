@@ -53,8 +53,18 @@ def subject(message):
         questions = pd.read_excel(f'{PATH}/flash_cards/math/flash_data.xlsx', header=None)
         d = np.array(questions)
         question = d[Q_NUM, 0]
-        keyboard = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id, question, reply_markup=keyboard)
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи']])
+        msg = bot.send_message(message.chat.id, question, reply_markup=keyboard)
+        bot.register_next_step_handler(msg, answer)
+
+
+def answer(message):
+    global Q_NUM
+    keyboard = types.ReplyKeyboardRemove()
+    bot.send_message(message.chat.id, 'Правильный ответ:')
+    with open(f'{PATH}/flash_cards/math/{Q_NUM + 1}.png', 'rb') as photo:
+        bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
 
 
 @bot.message_handler(commands=['figure'])
