@@ -58,7 +58,7 @@ def subject(message):
         msg = bot.send_message(message.chat.id, question, reply_markup=keyboard)
         bot.register_next_step_handler(msg, answer)
     if message.text == 'Всё, хватит':
-        keyboard = types.ReplyKeyboardRemove
+        keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
 
 
