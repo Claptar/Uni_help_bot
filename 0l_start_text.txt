@@ -1,0 +1,20 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{amsmath,amsfonts,amssymb,amsthm,mathtools}
+\usepackage{wasysym}
+
+\title{
+\-\mbox{}}
+\author{
+}
+\date{\today}
+
+\RequirePackage{caption2}
+\renewcommand\captionlabeldelim{ --}
+\begin{document}
+\renewcommand\figurename{}
+\maketitle
+
+\end{document}
