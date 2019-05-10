@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -7,7 +8,18 @@ from pyautogui import hotkey
 import time
 
 
-def ol_open():
+def unpack_document(text_file):
+    """
+    Функция читает текстовый файл
+    :param text_file: текстовый файл
+    :return:текст файла
+    """
+    file = open(text_file, 'r')
+    file_lines = file.read()
+    return file_lines
+
+
+def ol_open(text_file):
     """
     Функция открывает Overleaf, вводит логин и пароль, нажимает кнопку входа
     :return:
@@ -40,12 +52,17 @@ def ol_open():
                                 '/html/body/div[5]/div/div/div[3]/button[2]')))  # Ищем кнопку для создания проекта
     create_project_button.click()  # Нажимаем на кнопку и создаем проект
 
-    time.sleep(4)  # Подождем, чтобы страница успела загрузиться
-    hotkey('ctrl', 'a')  # Выделим весь текст
-    hotkey('delete')  # Удалим все
-    typewrite('Hello world')  # Просто тест
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH,
+                                '//*[@id="editor"]/div/div[2]')))
+    time.sleep(1)  # Ожидание загрузки страницы
+    hotkey('ctrl', 'a', 'delete')  # Удаление текста на странице
+    time.sleep(1)
+    text_list = unpack_document(text_file)  # Считывание файла
+    time.sleep(1)
+    typewrite(text_list)  # Печать исходного кода страницы
+
     time.sleep(10)  # Время для просмотра
 
 
-ol_open()
+ol_open('0l_start_text.txt')
 
