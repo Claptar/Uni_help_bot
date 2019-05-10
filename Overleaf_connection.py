@@ -19,7 +19,7 @@ def unpack_document(text_file):
     return file_lines
 
 
-def ol_open(text_file):
+def ol_open(text_file, email, password):
     """
     Функция открывает Overleaf, вводит логин и пароль, нажимает кнопку входа
     :return:
@@ -28,10 +28,10 @@ def ol_open(text_file):
     driver.get("http://www.overleaf.com/login")  # Открываем Overleaf
 
     email_box = driver.find_element_by_name('email')  # Ищем окно для ввода email
-    email_box.send_keys('klykin-2@yandex.ru')  # Вводим email
+    email_box.send_keys(email)  # Вводим email
 
     password_box = driver.find_element_by_name('password')  # Ищем окно для ввода пароля
-    password_box.send_keys('wallacedesouza8')  # Вводим пароль
+    password_box.send_keys(password)  # Вводим пароль
 
     login_button = driver.find_element_by_css_selector('div.actions')  # Ищем кнопку инициализации
     login_button.click()  # Нажимаем на кнопку
@@ -64,5 +64,5 @@ def ol_open(text_file):
     time.sleep(10)  # Время для просмотра
 
 
-ol_open('0l_start_text.txt')
+#ol_open('0l_start_text.txt')
 
