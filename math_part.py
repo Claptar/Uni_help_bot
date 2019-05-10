@@ -70,6 +70,7 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     plt.title(tit)
     plt.grid(True)
     plt.savefig('plot.png')
+    plt.clf()
     # plt.show()
 
 
@@ -109,7 +110,8 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     plt.title(tit)
     plt.grid(True)
     plt.savefig('plot.png')
-    plt.show()
+    plt.clf()
+    #plt.show()
 
 
 def mnk_calc(data_file):
@@ -137,6 +139,3 @@ def mnk_calc(data_file):
         d_b.append(r[3])
 
     return [a, b, d_a, d_b]
-
-
-plots_drawer('data.xlsx', 'asfsaf', 'asfsaf', 'asfsag')
