@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#import pandas as pd
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import math
@@ -84,11 +84,12 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     """
     dataset = pd.read_excel(data_file, header=None)
     d = np.array(dataset)
-    strk = 'plt.plot('
+    strk = "plt.plot("
     a = []
     b = []
     x = []
     y = []
+    x_ = []
     for i in range(0, len(d[1, :] - 1), 2):
         r = plt_const(d[:, i], d[:, i + 1])
         x.append(d[:, i])
@@ -96,9 +97,11 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
         a.append(r[0])
         b.append(r[1])
     for i in range(0, len(x)):
-        strk += 'x[{}], y[{}], \' o \', np.array([min(x[{}]) -1, max(x[{}]) + 1]),' \
-                ' a[{}]*np.array([min(x[{}]) - 1, max(x[{}]) + 1]) + b[{}],'.format(i, i, i, i, i, i, i, i)
-    strk = strk[0:-1] + ')'
+        delta = (max(x[i]) - min(x[i]))/len(x[i])
+        x_.append([min(x[i]) - delta, max(x[i]) + delta])
+        strk += "x[{}], y[{}], \' o \', x_[{}], a[{}]*x_[{}] + b[{}], 'r',".format(i, i, i, i, i, i)
+    strk = strk[0:-1] + ")"
+    x_ = np.array(x_)
     with plt.style.context('classic'):
         eval(strk)
     plt.xlabel(x_lb)
@@ -106,7 +109,7 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     plt.title(tit)
     plt.grid(True)
     plt.savefig('plot.png')
-    # plt.show()
+    plt.show()
 
 
 def mnk_calc(data_file):
@@ -135,3 +138,5 @@ def mnk_calc(data_file):
 
     return [a, b, d_a, d_b]
 
+
+plots_drawer('data.xlsx', 'asfsaf', 'asfsaf', 'asfsag')

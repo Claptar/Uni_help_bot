@@ -1,33 +1,79 @@
 import os
+import random
 import telebot
 from telebot.types import Message
+from telebot import types
+import pandas as pd
+import numpy as np
 import math_part
 
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
 TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
+PATH = os.path.abspath('')
 bot = telebot.TeleBot(TOKEN)
 MESSAGE_NUM = 0
 MESSAGE_COM = ''
+Q_NUM = 0
 
 
 @bot.message_handler(commands=['help'])
-def mnk_constants(message):
+def help_def(message):
     bot.send_message(message.chat.id, 'Сейчас я расскажу чем я могу тебе помочь ☺️\n'
                                       '/figure - Хочешь построить график по точкам ? Не вопрос !\n'
                                       '/figure_mnk - Хочешь построить график линеаризованный по мнк ? Запросто !\n'
                                       '/mnk_constants - Нужно посчитать константы прямой по мнк ? Я помогу !\n'
-                                      '/schedule - Забыл расписание ?) Бывает, пиши, я помогу 😉📱📱📱')
+                                      '/schedule - Забыл расписание ?) Бывает, пиши, я помогу 😉📱📱📱'
+                                      '\n/exam - Подскажу расписание экзамено, но ты сам захотел...'
+                                      ' Я не люблю напоминать'
+                                      'о плохом...\n'
+                                      '/flash_cards - Давай сыграем в игру... Я тебе определение/формулировку, а ты мне'
+                                      '"знаю/не знаю.')
 
 
 @bot.message_handler(commands=['start'])
-def mnk_constants(message):
+def start(message):
     bot.send_message(message.chat.id, 'Привет-привет 🙃 Я очень люблю помогать людям,'
                                       ' напиши /help чтобы узнать, что я умею. ')
 
 
+@bot.message_handler(commands=['flash_cards'])
+def start(message):
+    bot.send_message(message.chat.id, 'Хочешь вспомнить парочку определений ?)📚📚')
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Матан']])
+    msg = bot.send_message(message.chat.id, 'Сперва выбери предмет', reply_markup=keyboard)
+    bot.register_next_step_handler(msg, subject)
+
+
+def subject(message):
+    global Q_NUM, PATH
+    if (message.text == 'Матан') or (message.text == 'Ещё'):
+        Q_NUM = random.randint(0, 13)
+        questions = pd.read_excel(f'{PATH}/flash_cards/math/flash_data.xlsx', header=None)
+        d = np.array(questions)
+        question = d[Q_NUM, 0]
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи']])
+        msg = bot.send_message(message.chat.id, question, reply_markup=keyboard)
+        bot.register_next_step_handler(msg, answer)
+    if message.text == 'Всё, хватит':
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
+
+
+def answer(message):
+    global Q_NUM
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё', 'Всё, хватит']])
+    bot.send_message(message.chat.id, 'Правильный ответ:')
+    with open(f'{PATH}/flash_cards/math/{Q_NUM + 1}.png', 'rb') as photo:
+        msg = bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
+    bot.register_next_step_handler(msg, subject)
+
+
 @bot.message_handler(commands=['figure'])
-def mnk_constants(message):
+def figure(message):
     global MESSAGE_NUM, MESSAGE_COM
     bot.send_message(message.chat.id, 'Ой, а что это у тебя за зависимость такая?) Мне даже самому интересно стало.'
                                       ' Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
@@ -38,7 +84,7 @@ def mnk_constants(message):
 
 
 @bot.message_handler(commands=['figure_mnk'])
-def mnk_constants(message):
+def figure_mnk(message):
     global MESSAGE_NUM, MESSAGE_COM
     bot.send_message(message.chat.id, 'Снова лабки делаешь ?) Ох уж эти линеаризованные графики !...'
                                       ' Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
@@ -63,6 +109,13 @@ def schedule(message):
     bot.send_message(message.chat.id, 'Снова не можешь вспомнить номер кабинета или какая следующая пара ?)'
                                       'Ничего, я уже тут !')
     with open('schedule.jpg', 'rb') as photo:
+        bot.send_photo(message.chat.id, photo)
+
+
+@bot.message_handler(commands=['exam'])
+def exam(message):
+    bot.send_message(message.chat.id, 'Ну... Ты это.. Держись... !')
+    with open('exam.png', 'rb') as photo:
         bot.send_photo(message.chat.id, photo)
 
 
