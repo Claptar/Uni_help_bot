@@ -98,7 +98,7 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
         b.append(r[1])
     for i in range(0, len(x)):
         delta = (max(x[i]) - min(x[i]))/len(x[i])
-        x_.append([x[i][0] - delta, x[i][len(x[i]) - 1] + delta])
+        x_.append([min(x[i]) - delta, max(x[i]) + delta])
         strk += "x[{}], y[{}], \' o \', x_[{}], a[{}]*x_[{}] + b[{}], 'r',".format(i, i, i, i, i, i)
     strk = strk[0:-1] + ")"
     x_ = np.array(x_)
@@ -137,3 +137,6 @@ def mnk_calc(data_file):
         d_b.append(r[3])
 
     return [a, b, d_a, d_b]
+
+
+plots_drawer('data.xlsx', 'asfsaf', 'asfsaf', 'asfsag')
