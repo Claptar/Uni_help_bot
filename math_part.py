@@ -91,6 +91,8 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     x = []
     y = []
     x_ = []
+    d_a = []
+    d_b = []
     for i in range(0, len(d[1, :] - 1), 2):
         r = plt_const(d[:, i], d[:, i + 1])
         x.append(d[:, i])
@@ -98,6 +100,9 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
         a.append(r[0])
         b.append(r[1])
     for i in range(0, len(x)):
+        sigmas_x = np.sum(x[i] * x[i]) / len(x[i]) - (np.sum(x[i]) / len(x[i])) ** 2
+        sigmas_y = np.sum(y[i] * y[i]) / len(y[i]) - (np.sum(y[i]) / len(y[i])) ** 2
+        plt.errorbar(x[i], y[i], xerr=sigmas_x, yerr=sigmas_y, fmt='o', ecolor='blue')
         delta = (max(x[i]) - min(x[i]))/len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
         strk += "x[{}], y[{}], \' o \', x_[{}], a[{}]*x_[{}] + b[{}], 'r',".format(i, i, i, i, i, i)
@@ -110,8 +115,8 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     plt.title(tit)
     plt.grid(True)
     plt.savefig('plot.png')
-    plt.clf()
     #plt.show()
+    plt.clf()
 
 
 def mnk_calc(data_file):

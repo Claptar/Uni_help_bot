@@ -103,8 +103,7 @@ def figure_mnk(message):
 def mnk_constants(message):
     global MESSAGE_COM
     msg = bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
-                                            ' Даа, непростая задача, так и быть,'
-                                      'помогу тебе ! ')
+                                            ' Даа, непростая задача, так и быть, помогу тебе ! ')
     MESSAGE_COM = 'mnk_constants'
     bot.register_next_step_handler(msg, tit)
 
