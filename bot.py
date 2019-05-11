@@ -1,3 +1,4 @@
+
 import os
 import random
 import telebot
@@ -16,6 +17,21 @@ MESSAGE_NUM = 0
 MESSAGE_COM = ''
 Q_NUM = 0
 
+comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants', 'schedule', 'exam']
+
+@bot.message_handler(commands = [])
+def help_def(message):
+    bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n' 
+                                      'Вот какие команды я знаю:\n'
+                                      '/figure - Хочешь построить график по точкам ? Не вопрос !\n'
+                                      '/figure_mnk - Хочешь построить график линеаризованный по мнк ? Запросто !\n'
+                                      '/mnk_constants - Нужно посчитать константы прямой по мнк ? Я помогу !\n'
+                                      '/schedule - Забыл расписание ?) Бывает, пиши, я помогу 😉📱📱📱'
+                                      '\n/exam - Подскажу расписание экзамено, но ты сам захотел...'
+                                      ' Я не люблю напоминать'
+                                      'о плохом...\n'
+                                      '/flash_cards - Давай сыграем в игру... Я тебе определение/формулировку, а ты мне'
+                                      '"знаю/не знаю.')
 
 @bot.message_handler(commands=['help'])
 def help_def(message):
@@ -57,44 +73,28 @@ def subject(message):
         keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи']])
         msg = bot.send_message(message.chat.id, question, reply_markup=keyboard)
         bot.register_next_step_handler(msg, answer)
-    elif message.text == 'Всё, хватит' or message.text == 'В другой раз...':
+    if message.text == 'Всё, хватит':
         keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ['Матан', 'В другой раз...']])
-        msg = bot.send_message(message.chat.id, 'Извини, я тебя не понял, можешь повторить ?', reply_markup=keyboard)
-        bot.register_next_step_handler(msg, subject)
 
 
 def answer(message):
     global Q_NUM
-    if message.text == 'Покажи' or message.text == 'Покажи правильный ответ':
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё', 'Всё, хватит']])
-        bot.send_message(message.chat.id, 'Правильный ответ:')
-        with open(f'{PATH}/flash_cards/math/{Q_NUM + 1}.png', 'rb') as photo:
-            msg = bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
-        bot.register_next_step_handler(msg, subject)
-    elif message.text == 'Я не хочу смотреть ответ':
-        keyboard = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id, 'Ты не расстраивайся ! Все мы делаем ошибки...', reply_markup=keyboard)
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи правильный ответ', 'Я не хочу смотреть ответ']])
-        msg = bot.send_message(message.chat.id,
-                               'Извини, что-то не могу уловить твои мозговые волны... Попробуй ещё раз',
-                               reply_markup=keyboard)
-        bot.register_next_step_handler(msg, answer)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё', 'Всё, хватит']])
+    bot.send_message(message.chat.id, 'Правильный ответ:')
+    with open(f'{PATH}/flash_cards/math/{Q_NUM + 1}.png', 'rb') as photo:
+        msg = bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
+    bot.register_next_step_handler(msg, subject)
 
 
 @bot.message_handler(commands=['figure_mnk'])
 def figure_mnk(message):
     global MESSAGE_COM
-    bot.send_message(message.chat.id, 'Снова лабки делаешь ?) Ох уж эти линеаризованные графики !...'
-                                      ' Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
+    bot.send_message(message.chat.id, 'Снова лабки делаешь?) Ох уж эти линеаризованные графики!...'
+                                      'Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
                                       '😉. И не засиживайся, ложись спать))')
-    msg = bot.send_message(message.chat.id, 'Скажи, как мне подписать ось х ?')
+    msg = bot.send_message(message.chat.id, 'Скажи, как мне подписать ось х?')
     MESSAGE_COM = 'figure_mnk'
     bot.register_next_step_handler(msg, ax_x)
 
@@ -103,7 +103,8 @@ def figure_mnk(message):
 def mnk_constants(message):
     global MESSAGE_COM
     msg = bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
-                                            ' Даа, непростая задача, так и быть, помогу тебе ! ')
+                                            ' Даа, непростая задача, так и быть,'
+                                      'помогу тебе!')
     MESSAGE_COM = 'mnk_constants'
     bot.register_next_step_handler(msg, tit)
 
