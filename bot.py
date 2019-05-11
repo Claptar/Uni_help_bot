@@ -69,12 +69,23 @@ def subject(message):
 
 def answer(message):
     global Q_NUM
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё', 'Всё, хватит']])
-    bot.send_message(message.chat.id, 'Правильный ответ:')
-    with open(f'{PATH}/flash_cards/math/{Q_NUM + 1}.png', 'rb') as photo:
-        msg = bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
-    bot.register_next_step_handler(msg, subject)
+    if message.text == 'Покажи' or message.text == 'Покажи правильный ответ':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё', 'Всё, хватит']])
+        bot.send_message(message.chat.id, 'Правильный ответ:')
+        with open(f'{PATH}/flash_cards/math/{Q_NUM + 1}.png', 'rb') as photo:
+            msg = bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
+        bot.register_next_step_handler(msg, subject)
+    elif message.text == 'Я не хочу смотреть ответ':
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, 'Ты не расстраивайся ! Все мы делаем ошибки...', reply_markup=keyboard)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи правильный ответ', 'Я не хочу смотреть ответ']])
+        msg = bot.send_message(message.chat.id,
+                               'Извини, что-то не могу уловить твои мозговые волны... Попробуй ещё раз',
+                               reply_markup=keyboard)
+        bot.register_next_step_handler(msg, answer)
 
 
 @bot.message_handler(commands=['figure_mnk'])
