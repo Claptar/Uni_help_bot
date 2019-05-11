@@ -102,7 +102,16 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     for i in range(0, len(x)):
         sigmas_x = np.sum(x[i] * x[i]) / len(x[i]) - (np.sum(x[i]) / len(x[i])) ** 2
         sigmas_y = np.sum(y[i] * y[i]) / len(y[i]) - (np.sum(y[i]) / len(y[i])) ** 2
-        plt.errorbar(x[i], y[i], xerr=sigmas_x, yerr=sigmas_y, fmt='o', ecolor='blue')
+        if sigmas_y > 1:
+            xerr = math.sqrt(sigmas_x)
+        else:
+            xerr = sigmas_x
+
+        if sigmas_y > 1:
+            yerr = math.sqrt(sigmas_y)
+        else:
+            yerr = sigmas_y
+        plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='o', ecolor='blue')
         delta = (max(x[i]) - min(x[i]))/len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
         strk += "x[{}], y[{}], \' o \', x_[{}], a[{}]*x_[{}] + b[{}], 'r',".format(i, i, i, i, i, i)
