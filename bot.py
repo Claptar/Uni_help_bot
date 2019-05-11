@@ -57,9 +57,14 @@ def subject(message):
         keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи']])
         msg = bot.send_message(message.chat.id, question, reply_markup=keyboard)
         bot.register_next_step_handler(msg, answer)
-    if message.text == 'Всё, хватит':
+    elif message.text == 'Всё, хватит' or message.text == 'В другой раз...':
         keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Матан', 'В другой раз...']])
+        msg = bot.send_message(message.chat.id, 'Извини, я тебя не понял, можешь повторить ?', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, subject)
 
 
 def answer(message):
