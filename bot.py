@@ -1,4 +1,3 @@
-
 import os
 import random
 import telebot
@@ -187,11 +186,24 @@ def date_mnk(message):
 
 @bot.message_handler(commands=['schedule'])
 def schedule(message):
-    bot.send_message(message.chat.id, 'Снова не можешь вспомнить номер кабинета или какая следующая пара ?)'
-                                      'Ничего, я уже тут !')
-    with open('schedule.jpg', 'rb') as photo:
-        bot.send_photo(message.chat.id, photo)
+    bot.send_message(message.chat.id, 'Снова не можешь вспомнить номер кабинета или какая следующая пара?)'
+                                      'Ничего, я уже тут!')
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['1 группа', 'Общее расписание']])
+    msg = bot.send_message(message.chat.id, 'Чьё расписание ты хочешь узнать?', reply_markup=keyboard)
+    bot.register_next_step_handler(msg, answer)
 
+def answer(message):
+    if (message.text == '1 группа'):
+        bot.send_message(message.chat.id, 'Держи!')
+        with open('timetable_for_our_group.jpg', 'rb') as photo:
+            bot.send_photo(message.chat.id, photo)
+    else:
+        bot.send_message(message.chat.id, 'Держи!')
+        with open('timetable_for_all.jpg', 'rb') as photo:
+            bot.send_photo(message.chat.id, photo)
+    keyboard = types.ReplyKeyboardRemove()
+    bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
 
 @bot.message_handler(commands=['exam'])
 def exam(message):
