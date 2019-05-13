@@ -6,6 +6,7 @@ from telebot import types
 import pandas as pd
 import numpy as np
 import math_part
+import exam_timetable
 
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
@@ -16,6 +17,8 @@ MESSAGE_NUM = 0
 MESSAGE_COM = ''
 Q_NUM = 0
 
+comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants', 'timetable', 'exam']
+
 
 @bot.message_handler(commands=['help'])
 def help_def(message):
@@ -23,8 +26,8 @@ def help_def(message):
                                       '/figure - Хочешь построить график по точкам ? Не вопрос !\n'
                                       '/figure_mnk - Хочешь построить график линеаризованный по мнк ? Запросто !\n'
                                       '/mnk_constants - Нужно посчитать константы прямой по мнк ? Я помогу !\n'
-                                      '/schedule - Забыл расписание ?) Бывает, пиши, я помогу 😉📱📱📱'
-                                      '\n/exam - Подскажу расписание экзамено, но ты сам захотел...'
+                                      '/timetable - Забыл расписание ?) Бывает, пиши, я помогу 😉📱📱📱'
+                                      '\n/exam - Подскажу расписание экзаменов, но ты сам захотел...'
                                       ' Я не люблю напоминать'
                                       'о плохом...\n'
                                       '/flash_cards - Давай сыграем в игру... Я тебе определение/формулировку, а ты мне'
@@ -87,8 +90,7 @@ def figure_mnk(message):
 def mnk_constants(message):
     global MESSAGE_COM
     msg = bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
-                                            ' Даа, непростая задача, так и быть,'
-                                      'помогу тебе!')
+                                            ' Даа, непростая задача, так и быть, помогу тебе!')
     MESSAGE_COM = 'mnk_constants'
     bot.register_next_step_handler(msg, tit)
 
@@ -106,7 +108,7 @@ def figure(message):
 
 def ax_x(message):
     math_part.LABEL_X = message.text
-    msg = bot.send_message(message.chat.id, 'А, как мне подписать ось у ?')
+    msg = bot.send_message(message.chat.id, 'А как мне подписать ось у ?')
     bot.register_next_step_handler(msg, ax_y)
 
 
@@ -125,7 +127,7 @@ def tit(message):
             keyboard = types.ReplyKeyboardRemove()
             bot.send_message(message.chat.id, 'Давай попробуем ещё раз😔', reply_markup=keyboard)
         math_part.TITLE = message.text
-        bot.send_message(message.chat.id, 'Пришли мне файл с данными вот в таком формате и всё будет готово😊')
+        bot.send_message(message.chat.id, 'Отправь мне файл с данными вот в таком формате, и всё будет готово😊')
         with open('example.jpg', 'rb') as photo:
             msg = bot.send_photo(message.chat.id, photo)
         bot.register_next_step_handler(msg, date_mnk)
@@ -180,50 +182,46 @@ def date_mnk(message):
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Видимо не в этот раз ...']])
         msg = bot.send_message(message.chat.id,
-                               'Что-то не получилось... Проверь файл который ты прислал😨 ', reply_markup=keyboard)
+                               'Что-то не получилось... Проверь файл, который ты прислал😨 ', reply_markup=keyboard)
         bot.register_next_step_handler(msg, tit)
 
 
-@bot.message_handler(commands=['schedule'])
-def schedule(message):
-    bot.send_message(message.chat.id, 'Снова не можешь вспомнить номер кабинета или какая следующая пара?)'
-                                      'Ничего, я уже тут!')
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['1 группа', 'Общее расписание']])
-    msg = bot.send_message(message.chat.id, 'Чьё расписание ты хочешь узнать?', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, answer)
-
-def answer(message):
-    if (message.text == '1 группа'):
-        bot.send_message(message.chat.id, 'Держи!')
-        with open('timetable_for_our_group.jpg', 'rb') as photo:
-            bot.send_photo(message.chat.id, photo)
-    else:
-        bot.send_message(message.chat.id, 'Держи!')
-        with open('timetable_for_all.jpg', 'rb') as photo:
-            bot.send_photo(message.chat.id, photo)
-    keyboard = types.ReplyKeyboardRemove()
-    bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
-
-@bot.message_handler(commands=['exam'])
-def exam(message):
-    bot.send_message(message.chat.id, 'Ну... Ты это.. Держись... !')
-    with open('exam.png', 'rb') as photo:
+@bot.message_handler(commands=['timetable'])
+def timetable(message):
+    bot.send_message(message.chat.id, 'Снова не можешь вспомнить номер кабинета или какая следующая пара ?)'
+                                      'Ничего, я уже тут !')
+    with open('schedule.jpg', 'rb') as photo:
         bot.send_photo(message.chat.id, photo)
 
+
+@bot.message_handler(commands=['exam'])
+def ask_group(message):
+    bot.send_message(message.chat.id, 'А из какой ты группы?')
+    bot.register_next_step_handler(message, get_exam_timetable)
+
+
+def get_exam_timetable(message):
+    exam_timetable.get_timetable(message.text)
+    f = open('exam.txt')
+    for line in f:
+        bot.send_message(message.chat.id, line)
+    open('exam.txt', 'w').close()
+
+
 # Если отправить боту просто текст или незнакомую команду, то он ответит так:
-@bot.message_handler(content_types = ['text'])
+@bot.message_handler(content_types=['text'])
 def help_def(message):
     bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n' 
                                       'Вот какие команды я знаю:\n'
                                       '/figure - Хочешь построить график по точкам ? Не вопрос !\n'
                                       '/figure_mnk - Хочешь построить график линеаризованный по мнк ? Запросто !\n'
                                       '/mnk_constants - Нужно посчитать константы прямой по мнк ? Я помогу !\n'
-                                      '/schedule - Забыл расписание ?) Бывает, пиши, я помогу 😉📱📱📱'
-                                      '\n/exam - Подскажу расписание экзамено, но ты сам захотел...'
+                                      '/timetable - Забыл расписание ?) Бывает, пиши, я помогу 😉📱📱📱'
+                                      '\n/exam - Подскажу расписание экзаменов, но ты сам захотел...'
                                       ' Я не люблю напоминать'
                                       'о плохом...\n'
                                       '/flash_cards - Давай сыграем в игру... Я тебе определение/формулировку, а ты мне'
                                       '"знаю/не знаю.')
+
 
 bot.polling()
