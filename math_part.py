@@ -166,14 +166,14 @@ def error_calc(equation, var_list, point_list, error_list):
     :param error_list: список погрешностей для каждой переменной соответсвенно со списком переменных
     :return: погрешность
     """
-    sigma = 0
+    sigma = 0  # Объявляем переменную
     for number in range(len(var_list)):
-        elem = Symbol(var_list[number])
-        der = diff(equation, elem)
-        for score in range(len(point_list)):
-            der = lambdify(var_list[score], der, 'numpy')
-            der = der(point_list[score])
-        sigma += error_list[number] ** 2 * der ** 2
+        elem = Symbol(var_list[number])  # переводт символ в приемлемый формат для дифференцирования
+        der = diff(equation, elem)  # дифференцируем выражение equation по переменной elem
+        for score in range(len(point_list)):  # задаем каждую переменную, чтобы подставить ее значение
+            der = lambdify(var_list[score], der, 'numpy')  # говорим, что функция будет конкретной переменной
+            der = der(point_list[score])  # задаем функцию в строчном виде
+        sigma += error_list[number] ** 2 * der ** 2  # считем погрешность
 
     return sigma
 
