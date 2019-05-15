@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from sympy import *
 
 LABEL_X = ''
 LABEL_Y = ''
@@ -153,3 +154,10 @@ def mnk_calc(data_file):
         d_b.append(r[3])
 
     return [a, b, d_a, d_b]
+
+
+def error_calc(equation, variable):
+    variable = Symbol(str(variable))
+    print(diff(equation, variable))
+
+error_calc('(x * y) ** 3', 'x')
