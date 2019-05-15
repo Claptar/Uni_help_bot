@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import math
 from sympy import *
 
+
 LABEL_X = ''
 LABEL_Y = ''
 TITLE = ''
@@ -159,8 +160,12 @@ def mnk_calc(data_file):
 def error_calc(equation, var_list, point_list):
     for number in range(len(var_list)):
         elem = Symbol(var_list[number])
-        foo = lambdify(elem, diff(equation, elem), 'numpy')
-        print(foo(point_list[number]))
+        der = diff(equation, elem)
+        for score in range(len(point_list)):
+            der = lambdify(var_list[score], der, 'numpy')
+            der = der(point_list[score])
+        print(der)
+
 
 
 var_lis = ['x', 'y']
