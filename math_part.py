@@ -157,17 +157,25 @@ def mnk_calc(data_file):
     return [a, b, d_a, d_b]
 
 
-def error_calc(equation, var_list, point_list):
+def error_calc(equation, var_list, point_list, error_list):
+    """
+
+    :param equation: формула в формате, приемлемом для python
+    :param var_list: список переменных
+    :param point_list: список значений переменных в точке соответсвенно со списком переменных
+    :param error_list: список погрешностей для каждой переменной соответсвенно со списком переменных
+    :return: погрешность
+    """
+    sigma = 0
     for number in range(len(var_list)):
         elem = Symbol(var_list[number])
         der = diff(equation, elem)
         for score in range(len(point_list)):
             der = lambdify(var_list[score], der, 'numpy')
             der = der(point_list[score])
-        print(der)
+        sigma += error_list[number] ** 2 * der ** 2
+
+    return sigma
 
 
 
-var_lis = ['x', 'y']
-pl = [1, 2]
-error_calc('(x * y) ** 3', var_lis, pl)
