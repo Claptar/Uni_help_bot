@@ -156,8 +156,13 @@ def mnk_calc(data_file):
     return [a, b, d_a, d_b]
 
 
-def error_calc(equation, variable):
-    variable = Symbol(str(variable))
-    print(diff(equation, variable))
+def error_calc(equation, var_list, point_list):
+    for number in range(len(var_list)):
+        elem = Symbol(var_list[number])
+        foo = lambdify(elem, diff(equation, elem), 'numpy')
+        print(foo(point_list[number]))
 
-error_calc('(x * y) ** 3', 'x')
+
+var_lis = ['x', 'y']
+pl = [1, 2]
+error_calc('(x * y) ** 3', var_lis, pl)
