@@ -1,17 +1,23 @@
 import tkinter as tk
+import argparse
+import math_part
+import latex_table
+import numpy as np
+from tkinter import filedialog as fd
+from PIL import Image, ImageTk
 
 root = tk.Tk()
 root.title("MNK-Tool")
 root.geometry("800x600")
 
 
+def close():
+    root.destroy()
 
 
 def OK():
     help_window.destroy()
 
-def close():
-    root.destroy()
 
 def help():
     global help_window
@@ -27,7 +33,6 @@ def help():
                         relwidth=0.2, relx=0.4, rely=0.9)
 
 
-
 def back():
     global root
     root.destroy()
@@ -37,26 +42,108 @@ def back():
     start(root)
 
 
-def MNK():
+def openfileMNK():
+    file_name = fd.askopenfilename()
+    mnk_calculate_print(file_name)
+
+def mnk_calculate_print(file_name):
+    xy_list = math_part.mnk_calc(file_name)
+    a = xy_list[0]
+    d_a = xy_list[2]
+    b = xy_list[1]
+    d_b =xy_list[3]
+    # исправить подписи
+    sigmaX = "Погрешность коэффициента наклона прямой:", a, "+", d_a
+    sigmaY = "Погрешность свободного коэффициента:", b, "+", d_b
+    tk.Label(root, text=sigmaX).place(relx=0.2, rely=0.7)
+    tk.Label(root, text=sigmaY).place(relx=0.2, rely=0.75)
+
+def generation_tab_MNK():
     global root
     root.destroy()
     root = tk.Tk()
     root.title("MNK-Tool")
     root.geometry("800x600")
+#настроить кртинку
+    img = Image.open("example.jpg")
+    render = ImageTk.PhotoImage(img)
+    initil = tk.Label(root, image=render)
+    initil.image = render
+    initil.place(relheight=0.7, relwidth=0.6, relx=0.3, rely=0)
 
 
-    btn = tk.Button(text="Назад", background="#555", foreground="#ccc",
+    btnback = tk.Button(text="Назад", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15", command=back)
-    btn.place(relheight=0.2, relwidth=0.33, relx=0, rely=0.8)
+    btnback.place(relheight=0.2, relwidth=0.33, relx=0, rely=0.8)
 
     btnhelp = tk.Button(text="Помощь", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15", command=help)
     btnhelp.place(relheight=0.2, relwidth=0.33, relx=0.33, rely=0.8)
 
-    btn7 = tk.Button(text="Выход", background="#555", foreground="#ccc",
+    btnclose = tk.Button(text="Выход", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15", command=close)
-    btn7.place(relheight=0.2, relwidth=0.34, relx=0.66, rely=0.8)
+    btnclose.place(relheight=0.2, relwidth=0.34, relx=0.66, rely=0.8)
 
+    btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
+                  padx="15", pady="6", font="15", command=openfileMNK)
+    btnfile.place(relheight=0.1, relwidth=0.2, relx=0.0, rely=0.3)
+
+
+
+
+
+def openfileTable():
+    file_name = fd.askopenfilename()
+    Table(file_name)
+
+
+def Table(file_name):
+    data_array = np.array(math_part.data_conv(file_name))
+    name = "table"
+    latex_table.table_body_create(data_array, name)
+
+
+def generation_tab_Table():
+    global root
+    root.destroy()
+    root = tk.Tk()
+    root.title("MNK-Tool")
+    root.geometry("800x600")
+#настроить кртинку
+    img = Image.open("example.jpg")
+    render = ImageTk.PhotoImage(img)
+    initil = tk.Label(root, image=render)
+    initil.image = render
+    initil.place(relheight=0.7, relwidth=0.6, relx=0.3, rely=0)
+
+
+    btnback = tk.Button(text="Назад", background="#555", foreground="#ccc",
+                  padx="15", pady="6", font="15", command=back)
+    btnback.place(relheight=0.2, relwidth=0.33, relx=0, rely=0.8)
+
+    btnhelp = tk.Button(text="Помощь", background="#555", foreground="#ccc",
+                  padx="15", pady="6", font="15", command=help)
+    btnhelp.place(relheight=0.2, relwidth=0.33, relx=0.33, rely=0.8)
+
+    btnclose = tk.Button(text="Выход", background="#555", foreground="#ccc",
+                  padx="15", pady="6", font="15", command=close)
+    btnclose.place(relheight=0.2, relwidth=0.34, relx=0.66, rely=0.8)
+
+    btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
+                  padx="15", pady="6", font="15", command=openfileTable)
+    btnfile.place(relheight=0.1, relwidth=0.2, relx=0.0, rely=0.3)
+
+
+
+
+
+
+
+
+def Table(file_name):
+    data_array = np.array(math_part.data_conv(file_name))
+    name = "table"
+    latex_table.table_body_create(data_array, name)
 
 
 
@@ -65,21 +152,20 @@ def MNK():
 
 def start(root):
 
-    # Построить график
-    btn1 = tk.Button(text="Clicks 0", background="#555", foreground="#ccc",
+    btn1 = tk.Button(text="Построить график", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15")
     btn1.place(relheight=0.2, relwidth=1.0, relx=0, rely=0)
 
     btn2 = tk.Button(text="Посчитать МНК", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15",  command=MNK)
+                  padx="15", pady="6", font="15", command=generation_tab_MNK)
     btn2.place(relheight=0.2, relwidth=1.0, relx=0, rely=0.2)
 
     btn3 = tk.Button(text="Создать PDF Overleaf", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15")
     btn3.place(relheight=0.2, relwidth=1.0, relx=0, rely=0.4)
 
-    btn4 = tk.Button(text="TOP", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15")
+    btn4 = tk.Button(text="Создать табллицу в LaTex", background="#555", foreground="#ccc",
+                  padx="15", pady="6", font="15", command=generation_tab_Table)
     btn4.place(relheight=0.2, relwidth=1.0, relx=0, rely=0.6)
 
     btn5 = tk.Button(text="...", background="#555", foreground="#ccc",
