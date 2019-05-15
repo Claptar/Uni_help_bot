@@ -91,28 +91,44 @@ def subject(message):
         keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи']])
         msg = bot.send_message(message.chat.id, question, reply_markup=keyboard)
         bot.register_next_step_handler(msg, answer)
-    if message.text == 'Всё, хватит':
+    elif message.text == 'Всё, хватит' or message.text == 'В другой раз...':
         keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Матан', 'В другой раз...']])
+        msg = bot.send_message(message.chat.id, 'Извини, я тебя не понял, можешь повторить ?', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, subject)
 
 
 def answer(message):
     global Q_NUM
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё', 'Всё, хватит']])
-    bot.send_message(message.chat.id, 'Правильный ответ:')
-    with open(f'{PATH}/flash_cards/math/{Q_NUM + 1}.png', 'rb') as photo:
-        msg = bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
-    bot.register_next_step_handler(msg, subject)
+    if message.text == 'Покажи' or message.text == 'Покажи правильный ответ':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё', 'Всё, хватит']])
+        bot.send_message(message.chat.id, 'Правильный ответ:')
+        with open(f'{PATH}/flash_cards/math/{Q_NUM + 1}.png', 'rb') as photo:
+            msg = bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
+        bot.register_next_step_handler(msg, subject)
+    elif message.text == 'Я не хочу смотреть ответ':
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, 'Ты не расстраивайся ! Все мы делаем ошибки...', reply_markup=keyboard)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи правильный ответ', 'Я не хочу смотреть ответ']])
+        msg = bot.send_message(message.chat.id,
+                               'Извини, что-то не могу уловить твои мозговые волны... Попробуй ещё раз',
+                               reply_markup=keyboard)
+        bot.register_next_step_handler(msg, answer)
 
 
 @bot.message_handler(commands=['figure_mnk'])
 def figure_mnk(message):
     global MESSAGE_COM
-    bot.send_message(message.chat.id, 'Снова лабки делаешь?) Ох уж эти линеаризованные графики!...'
-                                      'Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
+    bot.send_message(message.chat.id, 'Снова лабки делаешь ?) Ох уж эти линеаризованные графики !...'
+                                      ' Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
                                       '😉. И не засиживайся, ложись спать))')
-    msg = bot.send_message(message.chat.id, 'Скажи, как мне подписать ось х?')
+    msg = bot.send_message(message.chat.id, 'Скажи, как мне подписать ось х ?')
     MESSAGE_COM = 'figure_mnk'
     bot.register_next_step_handler(msg, ax_x)
 
@@ -121,7 +137,7 @@ def figure_mnk(message):
 def mnk_constants(message):
     global MESSAGE_COM
     msg = bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
-                                            ' Даа, непростая задача, так и быть, помогу тебе!')
+                                            ' Даа, непростая задача, так и быть, помогу тебе ! ')
     MESSAGE_COM = 'mnk_constants'
     bot.register_next_step_handler(msg, tit)
 
@@ -139,7 +155,7 @@ def figure(message):
 
 def ax_x(message):
     math_part.LABEL_X = message.text
-    msg = bot.send_message(message.chat.id, 'А как мне подписать ось у ?')
+    msg = bot.send_message(message.chat.id, 'А, как мне подписать ось у ?')
     bot.register_next_step_handler(msg, ax_y)
 
 
@@ -158,7 +174,7 @@ def tit(message):
             keyboard = types.ReplyKeyboardRemove()
             bot.send_message(message.chat.id, 'Давай попробуем ещё раз😔', reply_markup=keyboard)
         math_part.TITLE = message.text
-        bot.send_message(message.chat.id, 'Отправь мне файл с данными вот в таком формате, и всё будет готово😊')
+        bot.send_message(message.chat.id, 'Пришли мне файл с данными вот в таком формате и всё будет готово😊')
         with open('example.jpg', 'rb') as photo:
             msg = bot.send_photo(message.chat.id, photo)
         bot.register_next_step_handler(msg, date_mnk)
@@ -213,7 +229,7 @@ def date_mnk(message):
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Видимо не в этот раз ...']])
         msg = bot.send_message(message.chat.id,
-                               'Что-то не получилось... Проверь файл, который ты прислал😨 ', reply_markup=keyboard)
+                               'Что-то не получилось... Проверь файл который ты прислал😨 ', reply_markup=keyboard)
         bot.register_next_step_handler(msg, tit)
 
 
@@ -228,7 +244,7 @@ def schedule(message):
 
 
 def answer(message):
-    if (message.text == '1 группа'):
+    if message.text == '1 группа':
         bot.send_message(message.chat.id, 'Держи!')
         with open('timetable_for_our_group.jpg', 'rb') as photo:
             bot.send_photo(message.chat.id, photo)
