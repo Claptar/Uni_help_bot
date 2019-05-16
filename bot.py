@@ -55,11 +55,11 @@ quotes = ['Трудности похожи на собак: они кусают 
 
 @bot.message_handler(commands=['help'])
 def help_def(message):
-    bot.send_message(message.chat.id, 'Сейчас я расскажу чем я могу тебе помочь ☺️\n'
+    bot.send_message(message.chat.id, 'Сейчас я расскажу, чем я могу тебе помочь ☺️\n'
                                       '/figure - Хочешь построить график по точкам ? Не вопрос !\n'
-                                      '/figure_mnk - Хочешь построить график линеаризованный по мнк ? Запросто !\n'
-                                      '/mnk_constants - Нужно посчитать константы прямой по мнк ? Я помогу !\n'
-                                      '/timetable - Забыл расписание ?) Бывает, пиши, я помогу 😉📱📱📱'
+                                      '/figure_mnk - Хочешь построить график линеаризованный по МНК? Запросто !\n'
+                                      '/mnk_constants - Нужно посчитать константы прямой по МНК? Я помогу !\n'
+                                      '/timetable - Забыл расписание?) Бывает, пиши, я помогу 😉📱📱📱'
                                       '\n/exam - Подскажу расписание экзаменов, но ты сам захотел...'
                                       ' Я не люблю напоминать'
                                       'о плохом...\n'
@@ -78,7 +78,7 @@ def start(message):
     bot.send_message(message.chat.id, 'Хочешь вспомнить парочку определений ?)📚📚')
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Матан']])
-    msg = bot.send_message(message.chat.id, 'Сперва выбери предмет', reply_markup=keyboard)
+    msg = bot.send_message(message.chat.id, 'Сначала выбери предмет', reply_markup=keyboard)
     bot.register_next_step_handler(msg, subject)
 
 
@@ -237,7 +237,7 @@ def date_mnk(message):
 
 @bot.message_handler(commands=['timetable'])
 def get_group(message)
-    bot.send_message(message.chat.id, 'Снова не можешь вспомнить номер кабинета или какая следующая пара?)'
+    bot.send_message(message.chat.id, 'Снова не можешь вспомнить какая пара следующая?)'
                                       'Ничего, я уже тут!')
     bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)')
     bot.register_next_step_handler(message, get_weekday)
@@ -248,7 +248,7 @@ def get_weekday(message):
     GROUP_NUM = message.text
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница']])
-    msg = bot.send_message(message.chat.id, 'Расписание за какой день ты хочешь узнать?', reply_markup=keyboard)
+    msg = bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
     bot.register_next_step_handler(msg, get_schedule)
 
 
