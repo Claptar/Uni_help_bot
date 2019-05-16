@@ -6,7 +6,7 @@ from telebot import types
 import pandas as pd
 import numpy as np
 import math_part
-import exam_timetable
+import timetable
 
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
@@ -16,11 +16,12 @@ bot = telebot.TeleBot(TOKEN)
 MESSAGE_NUM = 0
 MESSAGE_COM = ''
 Q_NUM = 0
+GROUP_NUM = ''
 
 comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants', 'timetable', 'exam']
 
 crazy_tokens = 0
-emoji = ['😀','😬','😁','😂','😃','👿','😈','😴','🤧','🤢','🤮','🤒','🤕','😷','🤐',
+emoji = ['😀', '😬', '😁', '😂', '😃', '👿', '😈','😴','🤧', '🤢', '🤮', '🤒','🤕','😷','🤐',
          '🤯','😲','😵','🤩','😭','😓','🤤','😪','😥','😢','😧','😦','😄','🤣','😅',
          '😆','😇','😉','😊','🙂','🙃','☺','😋','😌','😍','😘','😗','😙','😚','🤪',
          '😜','😝','😛','🤑','😎','🤓','🧐','🤠','🤗','🤡','😏','😶','😐','😑','😒',
@@ -50,6 +51,7 @@ quotes = ['Трудности похожи на собак: они кусают 
           'Те люди, которые чаще всего прощали и дольше всего терпели, обычно уходят неожиданно и навсегда...',
           'Постарайтесь получить то, что любите, иначе придется полюбить то, что получили. - Бернард Шоу.',
           'Никогда не делай выводов о человеке, пока не узнаешь причины его поступков.']
+
 
 @bot.message_handler(commands=['help'])
 def help_def(message):
@@ -234,36 +236,40 @@ def date_mnk(message):
 
 
 @bot.message_handler(commands=['timetable'])
-def schedule(message):
+def get_group(message)
     bot.send_message(message.chat.id, 'Снова не можешь вспомнить номер кабинета или какая следующая пара?)'
                                       'Ничего, я уже тут!')
+    bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)')
+    bot.register_next_step_handler(message, get_weekday)
+
+
+def get_weekday(message):
+    global GROUP_NUM
+    GROUP_NUM = message.text
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['1 группа', 'Общее расписание']])
-    msg = bot.send_message(message.chat.id, 'Чьё расписание ты хочешь узнать?', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, answer)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница']])
+    msg = bot.send_message(message.chat.id, 'Расписание за какой день ты хочешь узнать?', reply_markup=keyboard)
+    bot.register_next_step_handler(msg, get_schedule)
 
 
-def answer(message):
-    if message.text == '1 группа':
-        bot.send_message(message.chat.id, 'Держи!')
-        with open('timetable_for_our_group.jpg', 'rb') as photo:
-            bot.send_photo(message.chat.id, photo)
-    else:
-        bot.send_message(message.chat.id, 'Держи!')
-        with open('timetable_for_all.jpg', 'rb') as photo:
-            bot.send_photo(message.chat.id, photo)
+def get_schedule(message):
+    timetable.get_timetable(GROUP_NUM, message.text)
+    f = open('class.txt')
+    for line in f:
+        bot.send_message(message.chat.id, line)
+    open('class.txt', 'w').close()
     keyboard = types.ReplyKeyboardRemove()
     bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
 
 
 @bot.message_handler(commands=['exam'])
 def ask_group(message):
-    bot.send_message(message.chat.id, 'А из какой ты группы?')
+    bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)')
     bot.register_next_step_handler(message, get_exam_timetable)
 
 
 def get_exam_timetable(message):
-    exam_timetable.get_timetable(message.text)
+    timetable.get_exam_timetable(message.text)
     f = open('exam.txt')
     for line in f:
         bot.send_message(message.chat.id, line)
@@ -280,7 +286,7 @@ def chatting(message):
                                           'Напиши /help, чтобы узнать, что я умею.\n')
     elif crazy_tokens <= 4:
         bot.send_message(message.chat.id, random.choice(emoji))
-    elif crazy_tokens <=7:
+    elif crazy_tokens <= 7:
         bot.send_message(message.chat.id, random.choice(quotes))
     elif crazy_tokens == 8:
         bot.send_message(message.chat.id, 7*random.choice(emoji))
