@@ -42,13 +42,14 @@ def back():
     start(root)
 
 
-def standart():
+def standard_button():
     # настроить кртинку
-    img = Image.open("example.jpg")
+    tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5, relx=0.43, rely=0)
+    img = Image.open("examplegr.png")
     render = ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
-    initil.place(relheight=0.7, relwidth=0.6, relx=0.3, rely=0)
+    initil.place(relheight=0.75, relwidth=0.75, relx=0.3, rely=0.05)
 
     btnback = tk.Button(text="Назад", background="#555", foreground="#ccc",
                         padx="15", pady="6", font="15", command=back)
@@ -86,7 +87,7 @@ def generation_tab_MNK():
     root.title("MNK-Tool")
     root.geometry("800x600")
 
-    standart()
+    standard_button()
 
     btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15", command=openfileMNK)
@@ -111,11 +112,46 @@ def generation_tab_Table():
     root.title("MNK-Tool")
     root.geometry("800x600")
 
-    standart()
+    standard_button()
 
     btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15", command=openfileTable)
     btnfile.place(relheight=0.1, relwidth=0.2, relx=0.0, rely=0.3)
+
+
+def openfilePlots():
+    file_name = fd.askopenfilename()
+    x_lb = x1.get()
+    y_lb = y1.get()
+    tit = Name.get()
+    math_part.plot_drawer(file_name, x_lb, y_lb, tit)
+
+
+def generation_tab_Plots():
+    global root, x1, y1, Name
+    root.destroy()
+    root = tk.Tk()
+    root.title("MNK-Tool")
+    root.geometry("800x600")
+
+    standard_button()
+
+    tk.Label(root, text="Название графика:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.33)
+    Name = tk.Entry(root, width=8)
+    Name.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.33)
+
+    tk.Label(root, text="Название оси Ox:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.4)
+    x1 = tk.Entry(root, width=8)
+    x1.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.4)
+
+    tk.Label(root, text="Название оси Oy:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.47)
+    y1 = tk.Entry(root, width=8)
+    y1.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.47)
+
+    btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
+                  padx="15", pady="6", font="15", command=openfilePlots)
+    btnfile.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
+
 
 
 
@@ -132,7 +168,7 @@ def Table(file_name):
 def start(root):
 
     btn1 = tk.Button(text="Построить график", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15")
+                  padx="15", pady="6", font="15", command=generation_tab_Plots)
     btn1.place(relheight=0.2, relwidth=1.0, relx=0, rely=0)
 
     btn2 = tk.Button(text="Посчитать МНК", background="#555", foreground="#ccc",
