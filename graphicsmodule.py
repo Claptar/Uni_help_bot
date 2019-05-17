@@ -7,8 +7,10 @@ from tkinter import filedialog as fd
 from PIL import Image, ImageTk
 
 root = tk.Tk()
+
 root.title("MNK-Tool")
-root.geometry("800x600")
+characteristic = "900x600"
+root.geometry(characteristic)
 
 
 def close():
@@ -26,7 +28,7 @@ def help():
 
 
 
-    poetry = " НАПИСАТЬ ТЕКСТ ПОДСКАЗКИ.\n Вот мысль, которой весь я предан,\nИтог всего, что ум скопил.\nЛишь тот, кем бой за жизнь изведан,\nЖизнь и свободу заслужил."
+    poetry = "ОПИСАТЬ ПОМОЩЬ"
     tk.Label(help_window, text=poetry).place(relx=0.2, rely=0.3)
 
     tk.Button(help_window, text="OK", background="#555", foreground="#ccc", command=OK).place(relheight=0.1,
@@ -38,7 +40,7 @@ def back():
     root.destroy()
     root = tk.Tk()
     root.title("MNK-Tool")
-    root.geometry("800x600")
+    root.geometry(characteristic)
     start(root)
 
 
@@ -68,54 +70,32 @@ def openfileMNK():
     file_name = fd.askopenfilename()
     mnk_calculate_print(file_name)
 
+
 def mnk_calculate_print(file_name):
     xy_list = math_part.mnk_calc(file_name)
-    a = xy_list[0]
-    d_a = xy_list[2]
-    b = xy_list[1]
-    d_b =xy_list[3]
-    # исправить подписи
-    sigmaX = "Погрешность коэффициента наклона прямой:", a, "+", d_a
-    sigmaY = "Погрешность свободного коэффициента:", b, "+", d_b
-    tk.Label(root, text=sigmaX).place(relx=0.2, rely=0.7)
-    tk.Label(root, text=sigmaY).place(relx=0.2, rely=0.75)
+    a = round(xy_list[0][0], 4)
+    d_a = round(xy_list[2][0], 4)
+    b = round(xy_list[1][0], 4)
+    d_b = round(xy_list[3][0], 4)
+
+    sigma = tk.Text(width=12, height=12)
+    sigma.place(relheight=0.1, relwidth=0.4, relx=0, rely=0.4)
+    sigma.insert(1.0, f'Погрешность коэффициента наклона прямой: \n{a} + {d_a}'
+                          f' \nПогрешность коэффициента наклона прямой: \n{b} + {d_b} ')
+
+
 
 def generation_tab_MNK():
     global root
     root.destroy()
     root = tk.Tk()
     root.title("MNK-Tool")
-    root.geometry("800x600")
+    root.geometry(characteristic)
 
     standard_button()
 
     btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15", command=openfileMNK)
-    btnfile.place(relheight=0.1, relwidth=0.2, relx=0.0, rely=0.3)
-
-
-def openfileTable():
-    file_name = fd.askopenfilename()
-    Table(file_name)
-
-
-def Table(file_name):
-    data_array = np.array(math_part.data_conv(file_name))
-    name = "table"
-    latex_table.table_body_create(data_array, name)
-
-
-def generation_tab_Table():
-    global root
-    root.destroy()
-    root = tk.Tk()
-    root.title("MNK-Tool")
-    root.geometry("800x600")
-
-    standard_button()
-
-    btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15", command=openfileTable)
     btnfile.place(relheight=0.1, relwidth=0.2, relx=0.0, rely=0.3)
 
 
@@ -132,7 +112,7 @@ def generation_tab_Plots():
     root.destroy()
     root = tk.Tk()
     root.title("MNK-Tool")
-    root.geometry("800x600")
+    root.geometry(characteristic)
 
     standard_button()
 
@@ -154,15 +134,36 @@ def generation_tab_Plots():
 
 
 
+def openfileTable():
+    file_name = fd.askopenfilename()
+    Table(file_name)
 
 
+def generation_tab_Table():
+    global root
+    root.destroy()
+    root = tk.Tk()
+    root.title("MNK-Tool")
+    root.geometry(characteristic)
 
+    standard_button()
 
+    tk.Label(root, text="Название столбца 1:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.33)
+    Name = tk.Entry(root, width=8)
+    Name.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.33)
 
+    tk.Label(root, text="Название столбца 2:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.4)
+    x1 = tk.Entry(root, width=8)
+    x1.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.4)
+
+    btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
+                        padx="15", pady="6", font="15", command=openfilePlots)
+    btnfile.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
 
 def Table(file_name):
     data_array = np.array(math_part.data_conv(file_name))
     name = "table"
+
     latex_table.table_body_create(data_array, name)
 
 def start(root):

@@ -5,6 +5,12 @@ import numpy as np
 b = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
 
+
+def get_column_names():
+    # TODO написать нормальную функцию для получения названий колонок
+    return ['some', 'column', 'names']
+
+
 def table_body_create(data_array, name):
     """
 
@@ -18,16 +24,13 @@ def table_body_create(data_array, name):
     lines_number = data_array.shape[0]
     columns_number = data_array.shape[1]
 
-    lines_names = []
+    column_names = get_column_names()
 
     print(' В таблице число строк -', lines_number, '\n',
           'число столбцов -', columns_number, '\n',
           'Введите название для каждого столбца:')
 
-    for ln in range(columns_number):
-        lines_names.append(str(input()))
-
-    data_array = np.vstack((lines_names, data_array))
+    data_array = np.vstack((column_names, data_array))
     print(data_array)
 
     print('Хотите оставить текущий формат?[Д/н]:')
