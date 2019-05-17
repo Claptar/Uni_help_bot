@@ -28,4 +28,3 @@ def get_timetable(group_name, weekday):
                     with open('class.txt', 'a') as file:
                         file.write(sh_class.cell_value(j, 1)+' ')
                         file.write(sh_class.cell_value(j, i)+'\n')
-
