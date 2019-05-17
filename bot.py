@@ -113,8 +113,11 @@ def mnk_constants(message):
     global MESSAGE_COM
     msg = bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
                                             ' Даа, непростая задача, так и быть, помогу тебе ! ')
+    bot.send_message(message.chat.id, 'Пришли мне файл с данными вот в таком формате и всё будет готово😊')
+    with open('example.jpg', 'rb') as photo:
+        msg = bot.send_photo(message.chat.id, photo)
     MESSAGE_COM = 'mnk_constants'
-    bot.register_next_step_handler(msg, tit)
+    bot.register_next_step_handler(msg, date_mnk)
 
 
 @bot.message_handler(commands=['figure'])
@@ -185,7 +188,7 @@ def date_mnk(message):
 
             with open('plot.png', 'rb') as photo:
 
-                bot.send_photo(message.chat.id, photo)
+                bot.send_document(message.chat.id, photo)
 
             os.remove('plot.png')
 
@@ -210,10 +213,15 @@ def date_mnk(message):
 
 @bot.message_handler(commands=['timetable'])
 def get_group(message):
-    bot.send_message(message.chat.id, 'Снова не можешь вспомнить какая пара следующая?)'
-                                      'Ничего, я уже тут!')
-    bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)')
-    bot.register_next_step_handler(message, get_weekday)
+    if message.text == 'Ладно, сам посмотрю':
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, '😞', reply_markup=keyboard)
+    else:
+        bot.send_message(message.chat.id, 'Снова не можешь вспомнить какая пара следующая?)'
+                                          'Ничего, я уже тут!')
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)', reply_markup=keyboard)
+        bot.register_next_step_handler(message, get_weekday)
 
 
 def get_weekday(message):
@@ -226,13 +234,31 @@ def get_weekday(message):
 
 
 def get_schedule(message):
-    timetable.get_timetable(GROUP_NUM, message.text)
-    f = open('class.txt')
-    for line in f:
-        bot.send_message(message.chat.id, line)
-    open('class.txt', 'w').close()
-    keyboard = types.ReplyKeyboardRemove()
-    bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
+    if message.text in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница']:
+        timetable.get_timetable(GROUP_NUM, message.text)
+        f = open('class.txt')
+        mes = ''
+        for line in f:
+            bot.send_message(message.chat.id, line)
+            mes += line
+        open('class.txt', 'w').close()
+        if mes != '':
+            keyboard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
+        else:
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
+            msg = bot.send_message(message.chat.id,
+                                   'Что-то не получилось... Ты мне точно прислал номер группы в правильном формате ?',
+                                   reply_markup=keyboard)
+            bot.register_next_step_handler(msg, get_group)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
+        msg = bot.send_message(message.chat.id,
+                               'Какой интересный день недели, извини, я такого не знаю... ?',
+                               reply_markup=keyboard)
+        bot.register_next_step_handler(msg, get_group)
 
 
 @bot.message_handler(commands=['exam'])
@@ -268,5 +294,6 @@ def chatting(message):
             bot.send_photo(message.chat.id, photo)
 
         crazy_tokens = 0
+
 
 bot.polling()

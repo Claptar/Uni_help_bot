@@ -76,7 +76,6 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     plt.clf()
 
 
-
 def plots_drawer(data_file, x_lb, y_lb, tit):
     """
     Функция считывает данные из таблицы и строит графики с МНК по этим данным
@@ -117,7 +116,7 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
         plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='o', ecolor='blue')
         delta = (max(x[i]) - min(x[i]))/len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
-        strk += "x[{}], y[{}], \' o \', x_[{}], a[{}]*x_[{}] + b[{}], 'r',".format(i, i, i, i, i, i)
+        strk += "x[{}], y[{}], \' o \', x_[{}], a[{}]*x_[{}] + b[{}],".format(i, i, i, i, i, i)
     strk = strk[0:-1] + ")"
     x_ = np.array(x_)
     with plt.style.context('classic'):
