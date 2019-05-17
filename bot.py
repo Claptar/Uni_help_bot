@@ -1,13 +1,13 @@
 import os
 import random
 import telebot
-from telebot.types import Message
 from telebot import types
 import pandas as pd
 import numpy as np
 import math_part
 
-import timetable
+import timetable.timetable
+
 
 import texting_symbols
 
@@ -234,14 +234,14 @@ def get_weekday(message):
 
 
 def get_schedule(message):
-    if message.text in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница']:
-        timetable.get_timetable(GROUP_NUM, message.text)
-        f = open('class.txt')
+    if message.text in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Cуббота']:
+        timetable.timetable.get_timetable(GROUP_NUM, message.text)
+        f = open(f'{PATH}/timetable/class.txt')
         mes = ''
         for line in f:
             bot.send_message(message.chat.id, line)
             mes += line
-        open('class.txt', 'w').close()
+        open(f'{PATH}/timetable/class.txt', 'w').close()
         if mes != '':
             keyboard = types.ReplyKeyboardRemove()
             bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
@@ -268,11 +268,19 @@ def ask_group(message):
 
 
 def get_exam_timetable(message):
-    timetable.get_exam_timetable(message.text)
-    f = open('exam.txt')
-    for line in f:
-        bot.send_message(message.chat.id, line)
-    open('exam.txt', 'w').close()
+    if message.text in texting_symbols.groups:
+        timetable.timetable.get_exam_timetable(message.text)
+        f = open(f'{PATH}/timetable/exam.txt')
+        for line in f:
+            bot.send_message(message.chat.id, line)
+        open(f'/timetable/exam.txt', 'w').close()
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
+        msg = bot.send_message(message.chat.id,
+                                'Что-то не получилось... Ты мне точно прислал номер группы в правильном формате ?',
+                                reply_markup=keyboard)
+        bot.register_next_step_handler(msg, ask_group)
 
 
 # Если отправить боту просто текст или незнакомую команду, то он ответит так:

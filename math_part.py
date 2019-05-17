@@ -134,7 +134,7 @@ def mnk_calc(data_file):
     """
     Функция считывает данные из таблицы и возвращает коэффициенты и погрешности
     :param data_file: Название файла с данными
-    :return:
+    :return: [a - коэф. прямой, b - коэф. прямой, погрешность а, погрешность b]
     """
     dataset = pd.read_excel(data_file, header=None)
     d = np.array(dataset)
