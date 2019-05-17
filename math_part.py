@@ -55,7 +55,7 @@ def const_dev(x, y):
 
 def plot_drawer(data_file, x_lb, y_lb, tit):
     """
-    Функция считывает данные из таблицы и строит графики с МНК по этим данным
+    Функция считывает данные из таблицы и строит график по этим данным
     :param data_file: Название файла с данными
     :param x_lb: подпись оси абсцисс
     :param y_lb: оси ординат
@@ -138,7 +138,6 @@ def mnk_calc(data_file):
     """
     dataset = pd.read_excel(data_file, header=None)
     d = np.array(dataset)
-    strk = 'plt.plot('
     a = []
     b = []
     x = []
