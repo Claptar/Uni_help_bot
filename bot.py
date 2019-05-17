@@ -1,12 +1,15 @@
 import os
 import random
 import telebot
-from telebot.types import Message
 from telebot import types
 import pandas as pd
 import numpy as np
 import math_part
-import exam_timetable
+
+import timetable.timetable
+
+
+import texting_symbols
 
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
@@ -16,48 +19,20 @@ bot = telebot.TeleBot(TOKEN)
 MESSAGE_NUM = 0
 MESSAGE_COM = ''
 Q_NUM = 0
+GROUP_NUM = ''
 
 comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants', 'timetable', 'exam']
 
 crazy_tokens = 0
-emoji = ['😀','😬','😁','😂','😃','👿','😈','😴','🤧','🤢','🤮','🤒','🤕','😷','🤐',
-         '🤯','😲','😵','🤩','😭','😓','🤤','😪','😥','😢','😧','😦','😄','🤣','😅',
-         '😆','😇','😉','😊','🙂','🙃','☺','😋','😌','😍','😘','😗','😙','😚','🤪',
-         '😜','😝','😛','🤑','😎','🤓','🧐','🤠','🤗','🤡','😏','😶','😐','😑','😒',
-         '🙄','🤨','🤔','🤫','🤭','🤥','😳','😞','😟','😠','😡','🤬','😔','😕','🙁',
-         '☹','😣','😖','😫','😩','😤','😮','😱','😨','😰','😯','😦','😧','😢','😥',
-         '😪','🤤','😓','😭','🤩']
 
-quotes = ['Трудности похожи на собак: они кусают лишь тех, кто к ним не привык... - Антисфен.',
-          'Когда долго начинаешь всматриваться в пропасть – пропасть начинает всматриваться в тебя. - Ницше.',
-          'Найти любовь проще, чем стать тем человеком, которого ищут.',
-          'Желание - это тысяча способов, нежелание - это тысяча препятствий.',
-          'Обиженные люди обижают людей. И все равно любите их. Хотя никто не запрещает вам любить их на расстоянии.',
-          'Не злись на идиотов. Они так и останутся идиотами, а ты потеряешь самообладание. - Мэри Хиггинс Кларк.',
-          'Очень опасно встретить женщину, которая полностью тебя понимает. Это обычно кончается женитьбой. - Оскар Уайльд.',
-          'Чтобы дойти до цели, надо прежде всего идти. - Оноре де Бальзак.',
-          'Если вы идете через ад, идите не останавливаясь. - Уинстон Черчилль.',
-          'Лишь очень немногие живут сегодняшним днем. Большинство готовится жить позднее. - Джонатан Свифт.',
-          'Если Бог откладывает, то это еще не значит, что он отказывает.',
-          'В любой непонятной ситуации — ложись спать. - Еврейская мудрость.',
-          'Не переживай о многом, и ты переживёшь многих.',
-          'В жизни все временно. Так что, если все идет хорошо, наслаждайся–вечно не продлится. А если все идет плохо – не переживай, это не продлится вечно.',
-          'История учит нас по меньшей мере тому, что хуже может быть всегда.',
-          'Самое ужасное, это ожидание того, чего не будет.',
-          'Люди думают, что будут счастливы, если переедут в другое место, а потом оказывается: куда бы ты ни переехал, ты берешь с собой себя.',
-          'Умный человек иногда торопится, но никогда не делает ничего второпях.',
-          'Ненависть — месть труса за испытанный им страх. - Бернард Шоу.',
-          'Те люди, которые чаще всего прощали и дольше всего терпели, обычно уходят неожиданно и навсегда...',
-          'Постарайтесь получить то, что любите, иначе придется полюбить то, что получили. - Бернард Шоу.',
-          'Никогда не делай выводов о человеке, пока не узнаешь причины его поступков.']
 
 @bot.message_handler(commands=['help'])
 def help_def(message):
-    bot.send_message(message.chat.id, 'Сейчас я расскажу чем я могу тебе помочь ☺️\n'
+    bot.send_message(message.chat.id, 'Сейчас я расскажу, чем я могу тебе помочь ☺️\n'
                                       '/figure - Хочешь построить график по точкам ? Не вопрос !\n'
-                                      '/figure_mnk - Хочешь построить график линеаризованный по мнк ? Запросто !\n'
-                                      '/mnk_constants - Нужно посчитать константы прямой по мнк ? Я помогу !\n'
-                                      '/timetable - Забыл расписание ?) Бывает, пиши, я помогу 😉📱📱📱'
+                                      '/figure_mnk - Хочешь построить график линеаризованный по МНК? Запросто !\n'
+                                      '/mnk_constants - Нужно посчитать константы прямой по МНК? Я помогу !\n'
+                                      '/timetable - Забыл расписание?) Бывает, пиши, я помогу 😉📱📱📱'
                                       '\n/exam - Подскажу расписание экзаменов, но ты сам захотел...'
                                       ' Я не люблю напоминать'
                                       'о плохом...\n'
@@ -76,7 +51,7 @@ def start(message):
     bot.send_message(message.chat.id, 'Хочешь вспомнить парочку определений ?)📚📚')
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Матан']])
-    msg = bot.send_message(message.chat.id, 'Сперва выбери предмет', reply_markup=keyboard)
+    msg = bot.send_message(message.chat.id, 'Сначала выбери предмет', reply_markup=keyboard)
     bot.register_next_step_handler(msg, subject)
 
 
@@ -138,8 +113,11 @@ def mnk_constants(message):
     global MESSAGE_COM
     msg = bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
                                             ' Даа, непростая задача, так и быть, помогу тебе ! ')
+    bot.send_message(message.chat.id, 'Пришли мне файл с данными вот в таком формате и всё будет готово😊')
+    with open('example.jpg', 'rb') as photo:
+        msg = bot.send_photo(message.chat.id, photo)
     MESSAGE_COM = 'mnk_constants'
-    bot.register_next_step_handler(msg, tit)
+    bot.register_next_step_handler(msg, date_mnk)
 
 
 @bot.message_handler(commands=['figure'])
@@ -210,7 +188,7 @@ def date_mnk(message):
 
             with open('plot.png', 'rb') as photo:
 
-                bot.send_photo(message.chat.id, photo)
+                bot.send_document(message.chat.id, photo)
 
             os.remove('plot.png')
 
@@ -234,56 +212,95 @@ def date_mnk(message):
 
 
 @bot.message_handler(commands=['timetable'])
-def schedule(message):
-    bot.send_message(message.chat.id, 'Снова не можешь вспомнить номер кабинета или какая следующая пара?)'
-                                      'Ничего, я уже тут!')
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['1 группа', 'Общее расписание']])
-    msg = bot.send_message(message.chat.id, 'Чьё расписание ты хочешь узнать?', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, answer)
-
-
-def answer(message):
-    if message.text == '1 группа':
-        bot.send_message(message.chat.id, 'Держи!')
-        with open('timetable_for_our_group.jpg', 'rb') as photo:
-            bot.send_photo(message.chat.id, photo)
+def get_group(message):
+    if message.text == 'Ладно, сам посмотрю':
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, '😞', reply_markup=keyboard)
     else:
-        bot.send_message(message.chat.id, 'Держи!')
-        with open('timetable_for_all.jpg', 'rb') as photo:
-            bot.send_photo(message.chat.id, photo)
-    keyboard = types.ReplyKeyboardRemove()
-    bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
+        bot.send_message(message.chat.id, 'Снова не можешь вспомнить какая пара следующая?)'
+                                          'Ничего, я уже тут!')
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)', reply_markup=keyboard)
+        bot.register_next_step_handler(message, get_weekday)
+
+
+def get_weekday(message):
+    global GROUP_NUM
+    GROUP_NUM = message.text
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница']])
+    msg = bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
+    bot.register_next_step_handler(msg, get_schedule)
+
+
+def get_schedule(message):
+    if message.text in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Cуббота']:
+        timetable.timetable.get_timetable(GROUP_NUM, message.text)
+        f = open(f'{PATH}/timetable/class.txt')
+        mes = ''
+        for line in f:
+            bot.send_message(message.chat.id, line)
+            mes += line
+        open(f'{PATH}/timetable/class.txt', 'w').close()
+        if mes != '':
+            keyboard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
+        else:
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
+            msg = bot.send_message(message.chat.id,
+                                   'Что-то не получилось... Ты мне точно прислал номер группы в правильном формате ?',
+                                   reply_markup=keyboard)
+            bot.register_next_step_handler(msg, get_group)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
+        msg = bot.send_message(message.chat.id,
+                               'Какой интересный день недели, извини, я такого не знаю... ?',
+                               reply_markup=keyboard)
+        bot.register_next_step_handler(msg, get_group)
 
 
 @bot.message_handler(commands=['exam'])
 def ask_group(message):
-    bot.send_message(message.chat.id, 'А из какой ты группы?')
+    bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)')
     bot.register_next_step_handler(message, get_exam_timetable)
 
 
 def get_exam_timetable(message):
-    exam_timetable.get_timetable(message.text)
-    f = open('exam.txt')
-    for line in f:
-        bot.send_message(message.chat.id, line)
-    open('exam.txt', 'w').close()
+    if message.text in texting_symbols.groups:
+        timetable.timetable.get_exam_timetable(message.text)
+        f = open(f'{PATH}/timetable/exam.txt')
+        for line in f:
+            bot.send_message(message.chat.id, line)
+        open(f'/timetable/exam.txt', 'w').close()
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
+        msg = bot.send_message(message.chat.id,
+                                'Что-то не получилось... Ты мне точно прислал номер группы в правильном формате ?',
+                                reply_markup=keyboard)
+        bot.register_next_step_handler(msg, ask_group)
 
 
 # Если отправить боту просто текст или незнакомую команду, то он ответит так:
 @bot.message_handler(content_types=['text'])
 def chatting(message):
-    global crazy_tokens
+    global crazy_tokens, PATH
     crazy_tokens += 1
-    if crazy_tokens <= 2:
+    if crazy_tokens <= 1:
         bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n' 
                                           'Напиши /help, чтобы узнать, что я умею.\n')
-    elif crazy_tokens <= 4:
-        bot.send_message(message.chat.id, random.choice(emoji))
-    elif crazy_tokens <=7:
-        bot.send_message(message.chat.id, random.choice(quotes))
-    elif crazy_tokens == 8:
-        bot.send_message(message.chat.id, 7*random.choice(emoji))
+    elif crazy_tokens <= 3:
+        bot.send_message(message.chat.id, random.choice(texting_symbols.emoji))
+    elif crazy_tokens <= 5:
+        bot.send_message(message.chat.id, random.choice(texting_symbols.quotes))
+    elif crazy_tokens == 6:
+        file_name = random.choice(os.listdir(f'{PATH}/doges'))
+        bot.send_message(message.chat.id, random.choice(texting_symbols.doges))
+        with open(f'{PATH}/doges/{file_name}', 'rb') as photo:
+            bot.send_photo(message.chat.id, photo)
+
         crazy_tokens = 0
 
 

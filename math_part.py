@@ -55,7 +55,7 @@ def const_dev(x, y):
 
 def plot_drawer(data_file, x_lb, y_lb, tit):
     """
-    Функция считывает данные из таблицы и строит графики с МНК по этим данным
+    Функция считывает данные из таблицы и строит график по этим данным
     :param data_file: Название файла с данными
     :param x_lb: подпись оси абсцисс
     :param y_lb: оси ординат
@@ -74,7 +74,6 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     plt.savefig('plot.png')
     plt.show()
     plt.clf()
-
 
 
 def plots_drawer(data_file, x_lb, y_lb, tit):
@@ -117,7 +116,7 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
         plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='o', ecolor='blue')
         delta = (max(x[i]) - min(x[i]))/len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
-        strk += "x[{}], y[{}], \' o \', x_[{}], a[{}]*x_[{}] + b[{}], 'r',".format(i, i, i, i, i, i)
+        strk += "x[{}], y[{}], \' o \', x_[{}], a[{}]*x_[{}] + b[{}],".format(i, i, i, i, i, i)
     strk = strk[0:-1] + ")"
     x_ = np.array(x_)
     with plt.style.context('classic'):
@@ -135,11 +134,10 @@ def mnk_calc(data_file):
     """
     Функция считывает данные из таблицы и возвращает коэффициенты и погрешности
     :param data_file: Название файла с данными
-    :return:
+    :return: [a - коэф. прямой, b - коэф. прямой, погрешность а, погрешность b]
     """
     dataset = pd.read_excel(data_file, header=None)
     d = np.array(dataset)
-    strk = 'plt.plot('
     a = []
     b = []
     x = []
