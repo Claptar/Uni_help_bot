@@ -82,15 +82,16 @@ def subject(message):
 def paragraph(message):
     global Q_NUM, PATH, PAR_NUM
     if (message.text in PARAGRAPHS.keys()) or (message.text == 'Ещё'):
+        if message.text in PARAGRAPHS.keys():
+            PAR_NUM = PARAGRAPHS[message.text]
         Q_NUM = random.randint(0, 13)
-        questions = pd.read_excel(f'{PATH}/flash_cards/math/{PARAGRAPHS[message.text]}/flash_data.xlsx', header=None)
+        questions = pd.read_excel(f'{PATH}/flash_cards/math/{PAR_NUM}/flash_data.xlsx', header=None)
         d = np.array(questions)
         question = d[Q_NUM, 0]
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи']])
         msg = bot.send_message(message.chat.id, question, reply_markup=keyboard)
         bot.register_next_step_handler(msg, answer)
-        PAR_NUM = PARAGRAPHS[message.text]
     elif message.text == 'Всё, хватит' or message.text == 'В другой раз...':
         keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
