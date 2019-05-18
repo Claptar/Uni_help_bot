@@ -1,16 +1,14 @@
 import os
 import random
+
+import numpy as np
+import pandas as pd
 import telebot
 from telebot import types
-import pandas as pd
-import numpy as np
+
 import math_part
-
+import texting.texting_symbols
 import timetable.timetable
-
-
-import texting_symbols
-
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
 TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
@@ -220,7 +218,8 @@ def get_group(message):
         bot.send_message(message.chat.id, 'Снова не можешь вспомнить какая пара следующая?)'
                                           'Ничего, я уже тут!')
         keyboard = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)', reply_markup=keyboard)
+        bot.send_message(message.chat.id,
+                         'Не подскажешь номер своей группы? (В формате Б00-000)', reply_markup=keyboard)
         bot.register_next_step_handler(message, get_weekday)
 
 
@@ -228,7 +227,8 @@ def get_weekday(message):
     global GROUP_NUM
     GROUP_NUM = message.text
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница']])
+    keyboard.add(
+        *[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Cуббота']])
     msg = bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
     bot.register_next_step_handler(msg, get_schedule)
 
@@ -263,17 +263,21 @@ def get_schedule(message):
 
 @bot.message_handler(commands=['exam'])
 def ask_group(message):
-    bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)')
-    bot.register_next_step_handler(message, get_exam_timetable)
+    if message.text == 'Ладно, сам посмотрю':
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, '😞', reply_markup=keyboard)
+    else:
+        bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)')
+        bot.register_next_step_handler(message, get_exam_timetable)
 
 
 def get_exam_timetable(message):
-    if message.text in texting_symbols.groups:
+    if message.text in texting.texting_symbols.groups:
         timetable.timetable.get_exam_timetable(message.text)
         f = open(f'{PATH}/timetable/exam.txt')
         for line in f:
             bot.send_message(message.chat.id, line)
-        open(f'/timetable/exam.txt', 'w').close()
+        open(f'{PATH}/timetable/exam.txt', 'w').close()
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
@@ -292,13 +296,13 @@ def chatting(message):
         bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n' 
                                           'Напиши /help, чтобы узнать, что я умею.\n')
     elif crazy_tokens <= 3:
-        bot.send_message(message.chat.id, random.choice(texting_symbols.emoji))
+        bot.send_message(message.chat.id, random.choice(texting.texting_symbols.emoji))
     elif crazy_tokens <= 5:
-        bot.send_message(message.chat.id, random.choice(texting_symbols.quotes))
+        bot.send_message(message.chat.id, random.choice(texting.texting_symbols.quotes))
     elif crazy_tokens == 6:
-        file_name = random.choice(os.listdir(f'{PATH}/doges'))
-        bot.send_message(message.chat.id, random.choice(texting_symbols.doges))
-        with open(f'{PATH}/doges/{file_name}', 'rb') as photo:
+        file_name = random.choice(os.listdir(f'{PATH}/texting/doges'))
+        bot.send_message(message.chat.id, random.choice(texting.texting_symbols.doges))
+        with open(f'{PATH}/texting/doges/{file_name}', 'rb') as photo:
             bot.send_photo(message.chat.id, photo)
 
         crazy_tokens = 0
