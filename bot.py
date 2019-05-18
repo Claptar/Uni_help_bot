@@ -17,7 +17,16 @@ bot = telebot.TeleBot(TOKEN)
 MESSAGE_NUM = 0
 MESSAGE_COM = ''
 Q_NUM = 0
+PAR_NUM = 0
 GROUP_NUM = ''
+PARAGRAPHS = {
+    'Множество Rn': 1,
+    'Предел и непрерывность': 2,
+    'Дифференциальное исчисление в Rn': 3,
+    'Интеграл Римана': 4,
+    'Мера Жордана': 5,
+    'Числовые ряды': 6
+    }
 
 comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants', 'timetable', 'exam']
 
@@ -55,15 +64,11 @@ def start(message):
 
 def subject(message):
     global Q_NUM, PATH
-    if (message.text == 'Матан') or (message.text == 'Ещё'):
-        Q_NUM = random.randint(0, 13)
-        questions = pd.read_excel(f'{PATH}/flash_cards/math/flash_data.xlsx', header=None)
-        d = np.array(questions)
-        question = d[Q_NUM, 0]
+    if message.text == 'Матан' or message.text =='Выбрать другой параграф':
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи']])
-        msg = bot.send_message(message.chat.id, question, reply_markup=keyboard)
-        bot.register_next_step_handler(msg, answer)
+        keyboard.add(*[types.KeyboardButton(name) for name in PARAGRAPHS.keys()])
+        msg = bot.send_message(message.chat.id, 'Какой параграф ты хочешь поботать ?', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, paragraph)
     elif message.text == 'Всё, хватит' or message.text == 'В другой раз...':
         keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
@@ -74,15 +79,37 @@ def subject(message):
         bot.register_next_step_handler(msg, subject)
 
 
+def paragraph(message):
+    global Q_NUM, PATH, PAR_NUM
+    if (message.text in PARAGRAPHS.keys()) or (message.text == 'Ещё'):
+        Q_NUM = random.randint(0, 13)
+        questions = pd.read_excel(f'{PATH}/flash_cards/math/{PARAGRAPHS[message.text]}/flash_data.xlsx', header=None)
+        d = np.array(questions)
+        question = d[Q_NUM, 0]
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи']])
+        msg = bot.send_message(message.chat.id, question, reply_markup=keyboard)
+        bot.register_next_step_handler(msg, answer)
+        PAR_NUM = PARAGRAPHS[message.text]
+    elif message.text == 'Всё, хватит' or message.text == 'В другой раз...':
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Выбрать другой параграф', 'В другой раз...']])
+        msg = bot.send_message(message.chat.id, 'Извини, я тебя не понял, можешь повторить ?', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, subject)
+
+
 def answer(message):
-    global Q_NUM
+    global Q_NUM, PAR_NUM
     if message.text == 'Покажи' or message.text == 'Покажи правильный ответ':
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё', 'Всё, хватит']])
         bot.send_message(message.chat.id, 'Правильный ответ:')
-        with open(f'{PATH}/flash_cards/math/{Q_NUM + 1}.png', 'rb') as photo:
+        with open(f'{PATH}/flash_cards/math/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
             msg = bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
-        bot.register_next_step_handler(msg, subject)
+        bot.register_next_step_handler(msg, paragraph)
     elif message.text == 'Я не хочу смотреть ответ':
         keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, 'Ты не расстраивайся ! Все мы делаем ошибки...', reply_markup=keyboard)

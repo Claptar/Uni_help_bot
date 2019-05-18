@@ -3,8 +3,6 @@ pandas
 numpy
 matplotlib
 telebot
-math_fix
 pillow
 xlrd
 sympy
-master
