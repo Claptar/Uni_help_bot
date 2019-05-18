@@ -1,14 +1,14 @@
 import os
 import random
+
+import numpy as np
+import pandas as pd
 import telebot
 from telebot import types
-import pandas as pd
-import numpy as np
+
 import math_part
-
-import timetable.timetable
 import texting.texting_symbols
-
+import timetable.timetable
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
 TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
@@ -227,7 +227,8 @@ def get_weekday(message):
     global GROUP_NUM
     GROUP_NUM = message.text
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница']])
+    keyboard.add(
+        *[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Cуббота']])
     msg = bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
     bot.register_next_step_handler(msg, get_schedule)
 
@@ -262,8 +263,12 @@ def get_schedule(message):
 
 @bot.message_handler(commands=['exam'])
 def ask_group(message):
-    bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)')
-    bot.register_next_step_handler(message, get_exam_timetable)
+    if message.text == 'Ладно, сам посмотрю':
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, '😞', reply_markup=keyboard)
+    else:
+        bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)')
+        bot.register_next_step_handler(message, get_exam_timetable)
 
 
 def get_exam_timetable(message):
