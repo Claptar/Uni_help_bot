@@ -64,7 +64,7 @@ def start(message):
 
 def subject(message):
     global Q_NUM, PATH
-    if message.text == 'Матан' or message.text =='Выбрать другой параграф':
+    if message.text == 'Матан' or message.text == 'Выбрать другой параграф':
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in PARAGRAPHS.keys()])
         msg = bot.send_message(message.chat.id, 'Какой параграф ты хочешь поботать ?', reply_markup=keyboard)
@@ -194,32 +194,25 @@ def date_mnk(message):
         with open(src, 'wb') as new_file:
             new_file.write(downloaded_file)
         a, b, d_a, d_b = math_part.mnk_calc(src)
-
         if MESSAGE_COM == 'figure_mnk':
-
+            math_part.BOT_PLOT = True
             math_part.plots_drawer(src, math_part.LABEL_X, math_part.LABEL_Y, math_part.TITLE)
-
             with open('plot.png', 'rb') as photo:
                 bot.send_photo(message.chat.id, photo)
-
             for i in range(0, len(a)):
                 bot.send_message(message.chat.id, f'Коэффициенты {i + 1}-ой прямой:\n'
                 f' a = {round(a[i], 3)} +- {round(d_a[i], 3)}\n'
                 f' b = {round(b[i], 3)} +- {round(d_b[i], 3)}')
             os.remove('plot.png')
-
+            math_part.BOT_PLOT = False
         elif MESSAGE_COM == 'figure':
-
+            math_part.BOT_PLOT = True
             math_part.plot_drawer(src, math_part.LABEL_X, math_part.LABEL_Y, math_part.TITLE)
-
             with open('plot.png', 'rb') as photo:
-
                 bot.send_document(message.chat.id, photo)
-
             os.remove('plot.png')
-
+            math_part.BOT_PLOT = False
         elif MESSAGE_COM == 'mnk_constants':
-
             for i in range(0, len(a)):
                 bot.send_message(message.chat.id, f'Коэффициенты {i + 1}-ой прямой:\n'
                 f' a = {round(a[i], 3)} +- {round(d_a[i], 3)}\n'
