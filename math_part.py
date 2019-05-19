@@ -9,6 +9,7 @@ from sympy import *
 LABEL_X = ''
 LABEL_Y = ''
 TITLE = ''
+BOT_PLOT = False
 
 
 def data_conv(data_file):
@@ -71,8 +72,10 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     plt.ylabel(y_lb)
     plt.title(tit)
     plt.grid(True)
-    plt.savefig('plot.png')
-    plt.show()
+    if BOT_PLOT:
+        plt.savefig('plot.png')
+    else:
+        plt.show()
     plt.clf()
 
 
@@ -93,8 +96,6 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     x = []
     y = []
     x_ = []
-    d_a = []
-    d_b = []
     for i in range(0, len(d[1, :] - 1), 2):
         r = plt_const(d[:, i], d[:, i + 1])
         x.append(d[:, i])
@@ -125,8 +126,10 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     plt.ylabel(y_lb)
     plt.title(tit)
     plt.grid(True)
-    plt.savefig('plot.png')
-    #plt.show()
+    if BOT_PLOT:
+        plt.savefig('plot.png')
+    else:
+        plt.show()
     plt.clf()
 
 
