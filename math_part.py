@@ -2,7 +2,6 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import math
 from sympy import *
 
 
@@ -67,7 +66,7 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     d = np.array(dataset)
     x = d[:, 0]
     y = d[:, 1]
-    plt.plot(x, y, 'ro')
+    plt.plot(x, y, 'r')
     plt.xlabel(x_lb)
     plt.ylabel(y_lb)
     plt.title(tit)
@@ -90,7 +89,6 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     """
     dataset = pd.read_excel(data_file, header=None)
     d = np.array(dataset)
-    strk = "plt.plot("
     a = []
     b = []
     x = []
@@ -114,14 +112,10 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
             yerr = math.sqrt(sigmas_y)
         else:
             yerr = sigmas_y
-        plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='o', ecolor='blue')
+        plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='o')
         delta = (max(x[i]) - min(x[i]))/len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
-        strk += "x[{}], y[{}], \' o \', x_[{}], a[{}]*x_[{}] + b[{}],".format(i, i, i, i, i, i)
-    strk = strk[0:-1] + ")"
-    x_ = np.array(x_)
-    with plt.style.context('classic'):
-        eval(strk)
+        plt.plot(x[i], y[i], 'ro', np.array(x_[i]), a[i]*(np.array(x_[i])) + b[i])
     plt.xlabel(x_lb)
     plt.ylabel(y_lb)
     plt.title(tit)
@@ -178,6 +172,3 @@ def error_calc(equation, var_list, point_list, error_list):
         sigma += error_list[number] ** 2 * der ** 2  # считем погрешность
 
     return sigma
-
-
-
