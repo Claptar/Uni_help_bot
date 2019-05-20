@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sympy import *
+import math
 
 LABEL_X = ''
 LABEL_Y = ''
