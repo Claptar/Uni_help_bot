@@ -6,9 +6,9 @@ import pandas as pd
 import telebot
 from telebot import types
 
-import math_part
 import texting.texting_symbols
 import timetable.timetable
+from math_module import math_part
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
 TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
@@ -35,6 +35,11 @@ crazy_tokens = 0
 
 @bot.message_handler(commands=['help'])
 def help_def(message):
+    """
+    Функция ловит сообщение с командой '/help' и присылает описание комманд бота
+    :param message: telebot.types.Message
+    :return:
+    """
     bot.send_message(message.chat.id, 'Сейчас я расскажу, чем я могу тебе помочь ☺️\n'
                                       '/figure - Хочешь построить график по точкам ? Не вопрос !\n'
                                       '/figure_mnk - Хочешь построить график линеаризованный по МНК? Запросто !\n'
@@ -43,18 +48,30 @@ def help_def(message):
                                       '\n/exam - Подскажу расписание экзаменов, но ты сам захотел...'
                                       ' Я не люблю напоминать'
                                       'о плохом...\n'
-                                      '/flash_cards - Давай сыграем в игру... Я тебе определение/формулировку, а ты мне'
-                                      '"знаю/не знаю.')
+                                      '/flash_cards - Давай сыграем в игру... Я тебе определение/формулировку, а '
+                                      'ты попытайся вспомнить её. Как только вспомнишь/не вспомнишь нажимай "покажи"'
+                                      'чтобы проверить себя')
 
 
 @bot.message_handler(commands=['start'])
 def start(message):
+    """
+    Функция ловит сообщение с коммандой '/start' и шлёт пользователю сообщение с приветсвием
+    :param message: telebot.types.Message
+    :return:
+    """
     bot.send_message(message.chat.id, 'Привет-привет 🙃 Я очень люблю помогать людям,'
                                       ' напиши /help чтобы узнать, что я умею. ')
 
 
 @bot.message_handler(commands=['flash_cards'])
 def start(message):
+    """
+    Функция ловит сообщение с коммандой '/flash_cards' и запускает сессию этой функции
+     отправляя кнопки с выбором предмета. Следующее сообщение отправляется в функцию subject
+    :param message: telebot.types.Message
+    :return:
+    """
     bot.send_message(message.chat.id, 'Хочешь вспомнить парочку определений ?)📚📚')
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Матан']])
@@ -63,6 +80,12 @@ def start(message):
 
 
 def subject(message):
+    """
+    Функция вызывается функцией start, в зависимости от выбора предмета пользователем функция предлагает
+     параграфы этого предмета и вызывает функцию  paragraph()
+    :param message: telebot.types.Message
+    :return:
+    """
     global Q_NUM, PATH
     if message.text == 'Матан' or message.text == 'Выбрать другой параграф':
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -80,6 +103,11 @@ def subject(message):
 
 
 def paragraph(message):
+    """
+    Функция вызывается функцией subject(). Она рандомно генерирует номер вопроса и присылает вопрос пользователю
+    :param message: telebot.types.Message
+    :return:
+    """
     global Q_NUM, PATH, PAR_NUM
     if (message.text in PARAGRAPHS.keys()) or (message.text == 'Ещё'):
         if message.text in PARAGRAPHS.keys():
@@ -103,6 +131,11 @@ def paragraph(message):
 
 
 def answer(message):
+    """
+    Функция вызывается функцией paragraph(). Присылает пользователю ответ на вопрос.
+    :param message: telebot.types.Message
+    :return:
+    """
     global Q_NUM, PAR_NUM
     if message.text == 'Покажи' or message.text == 'Покажи правильный ответ':
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -125,6 +158,11 @@ def answer(message):
 
 @bot.message_handler(commands=['figure_mnk'])
 def figure_mnk(message):
+    """
+    Функция ловит сообщение с текстом '/figure_mnk'. Инициируется процесс рисования графика. Запускает функцию ax_x()
+    :param message: telebot.types.Message
+    :return:
+    """
     global MESSAGE_COM
     bot.send_message(message.chat.id, 'Снова лабки делаешь ?) Ох уж эти линеаризованные графики !...'
                                       ' Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
@@ -136,14 +174,19 @@ def figure_mnk(message):
 
 @bot.message_handler(commands=['mnk_constants'])
 def mnk_constants(message):
+    """
+    Функция ловит сообщение с текстом "/mnk_constants". Инициируется процесс
+    :param message:
+    :return:
+    """
     global MESSAGE_COM
-    msg = bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
-                                            ' Даа, непростая задача, так и быть, помогу тебе ! ')
+    mg = bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
+                                           ' Даа, непростая задача, так и быть, помогу тебе ! ')
     bot.send_message(message.chat.id, 'Пришли мне файл с данными вот в таком формате и всё будет готово😊')
     with open('example.jpg', 'rb') as photo:
         msg = bot.send_photo(message.chat.id, photo)
     MESSAGE_COM = 'mnk_constants'
-    bot.register_next_step_handler(msg, date_mnk)
+    bot.register_next_step_handler(mg, date_mnk)
 
 
 @bot.message_handler(commands=['figure'])
@@ -179,7 +222,7 @@ def tit(message):
             bot.send_message(message.chat.id, 'Давай попробуем ещё раз😔', reply_markup=keyboard)
         math_part.TITLE = message.text
         bot.send_message(message.chat.id, 'Пришли мне файл с данными вот в таком формате и всё будет готово😊')
-        with open('example.jpg', 'rb') as photo:
+        with open(f'{PATH}/math_module/example.jpg', 'rb') as photo:
             msg = bot.send_photo(message.chat.id, photo)
         bot.register_next_step_handler(msg, date_mnk)
 
@@ -214,8 +257,8 @@ def date_mnk(message):
             math_part.BOT_PLOT = False
         elif MESSAGE_COM == 'mnk_constants':
             for i in range(0, len(a)):
-                bot.send_message(message.chat.id, f'Коэффициенты {i + 1}-ой прямой:\n'
-                f' a = {round(a[i], 3)} +- {round(d_a[i], 3)}\n'
+                bot.send_message(message.chat.id, f'Коэффициенты {i + 1}-ой прямой:\n '
+                f'a = {round(a[i], 3)} +- {round(d_a[i], 3)}\n'
                 f' b = {round(b[i], 3)} +- {round(d_b[i], 3)}')
         os.remove(src)
         math_part.TITLE = ''
@@ -302,9 +345,9 @@ def get_exam_timetable(message):
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
-        msg = bot.send_message(message.chat.id,
-                                'Что-то не получилось... Ты мне точно прислал номер группы в правильном формате ?',
-                                reply_markup=keyboard)
+        msg = bot.send_message(message.chat.id, 'Что-то не получилось... '
+                                                'Ты мне точно прислал номер группы в правильном формате ?',
+                               reply_markup=keyboard)
         bot.register_next_step_handler(msg, ask_group)
 
 

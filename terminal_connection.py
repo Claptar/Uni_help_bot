@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import argparse
-import math_part
-import latex_table
-import numpy as np
-import Overleaf_connection as oc
 
+import numpy as np
+
+import latex_table
+from math_module import math_part
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--figure",

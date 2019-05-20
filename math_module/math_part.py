@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import math
-from sympy import *
+import os
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sympy import *
 
 LABEL_X = ''
 LABEL_Y = ''
 TITLE = ''
 BOT_PLOT = False
+PATH = os.path.abspath('')
 
 
 def data_conv(data_file):
@@ -39,8 +40,8 @@ def plt_const(x, y):
     r = np.sum(x*y)/len(x) - av_x*av_y
     a = r/sigmas_x
     b = av_y - a*av_x
-    d_a = 2*math.sqrt((sigmas_y/sigmas_x - a**2)/(len(x)-2))
-    d_b = d_a*math.sqrt(sigmas_x + av_x**2)
+    d_a = 2 * math.sqrt((sigmas_y / sigmas_x - a ** 2) / (len(x) - 2))
+    d_b = d_a * math.sqrt(sigmas_x + av_x ** 2)
     return [a, b, d_a, d_b]
 
 
@@ -67,15 +68,13 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     d = np.array(dataset)
     x = d[:, 0]
     y = d[:, 1]
-    plt.plot(x, y, 'ro')
+    plt.plot(x, y, 'r')
     plt.xlabel(x_lb)
     plt.ylabel(y_lb)
     plt.title(tit)
     plt.grid(True)
-    if BOT_PLOT:
-        plt.savefig('plot.png')
-    else:
-        plt.show()
+    plt.savefig('plot.png')
+    plt.show()
     plt.clf()
 
 
@@ -90,7 +89,6 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
     """
     dataset = pd.read_excel(data_file, header=None)
     d = np.array(dataset)
-    strk = "plt.plot("
     a = []
     b = []
     x = []
@@ -114,14 +112,10 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
             yerr = math.sqrt(sigmas_y)
         else:
             yerr = sigmas_y
-        plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='o', ecolor='blue')
+        plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='o')
         delta = (max(x[i]) - min(x[i]))/len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
-        strk += "x[{}], y[{}], \' o \', x_[{}], a[{}]*x_[{}] + b[{}],".format(i, i, i, i, i, i)
-    strk = strk[0:-1] + ")"
-    x_ = np.array(x_)
-    with plt.style.context('classic'):
-        eval(strk)
+        plt.plot(x[i], y[i], 'ro', np.array(x_[i]), a[i]*(np.array(x_[i])) + b[i])
     plt.xlabel(x_lb)
     plt.ylabel(y_lb)
     plt.title(tit)
@@ -178,6 +172,4 @@ def error_calc(equation, var_list, point_list, error_list):
         sigma += error_list[number] ** 2 * der ** 2  # считем погрешность
 
     return sigma
-
-
 
