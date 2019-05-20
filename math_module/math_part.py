@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from sympy import *
+import os
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sympy import *
 
 LABEL_X = ''
 LABEL_Y = ''
 TITLE = ''
 BOT_PLOT = False
+PATH = os.path.abspath('')
 
 
 def data_conv(data_file):
@@ -38,8 +40,8 @@ def plt_const(x, y):
     r = np.sum(x*y)/len(x) - av_x*av_y
     a = r/sigmas_x
     b = av_y - a*av_x
-    d_a = 2*math.sqrt((sigmas_y/sigmas_x - a**2)/(len(x)-2))
-    d_b = d_a*math.sqrt(sigmas_x + av_x**2)
+    d_a = 2 * math.sqrt((sigmas_y / sigmas_x - a ** 2) / (len(x) - 2))
+    d_b = d_a * math.sqrt(sigmas_x + av_x ** 2)
     return [a, b, d_a, d_b]
 
 
@@ -71,10 +73,8 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     plt.ylabel(y_lb)
     plt.title(tit)
     plt.grid(True)
-    if BOT_PLOT:
-        plt.savefig('plot.png')
-    else:
-        plt.show()
+    plt.savefig('plot.png')
+    plt.show()
     plt.clf()
 
 
@@ -172,3 +172,4 @@ def error_calc(equation, var_list, point_list, error_list):
         sigma += error_list[number] ** 2 * der ** 2  # считем погрешность
 
     return sigma
+
