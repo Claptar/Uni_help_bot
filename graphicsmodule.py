@@ -1,7 +1,8 @@
 import tkinter as tk
-import argparse
 import math_part
 import latex_table
+import pandas as pd
+import Overleaf_connection
 import numpy as np
 from tkinter import filedialog as fd
 from PIL import Image, ImageTk
@@ -84,7 +85,6 @@ def mnk_calculate_print(file_name):
                           f' \nПогрешность коэффициента наклона прямой: \n{b} + {d_b} ')
 
 
-
 def generation_tab_MNK():
     global root
     root.destroy()
@@ -133,7 +133,6 @@ def generation_tab_Plots():
     btnfile.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
 
 
-
 def openfileTable():
     file_name = fd.askopenfilename()
     Table(file_name)
@@ -148,23 +147,49 @@ def generation_tab_Table():
 
     standard_button()
 
-    tk.Label(root, text="Название столбца 1:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.33)
-    Name = tk.Entry(root, width=8)
-    Name.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.33)
-
-    tk.Label(root, text="Название столбца 2:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.4)
-    x1 = tk.Entry(root, width=8)
-    x1.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.4)
-
     btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
-                        padx="15", pady="6", font="15", command=openfilePlots)
+                        padx="15", pady="6", font="15", command=openfileTable)
     btnfile.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
 
-def Table(file_name):
-    data_array = np.array(math_part.data_conv(file_name))
-    name = "table"
 
-    latex_table.table_body_create(data_array, name)
+def Table(file_name):
+    file = pd.read_excel(file_name, header=None)
+    name = 'name'
+    latex_table.create_data_array(file, name)
+
+
+
+def openfileOverleaf():
+    e_mail = email.get()
+    passw_ord = password.get()
+    file = fd.askopenfilename()
+    file = open(file, 'r')
+    file_lines = file.read()
+    print(file_lines)
+    Overleaf_connection.ol_open(file_lines, e_mail, passw_ord)
+
+def generation_tab_Overleaf_connection():
+    global root, email, password
+    root.destroy()
+    root = tk.Tk()
+    root.title("MNK-Tool")
+    root.geometry(characteristic)
+
+    standard_button()
+
+    tk.Label(root, text="E-mail").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.33)
+    email = tk.Entry(root, width=8)
+    email.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.33)
+
+    tk.Label(root, text="Пароль:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.4)
+    password = tk.Entry(root, width=8)
+    password.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.4)
+
+
+
+    btnfile = tk.Button(text="Выбрать текстовый файл", background="#555", foreground="#ccc",
+                        padx="15", pady="6", font="15", command=openfileOverleaf)
+    btnfile.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
 
 def start(root):
 
@@ -177,7 +202,7 @@ def start(root):
     btn2.place(relheight=0.2, relwidth=1.0, relx=0, rely=0.2)
 
     btn3 = tk.Button(text="Создать PDF Overleaf", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15")
+                  padx="15", pady="6", font="15", command=generation_tab_Overleaf_connection)
     btn3.place(relheight=0.2, relwidth=1.0, relx=0, rely=0.4)
 
     btn4 = tk.Button(text="Создать табллицу в LaTex", background="#555", foreground="#ccc",

@@ -6,3 +6,5 @@ telebot
 pillow
 xlrd
 sympy
+pyautogui
+selenium
