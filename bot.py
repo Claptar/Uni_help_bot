@@ -11,7 +11,7 @@ import timetable.timetable
 from math_module import math_part
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
-TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
+TOKEN = '802918851:AAFcwXbQQDhHfWa0EZNx_Y5sQtJgkZ-L0xw'
 PATH = os.path.abspath('')
 bot = telebot.TeleBot(TOKEN)
 MESSAGE_NUM = 0
