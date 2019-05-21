@@ -67,7 +67,7 @@ def table_body_create(data_array, name):
           '\t\t', '\\end{tabular} \n',
           '\t\t', '\\caption{' + str(name) + '} \n',
           '\t', '\\end{center} \n \\end{table}')
-nameee = "name"
+
 
 
 #table_body_create(b, 'table')
