@@ -275,6 +275,11 @@ def date_mnk(message):
 
 @bot.message_handler(commands=['timetable'])
 def get_group(message):
+    """
+    Функция ловит сообщение с текстом "/timetable".
+    :param message:
+    :return:
+    """
     if message.text == 'Ладно, сам посмотрю':
         keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, '😞', reply_markup=keyboard)
@@ -292,21 +297,21 @@ def get_weekday(message):
     GROUP_NUM = message.text
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(
-        *[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Cуббота']])
+        *[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']])
     msg = bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
     bot.register_next_step_handler(msg, get_schedule)
 
 
 def get_schedule(message):
-    if message.text in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Cуббота']:
+    if message.text in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']:
         timetable.timetable.get_timetable(GROUP_NUM, message.text)
         f = open(f'{PATH}/timetable/class.txt')
-        mes = ''
+        msg = ''
         for line in f:
             bot.send_message(message.chat.id, line)
-            mes += line
+            msg += line
         open(f'{PATH}/timetable/class.txt', 'w').close()
-        if mes != '':
+        if msg != '':
             keyboard = types.ReplyKeyboardRemove()
             bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
         else:

@@ -34,8 +34,13 @@ def get_timetable(group_name, weekday):
     row_day = {'Понедельник': 5, 'Вторник': 13, 'Среда': 21, 'Четверг': 29, 'Пятница': 37, 'Суббота': 45}
     for i in range(columns_number_class):
         if sh_class.cell_value(4, i) == group_name:
+            cnt = 0
             for j in range(row_day[weekday], row_day[weekday] + 7):
                 if sh_class.cell_value(j, i) != '':
                     with open('timetable/class.txt', 'a') as file:
                         file.write(sh_class.cell_value(j, 1)+' ')
                         file.write(sh_class.cell_value(j, i)+'\n')
+                        cnt += 1
+            if cnt == 0:
+                with open('timetable/class.txt', 'a') as file:
+                    file.write('В этот день пар нет!')
