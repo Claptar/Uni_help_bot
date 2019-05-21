@@ -6,6 +6,7 @@ import pandas as pd
 import telebot
 from telebot import types
 import requests
+from bs4 import BeautifulSoup
 
 import texting.texting_symbols
 import timetable.timetable
@@ -398,7 +399,8 @@ def chatting(message):
     """
     Функция запускается, если пользователь пишет любой незнакомый боту текст.
     :param message: any text
-    :return:
+    :return: циклично возвращает одно вспомогательное сообщение, два смайлика,
+    две цитаты, одну фотку собаки при последовательной отправке незнакомого текста
     """
     global crazy_tokens, PATH
     crazy_tokens += 1
@@ -413,7 +415,14 @@ def chatting(message):
         file_name = random.choice(os.listdir(f'{PATH}/texting/doges'))
         contents = requests.get('https://random.dog/woof.json').json()
         doggy = contents['url']
-        bot.send_message(message.chat.id, random.choice(texting.texting_symbols.doges))
+
+        '''
+        API_LINK = 'http://api.forismatic.com/api/method=getQuote&format=text&lang=ru'
+        cont = requests.post(API_LINK)
+        print(cont.text)
+        bot.send_message(message.chat.id, quote)
+        '''
+
         bot.send_photo(message.chat.id, photo=doggy)
         crazy_tokens = 0
 
