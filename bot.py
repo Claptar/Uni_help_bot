@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import telebot
 from telebot import types
+import requests
 
 import texting.texting_symbols
 import timetable.timetable
@@ -356,9 +357,14 @@ def get_exam_timetable(message):
         bot.register_next_step_handler(msg, ask_group)
 
 
-# Если отправить боту просто текст или незнакомую команду, то он ответит так:
+
 @bot.message_handler(content_types=['text'])
 def chatting(message):
+    """
+    Функция запускается, если пользователь пишет любой незнакомый боту текст.
+    :param message: any text
+    :return:
+    """
     global crazy_tokens, PATH
     crazy_tokens += 1
     if crazy_tokens <= 1:
@@ -370,10 +376,10 @@ def chatting(message):
         bot.send_message(message.chat.id, random.choice(texting.texting_symbols.quotes))
     elif crazy_tokens == 6:
         file_name = random.choice(os.listdir(f'{PATH}/texting/doges'))
+        contents = requests.get('https://random.dog/woof.json').json()
+        doggy = contents['url']
         bot.send_message(message.chat.id, random.choice(texting.texting_symbols.doges))
-        with open(f'{PATH}/texting/doges/{file_name}', 'rb') as photo:
-            bot.send_photo(message.chat.id, photo)
-
+        bot.send_photo(message.chat.id, photo=doggy)
         crazy_tokens = 0
 
 
