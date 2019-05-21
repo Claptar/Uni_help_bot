@@ -12,8 +12,8 @@ def create_data_array(file, name):
             m.append(data_array[i][j])
         data.append(m)
     print(data)
-    name = name
-    table_body_create(data, name)
+    stringg = table_body_create(data, name)
+    return stringg
 
 
 def table_body_create(data_array, name):
@@ -23,6 +23,8 @@ def table_body_create(data_array, name):
     :param name: имя таблицы
     :return:
     """
+    global main_string
+
 
     column_names = data_array[:1]
     print(column_names)

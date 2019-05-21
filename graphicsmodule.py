@@ -174,11 +174,11 @@ def generation_tab_Table():
 def Table(file_name):
     file = pd.read_excel(file_name, header=None)
     name = TableName.get()
-    latex_table.create_data_array(file, name)
+    string = latex_table.create_data_array(file, name)
     sigma = tk.Text(width=12, height=12)
-    sigma.place(relheight=0.1, relwidth=0.4, relx=0, rely=0.4)
-    sigma.insert(1.0, f'Погрешность коэффициента наклона прямой: \n{a} + {d_a}'
-                      f' \nПогрешность коэффициента наклона прямой: \n{b} + {d_b} ')
+    sigma.place(relheight=0.6, relwidth=0.4, relx=0, rely=0.4)
+
+    sigma.insert(1.0, string)
 
 
 
