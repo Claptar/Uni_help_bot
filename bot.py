@@ -412,7 +412,6 @@ def chatting(message):
     elif crazy_tokens <= 5:
         bot.send_message(message.chat.id, random.choice(texting.texting_symbols.quotes))
     elif crazy_tokens == 6:
-        file_name = random.choice(os.listdir(f'{PATH}/texting/doges'))
         contents = requests.get('https://random.dog/woof.json').json()
         doggy = contents['url']
 
