@@ -1,9 +1,8 @@
 import tkinter as tk
-import math_part
+from math_module import math_part
 import latex_table
 import pandas as pd
 import Overleaf_connection
-import numpy as np
 from tkinter import filedialog as fd
 from PIL import Image, ImageTk
 
@@ -45,14 +44,27 @@ def back():
     start(root)
 
 
-def standard_button():
+def help_image_mnk_plot():
     # настроить кртинку
-    tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5, relx=0.43, rely=0)
+    tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
+                                                                                         relx=0.43, rely=0)
     img = Image.open("examplegr.png")
     render = ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
     initil.place(relheight=0.75, relwidth=0.75, relx=0.3, rely=0.05)
+
+def help_image_table():
+    # настроить кртинку
+    tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
+                                                                                         relx=0.43, rely=0)
+    img = Image.open("exampletb.png")
+    render = ImageTk.PhotoImage(img)
+    initil = tk.Label(root, image=render)
+    initil.image = render
+    initil.place(relheight=0.75, relwidth=0.75, relx=0.3, rely=0.05)
+
+def standard_button():
 
     btnback = tk.Button(text="Назад", background="#555", foreground="#ccc",
                         padx="15", pady="6", font="15", command=back)
@@ -93,6 +105,7 @@ def generation_tab_MNK():
     root.geometry(characteristic)
 
     standard_button()
+    help_image_mnk_plot()
 
     btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15", command=openfileMNK)
@@ -114,6 +127,7 @@ def generation_tab_Plots():
     root.title("MNK-Tool")
     root.geometry(characteristic)
 
+    help_image_mnk_plot()
     standard_button()
 
     tk.Label(root, text="Название графика:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.33)
@@ -139,23 +153,32 @@ def openfileTable():
 
 
 def generation_tab_Table():
-    global root
+    global root, TableName
     root.destroy()
     root = tk.Tk()
     root.title("MNK-Tool")
     root.geometry(characteristic)
 
     standard_button()
+    help_image_table()
 
     btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
                         padx="15", pady="6", font="15", command=openfileTable)
     btnfile.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
 
+    tk.Label(root, text="Название графика:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.33)
+    TableName = tk.Entry(root, width=8)
+    TableName.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.33)
+
 
 def Table(file_name):
     file = pd.read_excel(file_name, header=None)
-    name = 'name'
+    name = TableName.get()
     latex_table.create_data_array(file, name)
+    sigma = tk.Text(width=12, height=12)
+    sigma.place(relheight=0.1, relwidth=0.4, relx=0, rely=0.4)
+    sigma.insert(1.0, f'Погрешность коэффициента наклона прямой: \n{a} + {d_a}'
+                      f' \nПогрешность коэффициента наклона прямой: \n{b} + {d_b} ')
 
 
 
