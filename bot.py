@@ -289,7 +289,8 @@ def date_mnk(message):
 def get_group(message):
     """
     Функция ловит сообщение с текстом "/timetable".
-    :param message:
+    Отправляет пользователю вопрос о номере группы. Вызывает функцию get_weekday().
+    :param message: telebot.types.Message
     :return:
     """
     if message.text == 'Ладно, сам посмотрю':
@@ -305,6 +306,12 @@ def get_group(message):
 
 
 def get_weekday(message):
+    """
+    Функция сохраняет номер группы и отправляет кнопки с выбором дня недели.
+    Вызывает функцию get_schedule().
+    :param message: telebot.types.Message
+    :return:
+    """
     global GROUP_NUM
     GROUP_NUM = message.text
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -315,6 +322,12 @@ def get_weekday(message):
 
 
 def get_schedule(message):
+    """
+    Функция считывает день недели, вызывает функцию get_timetable из модуля timetable,
+    отправляет пользователю раписание из файла.
+    :param message: telebot.types.Message
+    :return:
+    """
     if message.text in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']:
         timetable.timetable.get_timetable(GROUP_NUM, message.text)
         f = open(f'{PATH}/timetable/class.txt')
@@ -344,6 +357,12 @@ def get_schedule(message):
 
 @bot.message_handler(commands=['exam'])
 def ask_group(message):
+    """
+    Функция ловит сообщение с текстом '/exam'.
+    Отправляет запрос о выборе группы и вызывает функцию get_exam_timetable().
+    :param message: telebot.types.Message
+    :return:
+    """
     if message.text == 'Ладно, сам посмотрю':
         keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, '😞', reply_markup=keyboard)
@@ -353,6 +372,12 @@ def ask_group(message):
 
 
 def get_exam_timetable(message):
+    """
+    Функция считывает номер группы, вызывает функцию get_exam_timetable из модуля timetable,
+    отправляет пользователю раписание экзаменов из файла.
+    :param message: telebot.types.Message
+    :return:
+    """
     if message.text in texting.texting_symbols.groups:
         timetable.timetable.get_exam_timetable(message.text)
         f = open(f'{PATH}/timetable/exam.txt')

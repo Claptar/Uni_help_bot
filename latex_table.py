@@ -2,9 +2,6 @@
 from __future__ import print_function
 import numpy as np
 
-b = [['мамы', 'дети'], [1, 10], [2, 11], [3, 12], [4, 13], [5, 14], [6, 15], [7, 16], [8, 20], [9, 25]]
-
-
 
 def create_data_array(file, name):
     data_array = np.array(file)
@@ -39,35 +36,27 @@ def table_body_create(data_array, name):
     lines_number = data_array.shape[0]
     columns_number = data_array.shape[1]
 
-
-
     print(' В таблице число строк -', lines_number, '\n',
           'число столбцов -', columns_number, '\n',)
-
 
     lines_number = data_array.shape[0]
     columns_number = data_array.shape[1]
 
-    print('\\begin{table}[h!])', '\n',
-          '\t', '\\begin{center}')
-    print('\t\t', '\\begin{tabular}{', end='')
+    main_string = '\\begin{table}[h!]) \n \t \\begin{center} \n \t\t \\begin{tabular}{'
 
     for number in range(columns_number):
-        print('|c', end='')
-    print('|}')
+        main_string += '|c'
+    main_string += '|} \n'
 
     for ln in range(lines_number):
-        print("\hline")
+        main_string += r'\hline' + '\n'
 
         for cn in range(columns_number - 1):
-            print('\t\t\t', data_array[ln, cn], '&', ' ', end='')
-        print('\t\t\t', data_array[ln, columns_number - 1], '\\\\')
+            main_string = main_string + '\t\t\t' + str(data_array[ln, cn]) + " " + '&'
 
-    print('\hline \n',
-          '\t\t', '\\end{tabular} \n',
-          '\t\t', '\\caption{' + str(name) + '} \n',
-          '\t', '\\end{center} \n \\end{table}')
+        main_string = main_string + '\t\t\t' + str(data_array[ln, columns_number - 1]) + ' ' + '\\\\' + '\n'
 
+    main_string = main_string + r'\hline' + '\n \t\t \\end{tabular} \n \t\t \\caption{' + str(name) + \
+                                '} \n \t \\end{center} \n \\end{table}'
 
-
-#table_body_create(b, 'table')
+    return main_string
