@@ -4,8 +4,10 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sympy import *
-import math
+import numpy as np
+import matplotlib.pyplot as plt
+import sympy as sp
+
 
 LABEL_X = ''
 LABEL_Y = ''
@@ -165,10 +167,10 @@ def error_calc(equation, var_list, point_list, error_list):
     """
     sigma = 0  # Объявляем переменную
     for number in range(len(var_list)):
-        elem = Symbol(var_list[number])  # переводт символ в приемлемый формат для дифференцирования
-        der = diff(equation, elem)  # дифференцируем выражение equation по переменной elem
+        elem = sp.Symbol(var_list[number])  # переводит символ в приемлемый формат для дифференцирования
+        der = sp.diff(equation, elem)  # дифференцируем выражение equation по переменной elem
         for score in range(len(point_list)):  # задаем каждую переменную, чтобы подставить ее значение
-            der = lambdify(var_list[score], der, 'numpy')  # говорим, что функция будет конкретной переменной
+            der = sp.lambdify(var_list[score], der, 'numpy')  # говорим, что функция будет конкретной переменной
             der = der(point_list[score])  # задаем функцию в строчном виде
         sigma += error_list[number] ** 2 * der ** 2  # считем погрешность
 
