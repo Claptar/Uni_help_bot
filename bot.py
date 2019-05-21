@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import telebot
 from telebot import types
+import requests
 
 import texting.texting_symbols
 import timetable.timetable
@@ -277,7 +278,8 @@ def date_mnk(message):
 def get_group(message):
     """
     Функция ловит сообщение с текстом "/timetable".
-    :param message:
+    Отправляет пользователю вопрос о номере группы. Вызывает функцию get_weekday().
+    :param message: telebot.types.Message
     :return:
     """
     if message.text == 'Ладно, сам посмотрю':
@@ -293,6 +295,12 @@ def get_group(message):
 
 
 def get_weekday(message):
+    """
+    Функция сохраняет номер группы и отправляет кнопки с выбором дня недели.
+    Вызывает функцию get_schedule().
+    :param message: telebot.types.Message
+    :return:
+    """
     global GROUP_NUM
     GROUP_NUM = message.text
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -303,6 +311,12 @@ def get_weekday(message):
 
 
 def get_schedule(message):
+    """
+    Функция считывает день недели, вызывает функцию get_timetable из модуля timetable,
+    отправляет пользователю раписание из файла.
+    :param message: telebot.types.Message
+    :return:
+    """
     if message.text in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']:
         timetable.timetable.get_timetable(GROUP_NUM, message.text)
         f = open(f'{PATH}/timetable/class.txt')
@@ -332,6 +346,12 @@ def get_schedule(message):
 
 @bot.message_handler(commands=['exam'])
 def ask_group(message):
+    """
+    Функция ловит сообщение с текстом '/exam'.
+    Отправляет запрос о выборе группы и вызывает функцию get_exam_timetable().
+    :param message: telebot.types.Message
+    :return:
+    """
     if message.text == 'Ладно, сам посмотрю':
         keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, '😞', reply_markup=keyboard)
@@ -341,6 +361,12 @@ def ask_group(message):
 
 
 def get_exam_timetable(message):
+    """
+    Функция считывает номер группы, вызывает функцию get_exam_timetable из модуля timetable,
+    отправляет пользователю раписание экзаменов из файла.
+    :param message: telebot.types.Message
+    :return:
+    """
     if message.text in texting.texting_symbols.groups:
         timetable.timetable.get_exam_timetable(message.text)
         f = open(f'{PATH}/timetable/exam.txt')
@@ -356,9 +382,14 @@ def get_exam_timetable(message):
         bot.register_next_step_handler(msg, ask_group)
 
 
-# Если отправить боту просто текст или незнакомую команду, то он ответит так:
+
 @bot.message_handler(content_types=['text'])
 def chatting(message):
+    """
+    Функция запускается, если пользователь пишет любой незнакомый боту текст.
+    :param message: any text
+    :return:
+    """
     global crazy_tokens, PATH
     crazy_tokens += 1
     if crazy_tokens <= 1:
@@ -370,10 +401,10 @@ def chatting(message):
         bot.send_message(message.chat.id, random.choice(texting.texting_symbols.quotes))
     elif crazy_tokens == 6:
         file_name = random.choice(os.listdir(f'{PATH}/texting/doges'))
+        contents = requests.get('https://random.dog/woof.json').json()
+        doggy = contents['url']
         bot.send_message(message.chat.id, random.choice(texting.texting_symbols.doges))
-        with open(f'{PATH}/texting/doges/{file_name}', 'rb') as photo:
-            bot.send_photo(message.chat.id, photo)
-
+        bot.send_photo(message.chat.id, photo=doggy)
         crazy_tokens = 0
 
 
