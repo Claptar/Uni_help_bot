@@ -176,22 +176,28 @@ def figure_mnk(message):
 @bot.message_handler(commands=['mnk_constants'])
 def mnk_constants(message):
     """
-    Функция ловит сообщение с текстом "/mnk_constants". Инициируется процесс
-    :param message:
+    Функция ловит сообщение с текстом "/mnk_constants". Является первой функцией в сессии рисования графика.
+    Вызывает ax_x()
+    :param message: telebot.types.Message
     :return:
     """
     global MESSAGE_COM
-    mg = bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
-                                           ' Даа, непростая задача, так и быть, помогу тебе ! ')
+    bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
+                                      ' Даа, непростая задача, так и быть, помогу тебе ! ')
     bot.send_message(message.chat.id, 'Пришли мне файл с данными вот в таком формате и всё будет готово😊')
     with open('example.jpg', 'rb') as photo:
         msg = bot.send_photo(message.chat.id, photo)
     MESSAGE_COM = 'mnk_constants'
-    bot.register_next_step_handler(mg, date_mnk)
+    bot.register_next_step_handler(msg, date_mnk)
 
 
 @bot.message_handler(commands=['figure'])
 def figure(message):
+    """
+    Ловит сообщение с текстом "/figure". Является первой функцией в сессии рисования графика. Вызывает ax_x()
+    :param message: telebot.types.Message
+    :return:
+    """
     global MESSAGE_COM
     MESSAGE_COM = 'figure'
     bot.send_message(message.chat.id, 'Ой, а что это у тебя за зависимость такая?) Мне даже самому интересно стало.'
@@ -202,6 +208,11 @@ def figure(message):
 
 
 def ax_x(message):
+    """
+    Функиция вызывается firure(), записывает введёное пользователем название строки
+    :param message:
+    :return:
+    """
     math_part.LABEL_X = message.text
     msg = bot.send_message(message.chat.id, 'А, как мне подписать ось у ?')
     bot.register_next_step_handler(msg, ax_y)
@@ -245,8 +256,8 @@ def date_mnk(message):
                 bot.send_photo(message.chat.id, photo)
             for i in range(0, len(a)):
                 bot.send_message(message.chat.id, f'Коэффициенты {i + 1}-ой прямой:\n'
-                f' a = {round(a[i], 3)} +- {round(d_a[i], 3)}\n'
-                f' b = {round(b[i], 3)} +- {round(d_b[i], 3)}')
+                                                  f' a = {round(a[i], 3)} +- {round(d_a[i], 3)}\n'
+                                                  f' b = {round(b[i], 3)} +- {round(d_b[i], 3)}')
             os.remove('plot.png')
             math_part.BOT_PLOT = False
         elif MESSAGE_COM == 'figure':
@@ -259,8 +270,8 @@ def date_mnk(message):
         elif MESSAGE_COM == 'mnk_constants':
             for i in range(0, len(a)):
                 bot.send_message(message.chat.id, f'Коэффициенты {i + 1}-ой прямой:\n '
-                f'a = {round(a[i], 3)} +- {round(d_a[i], 3)}\n'
-                f' b = {round(b[i], 3)} +- {round(d_b[i], 3)}')
+                                                  f'a = {round(a[i], 3)} +- {round(d_a[i], 3)}\n'
+                                                  f' b = {round(b[i], 3)} +- {round(d_b[i], 3)}')
         os.remove(src)
         math_part.TITLE = ''
         math_part.LABEL_Y = ''
@@ -380,7 +391,6 @@ def get_exam_timetable(message):
                                                 'Ты мне точно прислал номер группы в правильном формате ?',
                                reply_markup=keyboard)
         bot.register_next_step_handler(msg, ask_group)
-
 
 
 @bot.message_handler(content_types=['text'])

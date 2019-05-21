@@ -14,6 +14,7 @@ LABEL_Y = ''
 TITLE = ''
 BOT_PLOT = False
 PATH = os.path.abspath('')
+ERROR_BAR = True
 
 
 def data_conv(data_file):
@@ -115,7 +116,8 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
             yerr = math.sqrt(sigmas_y)
         else:
             yerr = sigmas_y
-        plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='o')
+        if ERROR_BAR:
+            plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='o')
         delta = (max(x[i]) - min(x[i]))/len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
         plt.plot(x[i], y[i], 'ro', np.array(x_[i]), a[i]*(np.array(x_[i])) + b[i])

@@ -8,3 +8,4 @@ xlrd
 sympy
 pyautogui
 selenium
+requests
