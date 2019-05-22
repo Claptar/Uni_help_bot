@@ -242,10 +242,10 @@ def Table(file_name):
     file = pd.read_excel(file_name, header=None)
     name = TableName.get()
     string = latex_table.create_data_array(file, name)
-    sigma = tk.Text(width=12, height=12)
-    sigma.place(relheight=0.6, relwidth=0.35, relx=0, rely=0.15)
+    table = tk.Text(width=12, height=12)
+    table.place(relheight=0.6, relwidth=0.35, relx=0, rely=0.17)
 
-    sigma.insert(1.0, string)
+    table.insert(1.0, string)
 
 
 

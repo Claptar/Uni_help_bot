@@ -11,7 +11,6 @@ def create_data_array(file, name):
         for j in range(data_array.shape[1]):
             m.append(data_array[i][j])
         data.append(m)
-    print(data)
     stringg = table_body_create(data, name)
     return stringg
 
@@ -27,9 +26,7 @@ def table_body_create(data_array, name):
 
 
     column_names = data_array[:1]
-    print(column_names)
     data_array = data_array[1:]
-    print(data_array)
 
     data_array = np.array(data_array)
 
