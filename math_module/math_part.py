@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
-import pandas as pd
-import sympy as sp
+
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import sympy as sp
 
 LABEL_X = ''
 LABEL_Y = ''
@@ -69,7 +70,7 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     d = np.array(dataset)
     x = d[:, 0]
     y = d[:, 1]
-    plt.plot(x, y, 'r')
+    plt.plot(x, y, 'ro')
     plt.xlabel(x_lb)
     plt.ylabel(y_lb)
     plt.title(tit)

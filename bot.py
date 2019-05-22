@@ -1,12 +1,12 @@
 import os
 import random
+import re
 
 import numpy as np
 import pandas as pd
+import requests
 import telebot
 from telebot import types
-import requests
-import re
 
 import texting.texting_symbols
 import timetable.timetable
@@ -210,8 +210,8 @@ def figure(message):
 
 def ax_x(message):
     """
-    Функиция вызывается firure(), записывает введёное пользователем название строки
-    :param message:
+    Функция вызывается firure(), записывает введёное пользователем название оси Х
+    :param message: telebot.types.Message
     :return:
     """
     math_part.LABEL_X = message.text
@@ -220,12 +220,22 @@ def ax_x(message):
 
 
 def ax_y(message):
+    """
+    Функция вызывается ax_x(), записывает введённое пользователем название оси У, вызывает ax_y()
+    :param message: telebot.types.Message
+    :return:
+    """
     math_part.LABEL_Y = message.text
     msg = bot.send_message(message.chat.id, 'Самое главное: как мне назвать график ?')
     bot.register_next_step_handler(msg, tit)
 
 
 def tit(message):
+    """
+    Функция вызывается ax_x(), записывает введённое пользователем название графика, вызывает data_mnk()
+    :param message:
+    :return:
+    """
     if message.text == 'Видимо не в этот раз ...':
         keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, 'Ну ладно... 😥', reply_markup=keyboard)
@@ -241,6 +251,12 @@ def tit(message):
 
 
 def date_mnk(message):
+    """
+    Функция активирует рисование графика/линеаризованного графика/подсчёта констант и погрешностей, в зависимости от
+    того, какая функция была написана пользователем.
+    :param message:
+    :return:
+    """
     try:
         global MESSAGE_COM
         file_id = message.json.get('document').get('file_id')
@@ -423,10 +439,13 @@ def chatting(message):
         bot.send_photo(message.chat.id, photo=doggy)
         crazy_tokens = 0
 
+
 def get_url():
     contents = requests.get('https://random.dog/woof.json').json()
     url = contents['url']
     return url
+
+
 def get_image_url():
     allowed_extension = ['jpg', 'jpeg', 'png']
     file_extension = ''
@@ -434,5 +453,6 @@ def get_image_url():
         url = get_url()
         file_extension = re.search("([^.]*)$", url).group(1).lower()
     return url
+
 
 bot.polling()
