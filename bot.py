@@ -12,8 +12,8 @@ import texting.texting_symbols
 import timetable.timetable
 from math_module import math_part
 
-base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
-TOKEN = '802918851:AAFcwXbQQDhHfWa0EZNx_Y5sQtJgkZ-L0xw'
+base_url = 'https://api.telegram.org/bot893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0/'
+TOKEN = '893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0'
 PATH = os.path.abspath('')
 bot = telebot.TeleBot(TOKEN)
 MESSAGE_NUM = 0
@@ -58,7 +58,8 @@ def help_def(message):
                                       'о плохом...\n'
                                       '/flash_cards - Давай сыграем в игру... Я тебе определение/формулировку, а '
                                       'ты попытайся вспомнить её. Как только вспомнишь/не вспомнишь нажимай "покажи"'
-                                      'чтобы проверить себя')
+                                      'чтобы проверить себя'
+                                      '/remove_button - Если что-то вдруг пошло не по плану, я уберу все кнопки')
 
 
 @bot.message_handler(commands=['start'])
