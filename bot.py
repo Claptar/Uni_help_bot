@@ -6,7 +6,7 @@ import pandas as pd
 import telebot
 from telebot import types
 import requests
-from bs4 import BeautifulSoup
+import re
 
 import texting.texting_symbols
 import timetable.timetable
@@ -412,9 +412,7 @@ def chatting(message):
     elif crazy_tokens <= 5:
         bot.send_message(message.chat.id, random.choice(texting.texting_symbols.quotes))
     elif crazy_tokens == 6:
-        contents = requests.get('https://random.dog/woof.json').json()
-        doggy = contents['url']
-
+        doggy = get_image_url()
         '''
         API_LINK = 'http://api.forismatic.com/api/method=getQuote&format=text&lang=ru'
         cont = requests.post(API_LINK)
@@ -425,5 +423,16 @@ def chatting(message):
         bot.send_photo(message.chat.id, photo=doggy)
         crazy_tokens = 0
 
+def get_url():
+    contents = requests.get('https://random.dog/woof.json').json()
+    url = contents['url']
+    return url
+def get_image_url():
+    allowed_extension = ['jpg', 'jpeg', 'png']
+    file_extension = ''
+    while file_extension not in allowed_extension:
+        url = get_url()
+        file_extension = re.search("([^.]*)$", url).group(1).lower()
+    return url
 
 bot.polling()
