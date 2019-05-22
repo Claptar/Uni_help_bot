@@ -35,6 +35,12 @@ comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants'
 crazy_tokens = 0
 
 
+@bot.message_handler(commands=['remove_button'])
+def button_delete(message):
+    keyboard = types.ReplyKeyboardRemove
+    bot.send_message(message.chat.id, 'Убрал все кнопки !', reply_markup=keyboard)
+
+
 @bot.message_handler(commands=['help'])
 def help_def(message):
     """
