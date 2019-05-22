@@ -142,7 +142,6 @@ def generation_tab_MNK():
 
 
 def openfilePlots():
-    global ERORR_BAR
     """
     Функция открывает файл для считывания данных, и считывает данные из полей экрана создания графика, вызыват функцию
     из модуля математики, отвечающуу за построение графиков
@@ -150,25 +149,26 @@ def openfilePlots():
     file_name = fd.askopenfilename()
     x_lb = x1.get()
     y_lb = y1.get()
-    linear1 = linear.get()
-    print(linear1)
-    if linear1 == 1:
-        ERROR_BAR = True
-    else:
-        ERROR_BAR = False
-    print(ERROR_BAR)
-
-
+    linear_val = linear.get()
+    cross_val = cross.get()
     tit = Name.get()
-    math_part.plot_drawer(file_name, x_lb, y_lb, tit)
 
+    if linear_val:
+        if cross_val:
+            math_part.ERROR_BAR = True
+            math_part.plots_drawer(file_name, x_lb, y_lb, tit)
+        else:
+            math_part.ERROR_BAR = False
+            math_part.plots_drawer(file_name, x_lb, y_lb, tit)
+    else:
+        math_part.plot_drawer(file_name, x_lb, y_lb, tit)
 
 
 def generation_tab_Plots():
     """
     Функция генерирует новый экран для построения графика
     """
-    global root, x1, y1, Name, linear
+    global root, x1, y1, Name, linear, cross
     root.destroy()
     root = tk.Tk()
     root.title("MNK-Tool")
@@ -191,8 +191,13 @@ def generation_tab_Plots():
 
     linear = tk.IntVar()
     linear.set(0)
-    c1 = tk.Checkbutton(text="Лианеризовать график", variable=linear)
-    c1.place(relheight=0.1, relwidth=0.2, relx=0.2, rely=0.65)
+    fllinear = tk.Checkbutton(text="Линеаризовать график", variable=linear)
+    fllinear.place(relheight=0.1, relwidth=0.24, relx=0.05, rely=0.55)
+
+    cross = tk.IntVar()
+    cross.set(0)
+    flcross = tk.Checkbutton(text="Построить кресты погрешностей", variable=cross)
+    flcross.place(relheight=0.1, relwidth=0.3, relx=0.05, rely=0.63)
 
     btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15", command=openfilePlots)
@@ -223,11 +228,11 @@ def generation_tab_Table():
 
     btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
                         padx="15", pady="6", font="15", command=openfileTable)
-    btnfile.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
+    btnfile.place(relheight=0.06, relwidth=0.2, relx=0.1, rely=0.02)
 
-    tk.Label(root, text="Название графика:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.33)
+    tk.Label(root, text="Название графика:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.12)
     TableName = tk.Entry(root, width=8)
-    TableName.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.33)
+    TableName.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.12)
 
 
 def Table(file_name):
@@ -238,7 +243,7 @@ def Table(file_name):
     name = TableName.get()
     string = latex_table.create_data_array(file, name)
     sigma = tk.Text(width=12, height=12)
-    sigma.place(relheight=0.6, relwidth=0.4, relx=0, rely=0.4)
+    sigma.place(relheight=0.6, relwidth=0.35, relx=0, rely=0.15)
 
     sigma.insert(1.0, string)
 
