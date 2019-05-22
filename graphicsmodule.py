@@ -2,6 +2,7 @@ import tkinter as tk
 from math_module import math_part
 import latex_table
 import pandas as pd
+import numpy as np
 import Overleaf_connection
 from tkinter import filedialog as fd
 from PIL import Image, ImageTk
@@ -18,10 +19,18 @@ def close():
 
 
 def OK():
+    """
+    Функция закрывает окно с подсказкой
+    """
     help_window.destroy()
 
 
 def help():
+    """
+    Функция вызывается при нажатии кропки "помощь", генерирует дополнительное окно, содержащее вспомогательную
+    информацию, считываемую из текстового файла
+    """
+    #TODO
     global help_window
     help_window = tk.Toplevel(root)
     help_window.geometry("400x400")
@@ -36,6 +45,9 @@ def help():
 
 
 def back():
+    """
+    Функция возвращает пользователя на главный экран, она уничтожает текуший экран и вызывает генерацию гланого
+    """
     global root
     root.destroy()
     root = tk.Tk()
@@ -45,7 +57,9 @@ def back():
 
 
 def help_image_mnk_plot():
-    # настроить кртинку
+    """
+    Функция создает и размещант картинку-помошника для построения МНК и графика
+    """
     tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
     img = Image.open("examplegr.png")
@@ -54,8 +68,11 @@ def help_image_mnk_plot():
     initil.image = render
     initil.place(relheight=0.75, relwidth=0.75, relx=0.3, rely=0.05)
 
+
 def help_image_table():
-    # настроить кртинку
+    """
+    Функция создает и размещает картинку-помошника для создания таблицы
+    """
     tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
     img = Image.open("exampletb.png")
@@ -65,7 +82,9 @@ def help_image_table():
     initil.place(relheight=0.75, relwidth=0.75, relx=0.3, rely=0.05)
 
 def standard_button():
-
+    """
+    Функция возвращает генериует стандартный набор кнопок (нижняя панель)
+    """
     btnback = tk.Button(text="Назад", background="#555", foreground="#ccc",
                         padx="15", pady="6", font="15", command=back)
     btnback.place(relheight=0.2, relwidth=0.33, relx=0, rely=0.8)
@@ -80,11 +99,18 @@ def standard_button():
 
 
 def openfileMNK():
+    """
+    Функция открывает выбранный пользователем файл и вызывает функцию обработчик
+    """
     file_name = fd.askopenfilename()
     mnk_calculate_print(file_name)
 
 
 def mnk_calculate_print(file_name):
+    """
+    Функция принимает данные из открытого файла и вызывает функцию из модуля математики, орабатывает полученные данные,
+    выводит их в виде текста
+    """
     xy_list = math_part.mnk_calc(file_name)
     a = round(xy_list[0][0], 4)
     d_a = round(xy_list[2][0], 4)
@@ -98,6 +124,9 @@ def mnk_calculate_print(file_name):
 
 
 def generation_tab_MNK():
+    """
+    Функция генерирует новый экран для расчета МНК
+    """
     global root
     root.destroy()
     root = tk.Tk()
@@ -109,10 +138,15 @@ def generation_tab_MNK():
 
     btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15", command=openfileMNK)
-    btnfile.place(relheight=0.1, relwidth=0.2, relx=0.0, rely=0.3)
+    btnfile.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
+
 
 
 def openfilePlots():
+    """
+    Функция открывает файл для считывания данных, и считывает данные из полей экрана создания графика, вызыват функцию
+    из модуля математики, отвечающуу за построение графиков
+    """
     file_name = fd.askopenfilename()
     x_lb = x1.get()
     y_lb = y1.get()
@@ -121,6 +155,9 @@ def openfilePlots():
 
 
 def generation_tab_Plots():
+    """
+    Функция генерирует новый экран для построения графика
+    """
     global root, x1, y1, Name
     root.destroy()
     root = tk.Tk()
@@ -148,11 +185,17 @@ def generation_tab_Plots():
 
 
 def openfileTable():
+    """
+    Функция открывает файл для считывания данных и передает его функции Table
+    """
     file_name = fd.askopenfilename()
     Table(file_name)
 
 
 def generation_tab_Table():
+    """
+    Функция генерирует новый экран для создания таблиц
+    """
     global root, TableName
     root.destroy()
     root = tk.Tk()
@@ -172,6 +215,9 @@ def generation_tab_Table():
 
 
 def Table(file_name):
+    """
+    Функция принимает файл и считывает название табицы из поля на экране создания таблиц
+    """
     file = pd.read_excel(file_name, header=None)
     name = TableName.get()
     string = latex_table.create_data_array(file, name)
@@ -182,17 +228,22 @@ def Table(file_name):
 
 
 
-def openfileOverleaf():
-    e_mail = email.get()
-    passw_ord = password.get()
-    file = fd.askopenfilename()
-    file = open(file, 'r')
-    file_lines = file.read()
-    print(file_lines)
-    Overleaf_connection.ol_open(file_lines, e_mail, passw_ord)
+def ErrorCalculate():
+    #TODO разберись как считываемую информацию отфарматировать нормально, чтоб считались погрешности и не было ошибок
+    equaton_l = equation.get() # cчитывание из первого окошка
+    equation_ls = equaton_l
+    print(equation_ls)
+    variables_lb = variables.get() #считывание из второго окошка
+    print(type(variables_lb))
+    values_l = values.get() #считывание из третьего
+    values_ls = list(values_l)
+    error_l = error.get() #считывание из четвертого
+    error_ls = np.array(error_l)
+    print(error_ls)
+    math_part.error_calc(equation_ls, variables_ls, values_ls, error_ls)
 
-def generation_tab_Overleaf_connection():
-    global root, email, password
+def generation_tab_Error_Calculate():
+    global root, equation, variables, values, error
     root.destroy()
     root = tk.Tk()
     root.title("MNK-Tool")
@@ -200,21 +251,32 @@ def generation_tab_Overleaf_connection():
 
     standard_button()
 
-    tk.Label(root, text="E-mail").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.33)
-    email = tk.Entry(root, width=8)
-    email.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.33)
+    tk.Label(root, text="Уравнение", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.33)
+    equation = tk.Entry(root, width=8)
+    equation.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.33)
 
-    tk.Label(root, text="Пароль:").place(relheight=0.05, relwidth=0.15, relx=0, rely=0.4)
-    password = tk.Entry(root, width=8)
-    password.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.4)
+    tk.Label(root, text="Список переменных", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.4)
+    variables = tk.Entry(root, width=8)
+    variables.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.4)
+
+    tk.Label(root, text="Список значений", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.47)
+    values = tk.Entry(root, width=8)
+    values.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.47)
+
+    tk.Label(root, text="Список погрешностей", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.54)
+    error = tk.Entry(root, width=8)
+    error.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.54)
 
 
 
-    btnfile = tk.Button(text="Выбрать текстовый файл", background="#555", foreground="#ccc",
-                        padx="15", pady="6", font="15", command=openfileOverleaf)
-    btnfile.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
+    btncalculate = tk.Button(text="Рассчитать", background="#555", foreground="#ccc",
+                        padx="15", pady="6", font="15", command=ErrorCalculate)
+    btncalculate.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
 
 def start(root):
+    """
+    Функция генерирует главный экран
+    """
 
     btn1 = tk.Button(text="Построить график", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15", command=generation_tab_Plots)
@@ -224,8 +286,8 @@ def start(root):
                   padx="15", pady="6", font="15", command=generation_tab_MNK)
     btn2.place(relheight=0.2, relwidth=1.0, relx=0, rely=0.2)
 
-    btn3 = tk.Button(text="Создать PDF Overleaf", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15", command=generation_tab_Overleaf_connection)
+    btn3 = tk.Button(text="Посчитать погрешность методом частных производных", background="#555", foreground="#ccc",
+                  padx="15", pady="6", font="15", command=generation_tab_Error_Calculate)
     btn3.place(relheight=0.2, relwidth=1.0, relx=0, rely=0.4)
 
     btn4 = tk.Button(text="Создать табллицу в LaTex", background="#555", foreground="#ccc",
