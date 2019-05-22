@@ -12,8 +12,8 @@ def create_data_array(file, name):
             m.append(data_array[i][j])
         data.append(m)
     print(data)
-    name = name
-    table_body_create(data, name)
+    stringg = table_body_create(data, name)
+    return stringg
 
 
 def table_body_create(data_array, name):
@@ -23,6 +23,8 @@ def table_body_create(data_array, name):
     :param name: имя таблицы
     :return:
     """
+    global main_string
+
 
     column_names = data_array[:1]
     print(column_names)
@@ -36,13 +38,7 @@ def table_body_create(data_array, name):
     lines_number = data_array.shape[0]
     columns_number = data_array.shape[1]
 
-    print(' В таблице число строк -', lines_number, '\n',
-          'число столбцов -', columns_number, '\n',)
-
-    lines_number = data_array.shape[0]
-    columns_number = data_array.shape[1]
-
-    main_string = '\\begin{table}[h!]) \n \t \\begin{center} \n \t\t \\begin{tabular}{'
+    main_string = '\\begin{table}[h!] \n \t \\begin{center} \n \t\t \\begin{tabular}{'
 
     for number in range(columns_number):
         main_string += '|c'
@@ -57,6 +53,6 @@ def table_body_create(data_array, name):
         main_string = main_string + '\t\t\t' + str(data_array[ln, columns_number - 1]) + ' ' + '\\\\' + '\n'
 
     main_string = main_string + r'\hline' + '\n \t\t \\end{tabular} \n \t\t \\caption{' + str(name) + \
-                                '} \n \t \\end{center} \n \\end{table}'
+                                '} \n \t \\end{center} \n\\end{table}'
 
     return main_string
