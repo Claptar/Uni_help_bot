@@ -3,7 +3,7 @@ from math_module import math_part
 import latex_table
 import pandas as pd
 import numpy as np
-import Overleaf_connection
+from tkinter.font import Font
 from tkinter import filedialog as fd
 from PIL import Image, ImageTk
 
@@ -30,15 +30,14 @@ def help():
     Функция вызывается при нажатии кропки "помощь", генерирует дополнительное окно, содержащее вспомогательную
     информацию, считываемую из текстового файла
     """
-    #TODO
     global help_window
     help_window = tk.Toplevel(root)
-    help_window.geometry("400x400")
+    help_window.geometry("600x600")
+    text = tk.Text(help_window, width=100, height=100, font=Font(family='Helvetica', size=10))
+    text.pack(expand='yes', fill='both')
 
-
-
-    poetry = "ОПИСАТЬ ПОМОЩЬ"
-    tk.Label(help_window, text=poetry).place(relx=0.2, rely=0.3)
+    with open("Help.txt", mode="r") as f:
+        text.insert('end', f.read())
 
     tk.Button(help_window, text="OK", background="#555", foreground="#ccc", command=OK).place(relheight=0.1,
                         relwidth=0.2, relx=0.4, rely=0.9)
@@ -143,6 +142,7 @@ def generation_tab_MNK():
 
 
 def openfilePlots():
+    global ERORR_BAR
     """
     Функция открывает файл для считывания данных, и считывает данные из полей экрана создания графика, вызыват функцию
     из модуля математики, отвечающуу за построение графиков
@@ -150,15 +150,25 @@ def openfilePlots():
     file_name = fd.askopenfilename()
     x_lb = x1.get()
     y_lb = y1.get()
+    linear1 = linear.get()
+    print(linear1)
+    if linear1 == 1:
+        ERROR_BAR = True
+    else:
+        ERROR_BAR = False
+    print(ERROR_BAR)
+
+
     tit = Name.get()
     math_part.plot_drawer(file_name, x_lb, y_lb, tit)
+
 
 
 def generation_tab_Plots():
     """
     Функция генерирует новый экран для построения графика
     """
-    global root, x1, y1, Name
+    global root, x1, y1, Name, linear
     root.destroy()
     root = tk.Tk()
     root.title("MNK-Tool")
@@ -179,9 +189,15 @@ def generation_tab_Plots():
     y1 = tk.Entry(root, width=8)
     y1.place(relheight=0.05, relwidth=0.2, relx=0.15, rely=0.47)
 
+    linear = tk.IntVar()
+    linear.set(0)
+    c1 = tk.Checkbutton(text="Лианеризовать график", variable=linear)
+    c1.place(relheight=0.1, relwidth=0.2, relx=0.2, rely=0.65)
+
     btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15", command=openfilePlots)
     btnfile.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
+
 
 
 def openfileTable():
