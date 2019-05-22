@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
-
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import sympy as sp
-
+import math
+import matplotlib.pyplot as plt
+import numpy as np
 
 LABEL_X = ''
 LABEL_Y = ''
@@ -77,8 +74,10 @@ def plot_drawer(data_file, x_lb, y_lb, tit):
     plt.ylabel(y_lb)
     plt.title(tit)
     plt.grid(True)
-    plt.savefig('plot.png')
-    plt.show()
+    if BOT_PLOT:
+        plt.savefig('plot.png')
+    else:
+        plt.show()
     plt.clf()
 
 
@@ -177,4 +176,3 @@ def error_calc(equation, var_list, point_list, error_list):
         sigma += error_list[number] ** 2 * der ** 2  # считем погрешность
 
     return sigma
-
