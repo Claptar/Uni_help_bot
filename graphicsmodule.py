@@ -5,6 +5,8 @@ import pandas as pd
 from tkinter.font import Font
 from tkinter import filedialog as fd
 from PIL import Image, ImageTk
+import os
+PATH = os.path.abspath('')
 
 root = tk.Tk()
 
@@ -35,7 +37,7 @@ def help_button():
     text = tk.Text(help_window, width=100, height=100, font=Font(family='Helvetica', size=10))
     text.pack(expand='yes', fill='both')
 
-    with open("Help.txt", mode="r") as f:
+    with open(f'{PATH}/graphics_module/Help.txt', mode="r") as f:
         text.insert('end', f.read())
 
     tk.Button(help_window, text="OK", background="#555", foreground="#ccc", command=OK).place(relheight=0.1,
@@ -61,11 +63,27 @@ def help_image_calc_error():
     """
     tk.Label(root, text="Пожалуйста, заполни поля по образцу", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.4, rely=0)
-    img = Image.open("help_calc_error.png")
+
+    tk.Label(root, text="Изпользуйте следующие опреации при вводе уравнения:\n "
+                        "+ – сложение\n"
+                        "- – вычитание\n"
+                        "* – умножение\n"
+                        "/ – деление\n"
+                        "** – возведение в степень\n"
+                        "Можете использовать () – скобки при надобности", font="Arial 10").place(relheight=0.2,
+                        relwidth=0.4, relx=0.5, rely=0.37)
+
+    img = Image.open(f'{PATH}/graphics_module/help_calc_error.png')
     render = ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
-    initil.place(relheight=0.3, relwidth=0.7, relx=0.3, rely=0.05)
+    initil.place(relheight=0.3, relwidth=0.7, relx=0.33, rely=0.05)
+
+    img1 = Image.open(f'{PATH}/graphics_module/derivative.gif')
+    render = ImageTk.PhotoImage(img1)
+    initil1 = tk.Label(root, image=render)
+    initil1.image = render
+    initil1.place(relheight=0.24, relwidth=0.34, relx=0, rely=0.06)
 
 
 def help_image_mnk_plot():
@@ -74,7 +92,7 @@ def help_image_mnk_plot():
     """
     tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
-    img = Image.open("examplegr.png")
+    img = Image.open(f'{PATH}/graphics_module/examplegr.png')
     render = ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
@@ -87,7 +105,7 @@ def help_image_table():
     """
     tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
-    img = Image.open("exampletb.png")
+    img = Image.open(f'{PATH}/graphics_module/exampletb.png')
     render = ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
@@ -115,8 +133,11 @@ def openfileMNK():
     """
     Функция открывает выбранный пользователем файл и вызывает функцию обработчик
     """
-    file_name = fd.askopenfilename()
-    mnk_calculate_print(file_name)
+    try:
+        file_name = fd.askopenfilename()
+        mnk_calculate_print(file_name)
+    except Exception as e:
+        print(e)
 
 
 def mnk_calculate_print(file_name):
@@ -159,22 +180,27 @@ def openfilePlots():
     Функция открывает файл для считывания данных, и считывает данные из полей экрана создания графика, вызыват функцию
     из модуля математики, отвечающуу за построение графиков
     """
-    file_name = fd.askopenfilename()
-    x_lb = x1.get()
-    y_lb = y1.get()
-    linear_val = linear.get()
-    cross_val = cross.get()
-    tit = Name.get()
+    try:
+        file_name = fd.askopenfilename()
+        x_lb = x1.get()
+        y_lb = y1.get()
+        linear_val = linear.get()
+        cross_val = cross.get()
+        tit = Name.get()
 
-    if linear_val:
-        if cross_val:
-            math_part.ERROR_BAR = True
-            math_part.plots_drawer(file_name, x_lb, y_lb, tit)
+        if linear_val:
+            if cross_val:
+                math_part.ERROR_BAR = True
+                math_part.plots_drawer(file_name, x_lb, y_lb, tit)
+            else:
+                math_part.ERROR_BAR = False
+                math_part.plots_drawer(file_name, x_lb, y_lb, tit)
         else:
-            math_part.ERROR_BAR = False
-            math_part.plots_drawer(file_name, x_lb, y_lb, tit)
-    else:
-        math_part.plot_drawer(file_name, x_lb, y_lb, tit)
+            math_part.plot_drawer(file_name, x_lb, y_lb, tit)
+
+    except Exception as e:
+        print(e)
+
 
 
 def generation_tab_Plots():
@@ -221,8 +247,11 @@ def openfileTable():
     """
     Функция открывает файл для считывания данных и передает его функции Table
     """
-    file_name = fd.askopenfilename()
-    Table(file_name)
+    try:
+        file_name = fd.askopenfilename()
+        Table(file_name)
+    except Exception as e:
+        print(e)
 
 
 def generation_tab_Table():
