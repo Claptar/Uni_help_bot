@@ -1,8 +1,7 @@
 import tkinter as tk
 from math_module import math_part
-import latex_table
+from graphics_module import latex_table
 import pandas as pd
-import numpy as np
 from tkinter.font import Font
 from tkinter import filedialog as fd
 from PIL import Image, ImageTk

@@ -3,7 +3,7 @@ import argparse
 
 import numpy as np
 
-import latex_table
+from graphics_module import latex_table
 from math_module import math_part
 
 parser = argparse.ArgumentParser()

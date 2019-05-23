@@ -1,2 +1,2 @@
 # MNK-Tool
-Apps for studing (Telegram, tkinter)
+Apps for studying (Telegram, tkinter)
