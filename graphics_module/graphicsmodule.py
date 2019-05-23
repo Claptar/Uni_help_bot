@@ -55,6 +55,19 @@ def back():
     start(root)
 
 
+def help_image_calc_error():
+    """
+    Функция создает и размещант картинку-помошника для построения МНК и графика
+    """
+    tk.Label(root, text="Пожалуйста, заполни поля по образцу", font="Arial 14").place(relheight=0.05, relwidth=0.5,
+                                                                                         relx=0.43, rely=0)
+    img = Image.open("help_calc_error.png")
+    render = ImageTk.PhotoImage(img)
+    initil = tk.Label(root, image=render)
+    initil.image = render
+    initil.place(relheight=0.3, relwidth=0.6, relx=0.3, rely=0.2)
+
+
 def help_image_mnk_plot():
     """
     Функция создает и размещант картинку-помошника для построения МНК и графика
@@ -90,7 +103,7 @@ def standard_button():
     btnback.place(relheight=0.2, relwidth=0.33, relx=0, rely=0.8)
 
     btnhelp = tk.Button(text="Помощь", background="#555", foreground="#ccc",
-                        padx="15", pady="6", font="15", command=help)
+                        padx="15", pady="6", font="15", command=help_button)
     btnhelp.place(relheight=0.2, relwidth=0.33, relx=0.33, rely=0.8)
 
     btnclose = tk.Button(text="Выход", background="#555", foreground="#ccc",
@@ -118,9 +131,9 @@ def mnk_calculate_print(file_name):
     d_b = round(xy_list[3][0], 4)
 
     sigma = tk.Text(width=12, height=12)
-    sigma.place(relheight=0.1, relwidth=0.4, relx=0, rely=0.4)
+    sigma.place(relheight=0.2, relwidth=0.4, relx=0, rely=0.4)
     sigma.insert(1.0, f'Погрешность коэффициента наклона прямой: \n{a} + {d_a}'
-                 f' \nПогрешность коэффициента наклона прямой: \n{b} + {d_b} ')
+                 f'\nПогрешность коэффициента наклона прямой: \n{b} + {d_b} ')
 
 
 def generation_tab_MNK():
@@ -252,7 +265,11 @@ def ErrorCalculate():
     variables_ls = variables.get().split(', ')  # считывание из второго окошка
     values_ls = [float(elem) for elem in values.get().split(', ')]  # считывание из третьего
     error_ls = [float(elem) for elem in error.get().split(', ')]  # считывание из четвертого
-    math_part.error_calc(equation_ls, variables_ls, values_ls, error_ls)
+    value = math_part.error_calc(equation_ls, variables_ls, values_ls, error_ls)
+
+    sigma = tk.Text(width=12, height=12)
+    sigma.place(relheight=0.1, relwidth=0.4, relx=0.5, rely=0.6)
+    sigma.insert(1.0, f'Погрешность : {value}')
 
 
 def generation_tab_Error_Calculate():
