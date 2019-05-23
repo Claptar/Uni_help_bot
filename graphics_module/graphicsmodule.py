@@ -60,12 +60,12 @@ def help_image_calc_error():
     Функция создает и размещант картинку-помошника для построения МНК и графика
     """
     tk.Label(root, text="Пожалуйста, заполни поля по образцу", font="Arial 14").place(relheight=0.05, relwidth=0.5,
-                                                                                         relx=0.43, rely=0)
+                                                                                         relx=0.4, rely=0)
     img = Image.open("help_calc_error.png")
     render = ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
-    initil.place(relheight=0.3, relwidth=0.6, relx=0.3, rely=0.2)
+    initil.place(relheight=0.3, relwidth=0.7, relx=0.3, rely=0.05)
 
 
 def help_image_mnk_plot():
@@ -280,6 +280,7 @@ def generation_tab_Error_Calculate():
     root.geometry(characteristic)
 
     standard_button()
+    help_image_calc_error()
 
     tk.Label(root, text="Уравнение", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.33)
     equation = tk.Entry(root, width=8)
@@ -299,7 +300,7 @@ def generation_tab_Error_Calculate():
 
     btncalculate = tk.Button(text="Рассчитать", background="#555", foreground="#ccc",
                              padx="15", pady="6", font="15", command=ErrorCalculate)
-    btncalculate.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
+    btncalculate.place(relheight=0.1, relwidth=0.2, relx=0.11, rely=0.65)
 
 
 def start(root):
