@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from tkinter.font import Font
 from tkinter import filedialog as fd
-from PIL import Image, ImageTk
+import PIL
 
 root = tk.Tk()
 
@@ -19,13 +19,13 @@ def close():
 
 
 def OK():
-    """
+    """f
     Функция закрывает окно с подсказкой
     """
     help_window.destroy()
 
 
-def help():
+def help_button():
     """
     Функция вызывается при нажатии кропки "помощь", генерирует дополнительное окно, содержащее вспомогательную
     информацию, считываемую из текстового файла
@@ -40,7 +40,8 @@ def help():
         text.insert('end', f.read())
 
     tk.Button(help_window, text="OK", background="#555", foreground="#ccc", command=OK).place(relheight=0.1,
-                        relwidth=0.2, relx=0.4, rely=0.9)
+                                                                                              relwidth=0.2, relx=0.4,
+                                                                                              rely=0.9)
 
 
 def back():
@@ -61,8 +62,8 @@ def help_image_mnk_plot():
     """
     tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
-    img = Image.open("examplegr.png")
-    render = ImageTk.PhotoImage(img)
+    img = PIL.Image.open("examplegr.png")
+    render = PIL.ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
     initil.place(relheight=0.75, relwidth=0.75, relx=0.3, rely=0.05)
@@ -74,11 +75,12 @@ def help_image_table():
     """
     tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
-    img = Image.open("exampletb.png")
-    render = ImageTk.PhotoImage(img)
+    img = PIL.Image.open("exampletb.png")
+    render = PIL.ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
     initil.place(relheight=0.75, relwidth=0.75, relx=0.3, rely=0.05)
+
 
 def standard_button():
     """
@@ -119,7 +121,7 @@ def mnk_calculate_print(file_name):
     sigma = tk.Text(width=12, height=12)
     sigma.place(relheight=0.1, relwidth=0.4, relx=0, rely=0.4)
     sigma.insert(1.0, f'Погрешность коэффициента наклона прямой: \n{a} + {d_a}'
-                          f' \nПогрешность коэффициента наклона прямой: \n{b} + {d_b} ')
+                 f' \nПогрешность коэффициента наклона прямой: \n{b} + {d_b} ')
 
 
 def generation_tab_MNK():
@@ -138,7 +140,6 @@ def generation_tab_MNK():
     btnfile = tk.Button(text="Выбрать файл", background="#555", foreground="#ccc",
                   padx="15", pady="6", font="15", command=openfileMNK)
     btnfile.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
-
 
 
 def openfilePlots():
@@ -204,7 +205,6 @@ def generation_tab_Plots():
     btnfile.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
 
 
-
 def openfileTable():
     """
     Функция открывает файл для считывания данных и передает его функции Table
@@ -248,20 +248,13 @@ def Table(file_name):
     table.insert(1.0, string)
 
 
-
 def ErrorCalculate():
-    #TODO разберись как считываемую информацию отфарматировать нормально, чтоб считались погрешности и не было ошибок
-    equaton_l = equation.get() # cчитывание из первого окошка
-    equation_ls = equaton_l
-    print(equation_ls)
-    variables_lb = variables.get() #считывание из второго окошка
-    print(type(variables_lb))
-    values_l = values.get() #считывание из третьего
-    values_ls = list(values_l)
-    error_l = error.get() #считывание из четвертого
-    error_ls = np.array(error_l)
-    print(error_ls)
+    equation_ls = equation.get()  # cчитывание из первого окошка
+    variables_ls = variables.get().split(', ')  # считывание из второго окошка
+    values_ls = [float(elem) for elem in values.get().split(', ')]  # считывание из третьего
+    error_ls = [float(elem) for elem in error.get().split(', ')]  # считывание из четвертого
     math_part.error_calc(equation_ls, variables_ls, values_ls, error_ls)
+
 
 def generation_tab_Error_Calculate():
     global root, equation, variables, values, error
@@ -288,11 +281,10 @@ def generation_tab_Error_Calculate():
     error = tk.Entry(root, width=8)
     error.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.54)
 
-
-
     btncalculate = tk.Button(text="Рассчитать", background="#555", foreground="#ccc",
-                        padx="15", pady="6", font="15", command=ErrorCalculate)
+                             padx="15", pady="6", font="15", command=ErrorCalculate)
     btncalculate.place(relheight=0.1, relwidth=0.2, relx=0.1, rely=0.1)
+
 
 def start(root):
     """
@@ -300,32 +292,33 @@ def start(root):
     """
 
     btn1 = tk.Button(text="Построить график", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15", command=generation_tab_Plots)
+                     padx="15", pady="6", font="15", command=generation_tab_Plots)
     btn1.place(relheight=0.2, relwidth=1.0, relx=0, rely=0)
 
     btn2 = tk.Button(text="Посчитать МНК", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15", command=generation_tab_MNK)
+                     padx="15", pady="6", font="15", command=generation_tab_MNK)
     btn2.place(relheight=0.2, relwidth=1.0, relx=0, rely=0.2)
 
     btn3 = tk.Button(text="Посчитать погрешность методом частных производных", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15", command=generation_tab_Error_Calculate)
+                     padx="15", pady="6", font="15", command=generation_tab_Error_Calculate)
     btn3.place(relheight=0.2, relwidth=1.0, relx=0, rely=0.4)
 
     btn4 = tk.Button(text="Создать табллицу в LaTex", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15", command=generation_tab_Table)
+                     padx="15", pady="6", font="15", command=generation_tab_Table)
     btn4.place(relheight=0.2, relwidth=1.0, relx=0, rely=0.6)
 
     btn5 = tk.Button(text="...", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15")
+                     padx="15", pady="6", font="15")
     btn5.place(relheight=0.2, relwidth=0.33, relx=0, rely=0.8)
 
     btn6 = tk.Button(text="Помощь", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15", command=help)
+                     padx="15", pady="6", font="15", command=help_button)
     btn6.place(relheight=0.2, relwidth=0.33, relx=0.33, rely=0.8)
 
     btn7 = tk.Button(text="Выход", background="#555", foreground="#ccc",
-                  padx="15", pady="6", font="15", command=close)
+                     padx="15", pady="6", font="15", command=close)
     btn7.place(relheight=0.2, relwidth=0.34, relx=0.66, rely=0.8)
+
 
 start(root)
 
