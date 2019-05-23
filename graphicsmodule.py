@@ -41,7 +41,7 @@ def help_button():
         text.insert('end', f.read())
 
     tk.Button(help_window, text="OK", background="#555", foreground="#ccc", command=OK).place(relheight=0.1,
-                                                                                              relwidth=0.2, relx=0.4,
+                                                                                              relwidth=0.2, relx=0.8,
                                                                                               rely=0.9)
 
 
