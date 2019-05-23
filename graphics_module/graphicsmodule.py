@@ -282,21 +282,21 @@ def generation_tab_Error_Calculate():
     standard_button()
     help_image_calc_error()
 
-    tk.Label(root, text="Уравнение", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.33)
+    tk.Label(root, text="Уравнение", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.35)
     equation = tk.Entry(root, width=8)
-    equation.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.33)
+    equation.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.35)
 
-    tk.Label(root, text="Список переменных", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.4)
+    tk.Label(root, text="Список переменных", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.42)
     variables = tk.Entry(root, width=8)
-    variables.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.4)
+    variables.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.42)
 
-    tk.Label(root, text="Список значений", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.47)
+    tk.Label(root, text="Список значений", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.49)
     values = tk.Entry(root, width=8)
-    values.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.47)
+    values.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.49)
 
-    tk.Label(root, text="Список погрешностей", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.54)
+    tk.Label(root, text="Список погрешностей", anchor="w").place(relheight=0.05, relwidth=0.2, relx=0.02, rely=0.56)
     error = tk.Entry(root, width=8)
-    error.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.54)
+    error.place(relheight=0.05, relwidth=0.2, relx=0.2, rely=0.56)
 
     btncalculate = tk.Button(text="Рассчитать", background="#555", foreground="#ccc",
                              padx="15", pady="6", font="15", command=ErrorCalculate)
