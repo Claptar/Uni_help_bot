@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from tkinter.font import Font
 from tkinter import filedialog as fd
-import PIL
+from PIL import Image, ImageTk
 
 root = tk.Tk()
 
@@ -62,8 +62,8 @@ def help_image_mnk_plot():
     """
     tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
-    img = PIL.Image.open("examplegr.png")
-    render = PIL.ImageTk.PhotoImage(img)
+    img = Image.open("examplegr.png")
+    render = ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
     initil.place(relheight=0.75, relwidth=0.75, relx=0.3, rely=0.05)
@@ -75,8 +75,8 @@ def help_image_table():
     """
     tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
-    img = PIL.Image.open("exampletb.png")
-    render = PIL.ImageTk.PhotoImage(img)
+    img = Image.open("exampletb.png")
+    render = ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
     initil.place(relheight=0.75, relwidth=0.75, relx=0.3, rely=0.05)
