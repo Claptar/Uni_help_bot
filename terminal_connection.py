@@ -91,7 +91,7 @@ if args.table:
     data_array = np.array(math_part.data_conv(input()))
     print('Введите название таблицы:')
     name = str(input())
-    latex_table.table_body_create(data_array, name)
+    print(latex_table.table_body_create(data_array, name))
 
 
 
