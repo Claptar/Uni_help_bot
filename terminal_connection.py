@@ -73,17 +73,16 @@ if args.figure:
 if args.sigma:
     print('Введите имя файла, из которого нужно взять данные:')
     sigma_file_name = input()
-    xy_list = math_part.data_conv(sigma_file_name)
     print('Коэффициент наклона прямой:',
-          math_part.const_dev(xy_list[0], xy_list[1])[0],
+          math_part.const_dev(sigma_file_name)[0],
           '.', '\n'
           'Погрешность коэффициента наклона прямой:',
-          math_part.const_dev(xy_list[0], xy_list[1])[2],
+          math_part.const_dev(sigma_file_name)[2],
           '.', '\n',
           'Свободный коэффициент:',
-          math_part.const_dev(xy_list[0], xy_list[1])[3],
+          math_part.const_dev(sigma_file_name)[3],
           'Погрешность свободного коэффициента:',
-          math_part.const_dev(xy_list[0], xy_list[1])[1], sep='')
+          math_part.const_dev(sigma_file_name)[1], sep='')
 
 
 if args.table:
