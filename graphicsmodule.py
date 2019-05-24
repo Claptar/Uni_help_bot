@@ -61,10 +61,10 @@ def help_image_calc_error():
     """
     Функция создает и размещант картинку-помошника для построения МНК и графика
     """
-    tk.Label(root, text="Пожалуйста, заполни поля по образцу", font="Arial 14").place(relheight=0.05, relwidth=0.5,
+    tk.Label(root, text="Пожалуйста, заполните поля по образцу", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.4, rely=0)
 
-    tk.Label(root, text="Изпользуйте следующие опреации при вводе уравнения:\n "
+    tk.Label(root, text="Используйте следующие операции при вводе уравнения:\n "
                         "+ – сложение\n"
                         "- – вычитание\n"
                         "* – умножение\n"
@@ -90,7 +90,7 @@ def help_image_mnk_plot():
     """
     Функция создает и размещант картинку-помошника для построения МНК и графика
     """
-    tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
+    tk.Label(root, text="Пожалуйста, сделайте таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
     img = Image.open(f'{PATH}/graphics_module/examplegr.png')
     render = ImageTk.PhotoImage(img)
@@ -103,7 +103,7 @@ def help_image_table():
     """
     Функция создает и размещает картинку-помошника для создания таблицы
     """
-    tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
+    tk.Label(root, text="Пожалуйста, сделайте таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
     img = Image.open(f'{PATH}/graphics_module/exampletb.png')
     render = ImageTk.PhotoImage(img)
