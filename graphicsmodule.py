@@ -64,7 +64,7 @@ def help_image_calc_error():
     tk.Label(root, text="Пожалуйста, заполните поля по образцу", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.4, rely=0)
 
-    tk.Label(root, text="Изпользуйте следующие операции при вводе уравнения:\n "
+    tk.Label(root, text="Используйте следующие операции при вводе уравнения:\n "
                         "+ – сложение\n"
                         "- – вычитание\n"
                         "* – умножение\n"
