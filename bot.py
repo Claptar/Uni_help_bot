@@ -37,8 +37,12 @@ crazy_tokens = 0
 
 @bot.message_handler(commands=['remove_button'])
 def button_delete(message):
-    keyboard = types.ReplyKeyboardRemove
-    bot.send_message(message.chat.id, 'Убрал все кнопки !', reply_markup=keyboard)
+    try:
+        keyboard = types.ReplyKeyboardRemove
+        bot.send_message(message.chat.id, 'Убрал все кнопки !', reply_markup=keyboard)
+    except Exception as e:
+        print(e)
+        bot.send_message(message.chat.id, 'Мне нечего убирать, никакой кнопки и так нет😉')
 
 
 @bot.message_handler(commands=['help'])
@@ -58,7 +62,7 @@ def help_def(message):
                                       'о плохом...\n'
                                       '/flash_cards - Давай сыграем в игру... Я тебе определение/формулировку, а '
                                       'ты попытайся вспомнить её. Как только вспомнишь/не вспомнишь нажимай "покажи"'
-                                      'чтобы проверить себя'
+                                      'чтобы проверить себя\n'
                                       '/remove_button - Если что-то вдруг пошло не по плану, я уберу все кнопки')
 
 
@@ -448,12 +452,20 @@ def chatting(message):
 
 
 def get_url():
+    """
+    Функция получает ссылку на картинку собаки
+    :return: ссылка на картинку
+    """
     contents = requests.get('https://random.dog/woof.json').json()
     url = contents['url']
     return url
 
 
 def get_image_url():
+    """
+    Функция проверяет расширение картинки с собакой
+    :return: ссылка на картинку
+    """
     allowed_extension = ['jpg', 'jpeg', 'png']
     file_extension = ''
     while file_extension not in allowed_extension:
