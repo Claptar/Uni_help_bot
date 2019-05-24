@@ -105,8 +105,8 @@ def help_image_table():
     """
     tk.Label(root, text="Пожалуйста, сделайте таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
-    img = PIL.Image.open(f'{PATH}/graphics_module/exampletb.png')
-    render = PIL.ImageTk.PhotoImage(img)
+    img = Image.open(f'{PATH}/graphics_module/exampletb.png')
+    render = ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
     initil.place(relheight=0.75, relwidth=0.75, relx=0.3, rely=0.05)
