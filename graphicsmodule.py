@@ -4,7 +4,7 @@ from graphics_module import latex_table
 import pandas as pd
 from tkinter.font import Font
 from tkinter import filedialog as fd
-from PIL import Image, ImageTk
+import PIL
 import os
 PATH = os.path.abspath('')
 
@@ -73,14 +73,14 @@ def help_image_calc_error():
                         "Можете использовать () – скобки при надобности", font="Arial 10").place(relheight=0.2,
                         relwidth=0.4, relx=0.5, rely=0.37)
 
-    img = Image.open(f'{PATH}/graphics_module/help_calc_error.png')
-    render = ImageTk.PhotoImage(img)
+    img = PIL.Image.open(f'{PATH}/graphics_module/help_calc_error.png')
+    render = PIL.ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
     initil.place(relheight=0.3, relwidth=0.7, relx=0.33, rely=0.05)
 
-    img1 = Image.open(f'{PATH}/graphics_module/derivative.gif')
-    render = ImageTk.PhotoImage(img1)
+    img1 = PIL.Image.open(f'{PATH}/graphics_module/derivative.gif')
+    render = PIL.ImageTk.PhotoImage(img1)
     initil1 = tk.Label(root, image=render)
     initil1.image = render
     initil1.place(relheight=0.24, relwidth=0.34, relx=0, rely=0.06)
@@ -92,8 +92,8 @@ def help_image_mnk_plot():
     """
     tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
-    img = Image.open(f'{PATH}/graphics_module/examplegr.png')
-    render = ImageTk.PhotoImage(img)
+    img = PIL.Image.open(f'{PATH}/graphics_module/examplegr.png')
+    render = PIL.ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
     initil.place(relheight=0.75, relwidth=0.75, relx=0.3, rely=0.05)
@@ -105,8 +105,8 @@ def help_image_table():
     """
     tk.Label(root, text="Пожалуйста, сделай таблицу Excel такой", font="Arial 14").place(relheight=0.05, relwidth=0.5,
                                                                                          relx=0.43, rely=0)
-    img = Image.open(f'{PATH}/graphics_module/exampletb.png')
-    render = ImageTk.PhotoImage(img)
+    img = PIL.Image.open(f'{PATH}/graphics_module/exampletb.png')
+    render = PIL.ImageTk.PhotoImage(img)
     initil = tk.Label(root, image=render)
     initil.image = render
     initil.place(relheight=0.75, relwidth=0.75, relx=0.3, rely=0.05)
