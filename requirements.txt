@@ -3,7 +3,7 @@ pandas==0.24.2
 numpy==1.16.2
 matplotlib==3.0.3
 telebot==0.0.3
-Pillow=6.0.0
+Pillow==6.0.0
 xlrd==1.2.0
 sympy==1.4
 pyautogui
