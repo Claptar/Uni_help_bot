@@ -193,7 +193,7 @@ def mnk_constants(message):
     bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
                                       ' Даа, непростая задача, так и быть, помогу тебе ! ')
     bot.send_message(message.chat.id, 'Пришли мне файл с данными вот в таком формате и всё будет готово😊')
-    with open('example.jpg', 'rb') as photo:
+    with open(f'{PATH}/math_module/example.jpg', 'rb') as photo:
         msg = bot.send_photo(message.chat.id, photo)
     MESSAGE_COM = 'mnk_constants'
     bot.register_next_step_handler(msg, date_mnk)
