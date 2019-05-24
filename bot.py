@@ -452,12 +452,20 @@ def chatting(message):
 
 
 def get_url():
+    """
+    Функция получает ссылку на картинку собаки
+    :return: ссылка на картинку
+    """
     contents = requests.get('https://random.dog/woof.json').json()
     url = contents['url']
     return url
 
 
 def get_image_url():
+    """
+    Функция проверяет расширение картинки с собакой
+    :return: ссылка на картинку
+    """
     allowed_extension = ['jpg', 'jpeg', 'png']
     file_extension = ''
     while file_extension not in allowed_extension:
