@@ -37,8 +37,12 @@ crazy_tokens = 0
 
 @bot.message_handler(commands=['remove_button'])
 def button_delete(message):
-    keyboard = types.ReplyKeyboardRemove
-    bot.send_message(message.chat.id, 'Убрал все кнопки !', reply_markup=keyboard)
+    try:
+        keyboard = types.ReplyKeyboardRemove
+        bot.send_message(message.chat.id, 'Убрал все кнопки !', reply_markup=keyboard)
+    except Exception as e:
+        print(e)
+        bot.send_message(message.chat.id, 'Мне нечего убирать, никакой кнопки и так нет😉')
 
 
 @bot.message_handler(commands=['help'])
