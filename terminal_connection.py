@@ -15,7 +15,7 @@ parser.add_argument("-f", "--figure",
                     action="store_true")
 
 parser.add_argument("-s", "--sigma",
-                    help="С помощью опции можно получить коэффициенты прямой",
+                    help="С помощью опции можно получить коэффициенты прямой и их погрешности",
                     action="store_true")
 parser.add_argument("-t", "--table",
                     help="Опция вызывает функцию, которая создает Latex таблицу",
@@ -74,11 +74,16 @@ if args.sigma:
     print('Введите имя файла, из которого нужно взять данные:')
     sigma_file_name = input()
     xy_list = math_part.data_conv(sigma_file_name)
-    print('Погрешность коэффициента наклона прямой:',
+    print('Коэффициент наклона прямой:',
           math_part.const_dev(xy_list[0], xy_list[1])[0],
+          '.', '\n'
+          'Погрешность коэффициента наклона прямой:',
+          math_part.const_dev(xy_list[0], xy_list[1])[2],
           '.', '\n',
+          'Свободный коэффициент:',
+          math_part.const_dev(xy_list[0], xy_list[1])[3],
           'Погрешность свободного коэффициента:',
-          math_part.const_dev(xy_list[0], xy_list[1])[1])
+          math_part.const_dev(xy_list[0], xy_list[1])[1], sep='')
 
 
 if args.table:
