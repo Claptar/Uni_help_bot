@@ -125,9 +125,9 @@ def paragraph(message):
     if (message.text in PARAGRAPHS.keys()) or (message.text == 'Ещё'):
         if message.text in PARAGRAPHS.keys():
             PAR_NUM = PARAGRAPHS[message.text]
-        Q_NUM = random.randint(0, 13)
         questions = pd.read_excel(f'{PATH}/flash_cards/math/{PAR_NUM}/flash_data.xlsx', header=None)
         d = np.array(questions)
+        Q_NUM = random.randint(0, len(d) - 1)
         question = d[Q_NUM, 0]
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи']])
