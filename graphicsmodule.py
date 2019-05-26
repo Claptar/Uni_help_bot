@@ -290,6 +290,9 @@ def Table(file_name):
 
 
 def ErrorCalculate():
+    '''
+    Принимает данные введенные пользователем, вызывает от них функцию из модуля математикиб и выводит результат
+    '''
     equation_ls = equation.get()  # cчитывание из первого окошка
     variables_ls = variables.get().split(', ')  # считывание из второго окошка
     values_ls = [float(elem) for elem in values.get().split(', ')]  # считывание из третьего
@@ -302,6 +305,9 @@ def ErrorCalculate():
 
 
 def generation_tab_Error_Calculate():
+    '''
+    Функция генерирует новый экран для разчета частных производных
+    '''
     global root, equation, variables, values, error
     root.destroy()
     root = tk.Tk()
