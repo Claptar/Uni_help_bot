@@ -21,14 +21,22 @@ MESSAGE_COM = ''
 Q_NUM = 0
 PAR_NUM = 0
 GROUP_NUM = ''
-PARAGRAPHS = {
-    'Множество Rn': 1,
-    'Предел и непрерывность': 2,
-    'Дифференциальное исчисление в Rn': 3,
-    'Интеграл Римана': 4,
-    'Мера Жордана': 5,
-    'Числовые ряды': 6
-    }
+SUBJECT_NOW = ''
+SUBJECTS = {
+    'Матан':
+        {'Множество Rn': 1,
+         'Предел и непрерывность': 2,
+         'Дифференциальное исчисление в Rn': 3,
+         'Интеграл Римана': 4,
+         'Мера Жордана': 5,
+         'Числовые ряды': 6,
+         'PATH': 'math'},
+    'Химия':
+        {
+            'Билеты 1-2': 1,
+            'PATH': 'chem_org'
+        }
+}
 
 comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants', 'timetable', 'exam']
 
@@ -78,7 +86,7 @@ def start(message):
 
 
 @bot.message_handler(commands=['flash_cards'])
-def start(message):
+def flash_cards(message):
     """
     Функция ловит сообщение с коммандой '/flash_cards' и запускает сессию этой функции
      отправляя кнопки с выбором предмета. Следующее сообщение отправляется в функцию subject
@@ -87,7 +95,7 @@ def start(message):
     """
     bot.send_message(message.chat.id, 'Хочешь вспомнить парочку определений ?)📚📚')
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['Матан']])
+    keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS.keys()])
     msg = bot.send_message(message.chat.id, 'Сначала выбери предмет', reply_markup=keyboard)
     bot.register_next_step_handler(msg, subject)
 
@@ -99,15 +107,25 @@ def subject(message):
     :param message: telebot.types.Message
     :return:
     """
-    global Q_NUM, PATH
-    if message.text == 'Матан' or message.text == 'Выбрать другой параграф':
+    global Q_NUM, PATH, SUBJECT_NOW, SUBJECTS
+    if message.text in SUBJECTS.keys():
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in PARAGRAPHS.keys()])
+        keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS[message.text].keys()])
+        msg = bot.send_message(message.chat.id, 'Какой раздел ты хочешь поботать ?', reply_markup=keyboard)
+        SUBJECT_NOW = message.text
+        bot.register_next_step_handler(msg, paragraph)
+
+    elif message.text == 'Выбрать другой параграф':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS[SUBJECT_NOW].keys()])
         msg = bot.send_message(message.chat.id, 'Какой параграф ты хочешь поботать ?', reply_markup=keyboard)
         bot.register_next_step_handler(msg, paragraph)
+
     elif message.text == 'Всё, хватит' or message.text == 'В другой раз...':
         keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
+        SUBJECT_NOW = ''
+
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Матан', 'В другой раз...']])
@@ -121,11 +139,12 @@ def paragraph(message):
     :param message: telebot.types.Message
     :return:
     """
-    global Q_NUM, PATH, PAR_NUM
-    if (message.text in PARAGRAPHS.keys()) or (message.text == 'Ещё'):
-        if message.text in PARAGRAPHS.keys():
-            PAR_NUM = PARAGRAPHS[message.text]
-        questions = pd.read_excel(f'{PATH}/flash_cards/math/{PAR_NUM}/flash_data.xlsx', header=None)
+    global Q_NUM, PATH, PAR_NUM, SUBJECTS, SUBJECT_NOW
+    if (message.text in SUBJECTS[SUBJECT_NOW].keys()) or (message.text == 'Ещё'):
+        if message.text in SUBJECTS[SUBJECT_NOW].keys():
+            PAR_NUM = SUBJECTS[SUBJECT_NOW][message.text]
+        questions = pd.read_excel(f'{PATH}/flash_cards/{SUBJECTS[SUBJECT_NOW]["Path"]}/{PAR_NUM}/flash_data.xlsx',
+                                  header=None)
         d = np.array(questions)
         Q_NUM = random.randint(0, len(d) - 1)
         question = d[Q_NUM, 0]
@@ -133,9 +152,12 @@ def paragraph(message):
         keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи']])
         msg = bot.send_message(message.chat.id, question, reply_markup=keyboard)
         bot.register_next_step_handler(msg, answer)
+
     elif message.text == 'Всё, хватит' or message.text == 'В другой раз...':
         keyboard = types.ReplyKeyboardRemove()
+        SUBJECT_NOW = ''
         bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
+
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Выбрать другой параграф', 'В другой раз...']])
@@ -154,7 +176,7 @@ def answer(message):
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё', 'Всё, хватит']])
         bot.send_message(message.chat.id, 'Правильный ответ:')
-        with open(f'{PATH}/flash_cards/math/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
+        with open(f'{PATH}/flash_cards/{SUBJECTS[SUBJECT_NOW]["Path"]}/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
             msg = bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
         bot.register_next_step_handler(msg, paragraph)
     elif message.text == 'Я не хочу смотреть ответ':
@@ -283,9 +305,9 @@ def date_mnk(message):
             with open('plot.png', 'rb') as photo:
                 bot.send_photo(message.chat.id, photo)
             for i in range(0, len(a)):
-                bot.send_message(message.chat.id, f'Коэффициенты {i + 1}-ой прямой:\n'
-                                                  f' a = {round(a[i], 3)} +- {round(d_a[i], 3)}\n'
-                                                  f' b = {round(b[i], 3)} +- {round(d_b[i], 3)}')
+                bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
+                                                  f" a = {round(a[i], 3)} +- {round(d_a[i], 3)}\n"
+                                                  f" b = {round(b[i], 3)} +- {round(d_b[i], 3)}")
             os.remove('plot.png')
             math_part.BOT_PLOT = False
         elif MESSAGE_COM == 'figure':
@@ -432,7 +454,7 @@ def chatting(message):
     global crazy_tokens, PATH
     crazy_tokens += 1
     if crazy_tokens <= 1:
-        bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n' 
+        bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n'
                                           'Напиши /help, чтобы узнать, что я умею.\n')
     elif crazy_tokens <= 3:
         bot.send_message(message.chat.id, random.choice(texting.texting_symbols.emoji))
