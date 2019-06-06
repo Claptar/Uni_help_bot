@@ -22,6 +22,10 @@ Q_NUM = 0
 PAR_NUM = 0
 GROUP_NUM = ''
 SUBJECT_NOW = ''
+SUBJECTS_PATH = {
+    'Матан': 'math',
+    'Химия': 'chem_org'
+}
 SUBJECTS = {
     'Матан':
         {'Множество Rn': 1,
@@ -29,12 +33,10 @@ SUBJECTS = {
          'Дифференциальное исчисление в Rn': 3,
          'Интеграл Римана': 4,
          'Мера Жордана': 5,
-         'Числовые ряды': 6,
-         'PATH': 'math'},
+         'Числовые ряды': 6},
     'Химия':
         {
-            'Билеты 1-2': 1,
-            'PATH': 'chem_org'
+            'Билеты 1-2': 1
         }
 }
 
@@ -143,7 +145,7 @@ def paragraph(message):
     if (message.text in SUBJECTS[SUBJECT_NOW].keys()) or (message.text == 'Ещё'):
         if message.text in SUBJECTS[SUBJECT_NOW].keys():
             PAR_NUM = SUBJECTS[SUBJECT_NOW][message.text]
-        questions = pd.read_excel(f'{PATH}/flash_cards/{SUBJECTS[SUBJECT_NOW]["Path"]}/{PAR_NUM}/flash_data.xlsx',
+        questions = pd.read_excel(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/flash_data.xlsx',
                                   header=None)
         d = np.array(questions)
         Q_NUM = random.randint(0, len(d) - 1)
@@ -176,7 +178,7 @@ def answer(message):
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё', 'Всё, хватит']])
         bot.send_message(message.chat.id, 'Правильный ответ:')
-        with open(f'{PATH}/flash_cards/{SUBJECTS[SUBJECT_NOW]["Path"]}/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
+        with open(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
             msg = bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
         bot.register_next_step_handler(msg, paragraph)
     elif message.text == 'Я не хочу смотреть ответ':
