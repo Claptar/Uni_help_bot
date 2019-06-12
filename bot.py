@@ -325,8 +325,8 @@ def date_mnk(message):
         elif MESSAGE_COM == 'mnk_constants':
             for i in range(0, len(a)):
                 bot.send_message(message.chat.id, f'Коэффициенты {i + 1}-ой прямой:\n '
-                                                  f'a = {round(a[i], 3)} +- {round(d_a[i], 3)}\n'
-                                                  f' b = {round(b[i], 3)} +- {round(d_b[i], 3)}')
+                                                  f'a = {round(a[i], 6)} +- {round(d_a[i], 6)}\n'
+                                                  f' b = {round(b[i], 6)} +- {round(d_b[i], 6)}')
         os.remove(src)
         math_part.TITLE = ''
         math_part.LABEL_Y = ''
