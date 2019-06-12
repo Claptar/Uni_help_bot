@@ -117,8 +117,8 @@ def plots_drawer(data_file, x_lb, y_lb, tit):
         else:
             yerr = sigmas_y
         if ERROR_BAR:
-            plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='o')
-            #print(1)
+            #plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='o')
+            print(1)
         delta = (max(x[i]) - min(x[i]))/len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
         plt.plot(x[i], y[i], 'ro', np.array(x_[i]), a[i]*(np.array(x_[i])) + b[i])
