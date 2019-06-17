@@ -111,11 +111,74 @@ def start(message):
                                       ' напиши /help чтобы узнать, что я умею. ')
 
 
+@bot.message_handler(commands=['pb'])
+def pb(message):
+    bot.send_message(message.chat.id, 'Хочешь вспомнить парочку определений ?)📚📚')
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS.keys()])
+    msg = bot.send_message(message.chat.id, 'Сначала выбери предмет', reply_markup=keyboard)
+    bot.register_next_step_handler(msg, sub)
+
+
+def sub(message):
+    """
+    Функция вызывается функцией start, в зависимости от выбора предмета пользователем функция предлагает
+     параграфы этого предмета и вызывает функцию  paragraph()
+    :param message: telebot.types.Message
+    :return:
+    """
+    global Q_NUM, PATH, SUBJECT_NOW, SUBJECTS
+    if message.text in SUBJECTS.keys():
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS[message.text].keys()])
+        msg = bot.send_message(message.chat.id, 'Какой раздел ты хочешь поботать ?', reply_markup=keyboard)
+        SUBJECT_NOW = message.text
+        bot.register_next_step_handler(msg, paragraph)
+
+    elif message.text == 'Выбрать другой параграф':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS[SUBJECT_NOW].keys()])
+        msg = bot.send_message(message.chat.id, 'Какой параграф ты хочешь поботать ?', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, paragraph)
+
+    elif message.text == 'Всё, хватит' or message.text == 'В другой раз...':
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
+        SUBJECT_NOW = ''
+
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Матан', 'В другой раз...']])
+        msg = bot.send_message(message.chat.id, 'Извини, я тебя не понял, можешь повторить ?', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, subject)
+
+
+def par(message):
+    """
+    Функция вызывается функцией subject(). Она рандомно генерирует номер вопроса и присылает вопрос пользователю
+    :param message: telebot.types.Message
+    :return:
+    """
+    global Q_NUM, PATH, PAR_NUM, SUBJECTS, SUBJECT_NOW
+    if (message.text in SUBJECTS[SUBJECT_NOW].keys()) or (message.text == 'Ещё'):
+        if message.text in SUBJECTS[SUBJECT_NOW].keys():
+            PAR_NUM = SUBJECTS[SUBJECT_NOW][message.text]
+        questions = pd.read_excel(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/flash_data.xlsx',
+                                  header=None)
+        d = np.array(questions)
+        for i in range(0, len(d)):
+            Q_NUM = i
+            question = d[Q_NUM, 0]
+            msg = bot.send_message(message.chat.id, question)
+            with open(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
+                msg_a = bot.send_photo(message.chat.id, photo)
+
+
 @bot.message_handler(commands=['flash_cards'])
 def flash_cards(message):
     """
     Функция ловит сообщение с коммандой '/flash_cards' и запускает сессию этой функции
-     отправляя кнопки с выбором предмета. Следующее сообщение отправляется в функцию subject
+     отправляя кнопки с выбором предмета. Следующее сообщение отправляется в функцию sub
     :param message: telebot.types.Message
     :return:
     """
@@ -123,7 +186,24 @@ def flash_cards(message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS.keys()])
     msg = bot.send_message(message.chat.id, 'Сначала выбери предмет', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, subject)
+    bot.register_next_step_handler(msg, sub)
+
+    def par(message):
+        """
+        Функция вызывается функцией subject(). Она рандомно генерирует номер вопроса и присылает вопрос пользователю
+        :param message: telebot.types.Message
+        :return:
+        """
+        global Q_NUM, PATH, PAR_NUM, SUBJECTS, SUBJECT_NOW
+        if (message.text in SUBJECTS[SUBJECT_NOW].keys()) or (message.text == 'Ещё'):
+            if message.text in SUBJECTS[SUBJECT_NOW].keys():
+                PAR_NUM = SUBJECTS[SUBJECT_NOW][message.text]
+            questions = pd.read_excel(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/flash_data.xlsx',
+                                      header=None)
+            d = np.array(questions)
+            Q_NUM = random.randint(0, len(d) - 1)
+            question = d[Q_NUM, 0]
+            msg = bot.send_message(message.chat.id, question)
 
 
 def subject(message):
