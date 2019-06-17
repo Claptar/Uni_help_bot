@@ -188,23 +188,6 @@ def flash_cards(message):
     msg = bot.send_message(message.chat.id, 'Сначала выбери предмет', reply_markup=keyboard)
     bot.register_next_step_handler(msg, sub)
 
-    def par(message):
-        """
-        Функция вызывается функцией subject(). Она рандомно генерирует номер вопроса и присылает вопрос пользователю
-        :param message: telebot.types.Message
-        :return:
-        """
-        global Q_NUM, PATH, PAR_NUM, SUBJECTS, SUBJECT_NOW
-        if (message.text in SUBJECTS[SUBJECT_NOW].keys()) or (message.text == 'Ещё'):
-            if message.text in SUBJECTS[SUBJECT_NOW].keys():
-                PAR_NUM = SUBJECTS[SUBJECT_NOW][message.text]
-            questions = pd.read_excel(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/flash_data.xlsx',
-                                      header=None)
-            d = np.array(questions)
-            Q_NUM = random.randint(0, len(d) - 1)
-            question = d[Q_NUM, 0]
-            msg = bot.send_message(message.chat.id, question)
-
 
 def subject(message):
     """
