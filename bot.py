@@ -133,13 +133,13 @@ def sub(message):
         keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS[message.text].keys()])
         msg = bot.send_message(message.chat.id, 'Какой раздел ты хочешь поботать ?', reply_markup=keyboard)
         SUBJECT_NOW = message.text
-        bot.register_next_step_handler(msg, paragraph)
+        bot.register_next_step_handler(msg, par)
 
     elif message.text == 'Выбрать другой параграф':
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS[SUBJECT_NOW].keys()])
         msg = bot.send_message(message.chat.id, 'Какой параграф ты хочешь поботать ?', reply_markup=keyboard)
-        bot.register_next_step_handler(msg, paragraph)
+        bot.register_next_step_handler(msg, par)
 
     elif message.text == 'Всё, хватит' or message.text == 'В другой раз...':
         keyboard = types.ReplyKeyboardRemove()
@@ -150,7 +150,7 @@ def sub(message):
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Матан', 'В другой раз...']])
         msg = bot.send_message(message.chat.id, 'Извини, я тебя не понял, можешь повторить ?', reply_markup=keyboard)
-        bot.register_next_step_handler(msg, subject)
+        bot.register_next_step_handler(msg, sub)
 
 
 def par(message):
