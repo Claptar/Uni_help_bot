@@ -13,7 +13,7 @@ import timetable.timetable
 from math_module import math_part
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
-TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
+TOKEN = '893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0'
 PATH = os.path.abspath('')
 bot = telebot.TeleBot(TOKEN)
 MESSAGE_NUM = 0
@@ -184,10 +184,26 @@ def flash_cards(message):
     :return:
     """
     bot.send_message(message.chat.id, 'Хочешь вспомнить парочку определений ?)📚📚')
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS.keys()])
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in SUBJECTS.keys()])
     msg = bot.send_message(message.chat.id, 'Сначала выбери предмет', reply_markup=keyboard)
     bot.register_next_step_handler(msg, subj)
+
+
+@bot.callback_query_handler(func=lambda c: True)
+def inline(c):
+    if c.data == 'Матан':
+        bot.edit_message_text(
+            chat_id=c.message.chat.id,
+            message_id=c.message.message_id,
+            text=' Это пиздец ',
+            parse_mode='Markdown')
+    elif c.data == 'Химия':
+        bot.edit_message_text(
+            chat_id=c.message.chat.id,
+            message_id=c.message.message_id,
+            text=' Это пиздец тебе ',
+            parse_mode='Markdown')
 
 
 def subj(message):
