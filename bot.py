@@ -68,7 +68,7 @@ SUBJECTS = {
 comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants', 'timetable', 'exam']
 
 crazy_tokens = 0
-
+ANSW_ID = 0
 
 @bot.message_handler(commands=['remove_button'])
 def button_delete(message):
@@ -186,129 +186,84 @@ def flash_cards(message):
     bot.send_message(message.chat.id, 'Хочешь вспомнить парочку определений ?)📚📚')
     keyboard = types.InlineKeyboardMarkup()
     keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in SUBJECTS.keys()])
-    msg = bot.send_message(message.chat.id, 'Сначала выбери предмет', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, subj)
+    bot.send_message(message.chat.id, 'Сначала выбери предмет', reply_markup=keyboard)
 
 
-@bot.callback_query_handler(func=lambda c: True)
-def inline(c):
-    if c.data == 'Матан':
-        bot.edit_message_text(
-            chat_id=c.message.chat.id,
-            message_id=c.message.message_id,
-            text=' Это пиздец ',
-            parse_mode='Markdown')
-    elif c.data == 'Химия':
-        bot.edit_message_text(
-            chat_id=c.message.chat.id,
-            message_id=c.message.message_id,
-            text=' Это пиздец тебе ',
-            parse_mode='Markdown')
-
-
-def subj(message):
-    """
-    Функция вызывается функцией start, в зависимости от выбора предмета пользователем функция предлагает
-     параграфы этого предмета и вызывает функцию  paragraph()
-    :param message: telebot.types.Message
-    :return:
-    """
+@bot.callback_query_handler(func=lambda c: c.data in SUBJECTS.keys())
+def subject(c):  # TODO Добавить документацию
     global Q_NUM, PATH, SUBJECT_NOW, SUBJECTS
-    if message.text in SUBJECTS.keys():
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS[message.text].keys()])
-        msg = bot.send_message(message.chat.id, 'Какой раздел ты хочешь поботать ?', reply_markup=keyboard)
-        SUBJECT_NOW = message.text
-        bot.register_next_step_handler(msg, paragraph)
-
-    elif message.text == 'Выбрать другой параграф':
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS[SUBJECT_NOW].keys()])
-        msg = bot.send_message(message.chat.id, 'Какой параграф ты хочешь поботать ?', reply_markup=keyboard)
-        bot.register_next_step_handler(msg, paragraph)
-
-    elif message.text == 'Всё, хватит' or message.text == 'В другой раз...':
-        keyboard = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
-        SUBJECT_NOW = ''
-
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ['Матан', 'В другой раз...']])
-        msg = bot.send_message(message.chat.id, 'Извини, я тебя не понял, можешь повторить ?',
-                               reply_markup=keyboard)
-        bot.register_next_step_handler(msg, subj)
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in SUBJECTS[c.data].keys()])
+    bot.edit_message_text(
+        chat_id=c.message.chat.id,
+        message_id=c.message.message_id,
+        text='Какой раздел ты хочешь поботать ?',
+        parse_mode='Markdown',
+        reply_markup=keyboard)
+    SUBJECT_NOW = c.data
 
 
-def paragraph(message):
-    """
-    Функция вызывается функцией subject(). Она рандомно генерирует номер вопроса и присылает вопрос пользователю
-    :param message: telebot.types.Message
-    :return:
-    """
+@bot.callback_query_handler(func=lambda c: (c.data in SUBJECTS[SUBJECT_NOW].keys()) or (c.data == 'Ещё'))
+def paragraph(c):  # TODO Документация и имя функции
     global Q_NUM, PATH, PAR_NUM, SUBJECTS, SUBJECT_NOW, Q_SEQUENCE
-    if (message.text in SUBJECTS[SUBJECT_NOW].keys()) or (message.text == 'Ещё'):
-        if message.text in SUBJECTS[SUBJECT_NOW].keys():
-            PAR_NUM = SUBJECTS[SUBJECT_NOW][message.text]
-        # импортирую список вопросов
-        questions = pd.read_excel(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/flash_data.xlsx',
-                                  header=None)
-        # преобразования списка в numpy массив
-        questions = np.array(questions)
-        if not Q_SEQUENCE:
-            i = 0
-            for q in questions:
-                Q_SEQUENCE.append(i)
-                i += 1
-            random.shuffle(Q_SEQUENCE)
-        Q_NUM = Q_SEQUENCE[0]
-        Q_SEQUENCE.pop(0)
-        question = questions[Q_NUM, 0]
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ['Покажи']])
-        msg = bot.send_message(message.chat.id, question, reply_markup=keyboard)
-        bot.register_next_step_handler(msg, answer)
-
-    elif message.text == 'Всё, хватит' or message.text == 'В другой раз...':
-        keyboard = types.ReplyKeyboardRemove()
-        SUBJECT_NOW = ''
-        Q_SEQUENCE = []
-        bot.send_message(message.chat.id, 'Возвращайся ещё !', reply_markup=keyboard)
-
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ['Выбрать другой параграф', 'В другой раз...']])
-        msg = bot.send_message(message.chat.id, 'Извини, я тебя не понял, можешь повторить ?',
-                               reply_markup=keyboard)
-        bot.register_next_step_handler(msg, subj)
+    if ANSW_ID:
+        bot.delete_message(c.message.chat.id, ANSW_ID)
+    if c.data in SUBJECTS[SUBJECT_NOW].keys():
+        PAR_NUM = SUBJECTS[SUBJECT_NOW][c.data]
+    # импортирую список вопросов
+    questions = pd.read_excel(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/flash_data.xlsx',
+                              header=None)
+    # преобразования списка в numpy массив
+    questions = np.array(questions)
+    if not Q_SEQUENCE:
+        i = 0
+        for q in questions:
+            Q_SEQUENCE.append(i)
+            i += 1
+        random.shuffle(Q_SEQUENCE)
+    Q_NUM = Q_SEQUENCE[0]
+    Q_SEQUENCE.pop(0)
+    question = questions[Q_NUM, 0]
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in ['Покажи']])
+    bot.edit_message_text(
+        chat_id=c.message.chat.id,
+        message_id=c.message.message_id,
+        text=question,
+        parse_mode='Markdown',
+        reply_markup=keyboard)
 
 
-def answer(message):
+@bot.callback_query_handler(func=lambda c: c.data == 'Покажи')
+def answer(c):
     """
     Функция вызывается функцией paragraph(). Присылает пользователю ответ на вопрос.
     :param message: telebot.types.Message
     :return:
     """
-    global Q_NUM, PAR_NUM
-    if message.text == 'Покажи' or message.text == 'Покажи правильный ответ':
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё', 'Всё, хватит']])
-        bot.send_message(message.chat.id, 'Правильный ответ:')
-        with open(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
-            msg = bot.send_photo(message.chat.id, photo, reply_markup=keyboard)
-        bot.register_next_step_handler(msg, paragraph)
-    elif message.text == 'Я не хочу смотреть ответ':
-        keyboard = types.ReplyKeyboardRemove()
-        Q_SEQUENCE = []
-        bot.send_message(message.chat.id, 'Ты не расстраивайся ! Все мы делаем ошибки...', reply_markup=keyboard)
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(
-            *[types.KeyboardButton(name) for name in ['Покажи правильный ответ', 'Я не хочу смотреть ответ']])
-        msg = bot.send_message(message.chat.id,
-                               'Извини, что-то не могу уловить твои мозговые волны... Попробуй ещё раз',
-                               reply_markup=keyboard)
-        bot.register_next_step_handler(msg, answer)
+    global Q_NUM, PAR_NUM, ANSW_ID
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in ['Ещё', 'Всё, хватит']])
+    with open(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
+        bot.edit_message_text(
+            chat_id=c.message.chat.id,
+            message_id=c.message.message_id,
+            text='Правильный ответ',
+            parse_mode='Markdown',
+            reply_markup=keyboard)
+        msg = bot.send_photo(c.message.chat.id, photo)
+        ANSW_ID = msg.message_id
+
+
+@bot.callback_query_handler(func=lambda c: c.data == 'Всё, хватит')
+def stop_cards(c):
+    global ANSW_ID
+    bot.edit_message_text(
+        chat_id=c.message.chat.id,
+        message_id=c.message.message_id,
+        text='Возвращайся ещё 😉',
+        parse_mode='Markdown')
+    bot.delete_message(c.message.chat.id, ANSW_ID)
 
 
 @bot.message_handler(commands=['figure_mnk'])
