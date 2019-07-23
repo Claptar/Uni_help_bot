@@ -70,6 +70,7 @@ comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants'
 crazy_tokens = 0
 ANSW_ID = 0
 
+
 @bot.message_handler(commands=['remove_button'])
 def button_delete(message):
     try:
@@ -170,16 +171,17 @@ def par(message):
         for i in range(0, len(d)):
             Q_NUM = i
             question = d[Q_NUM, 0]
-            msg = bot.send_message(message.chat.id, question)
+            bot.send_message(message.chat.id, question)
             with open(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
-                msg_a = bot.send_photo(message.chat.id, photo)
+                bot.send_photo(message.chat.id, photo)
 
 
 @bot.message_handler(commands=['flash_cards'])
 def flash_cards(message):
     """
     Функция ловит сообщение с коммандой '/flash_cards' и запускает сессию этой функции
-     отправляя кнопки с выбором предмета. Следующее сообщение отправляется в функцию sub
+     отправляя кнопки с выбором предмета. Добавляется inline-клавиатура, нажатие кнопок которой
+     передаются дальше в callback_query_handler
     :param message: telebot.types.Message
     :return:
     """
@@ -190,7 +192,13 @@ def flash_cards(message):
 
 
 @bot.callback_query_handler(func=lambda c: c.data in SUBJECTS.keys())
-def subject(c):  # TODO Добавить документацию
+def subject(c):
+    """
+    Функция ловит callback с названием предмета и изменяет
+     это сообщение на предложение выбора разделов.
+    :param c: telebot.types.CallbackQuery
+    :return:
+    """
     global Q_NUM, PATH, SUBJECT_NOW, SUBJECTS
     keyboard = types.InlineKeyboardMarkup()
     keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in SUBJECTS[c.data].keys()])
@@ -204,7 +212,13 @@ def subject(c):  # TODO Добавить документацию
 
 
 @bot.callback_query_handler(func=lambda c: (c.data in SUBJECTS[SUBJECT_NOW].keys()) or (c.data == 'Ещё'))
-def paragraph(c):  # TODO Документация и имя функции
+def paragraph(c):
+    """
+    Функция ловит callback с названием раздела выбранного ранее предмета
+    и изменяет это сообщение на вопрос из этого раздела.
+    :param c: telebot.types.CallbackQuery
+    :return:
+    """
     global Q_NUM, PATH, PAR_NUM, SUBJECTS, SUBJECT_NOW, Q_SEQUENCE
     if ANSW_ID:
         bot.delete_message(c.message.chat.id, ANSW_ID)
@@ -237,8 +251,8 @@ def paragraph(c):  # TODO Документация и имя функции
 @bot.callback_query_handler(func=lambda c: c.data == 'Покажи')
 def answer(c):
     """
-    Функция вызывается функцией paragraph(). Присылает пользователю ответ на вопрос.
-    :param message: telebot.types.Message
+    Функция ловит callback с текстом "Покажи". Присылает пользователю ответ на вопрос.
+    :param c: telebot.types.CallbackQuery
     :return:
     """
     global Q_NUM, PAR_NUM, ANSW_ID
@@ -257,6 +271,11 @@ def answer(c):
 
 @bot.callback_query_handler(func=lambda c: c.data == 'Всё, хватит')
 def stop_cards(c):
+    """
+    Функция ловит callback с текстом "Всё, хватит". Завершает сеанс игры.
+    :param c: telebot.types.CallbackQuery
+    :return:
+    """
     global ANSW_ID
     bot.edit_message_text(
         chat_id=c.message.chat.id,
