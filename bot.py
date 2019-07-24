@@ -211,7 +211,7 @@ def subject(c):
     SUBJECT_NOW = c.data
 
 
-@bot.callback_query_handler(func=lambda c: (c.data in SUBJECTS[SUBJECT_NOW].keys()) or (c.data == 'Ещё'))
+@bot.callback_query_handler(func=lambda c: (SUBJECT_NOW != '') or (c.data == 'Ещё'))
 def paragraph(c):
     """
     Функция ловит callback с названием раздела выбранного ранее предмета
@@ -292,13 +292,74 @@ def figure_mnk(message):
     :param message: telebot.types.Message
     :return:
     """
-    global MESSAGE_COM
     bot.send_message(message.chat.id, 'Снова лабки делаешь ?) Ох уж эти линеаризованные графики !...'
                                       ' Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
                                       '😉. И не засиживайся, ложись спать))')
-    msg = bot.send_message(message.chat.id, 'Скажи, как мне подписать ось х ?')
-    MESSAGE_COM = 'figure_mnk'
-    bot.register_next_step_handler(msg, ax_x)
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in
+                   ['Название графика', 'Подпись осей', 'Кресты погрешностей', 'Готово']])
+    bot.send_message(message.chat.id, 'Заполните следующие параметры', reply_markup=keyboard)
+
+
+@bot.callback_query_handler(func=lambda c: c.data == 'Название графика')
+def title(c):
+    """
+    Функция ловит callback с текстом "Покажи". Присылает пользователю ответ на вопрос.
+    :param c: telebot.types.CallbackQuery
+    :return:
+    """
+    msg = bot.edit_message_text(
+        chat_id=c.message.chat.id,
+        message_id=c.message.message_id,
+        text='Напиши как мне назвать график или пришли 👻 если хочешь оставить название пустым',
+        parse_mode='Markdown')
+    bot.register_next_step_handler(msg, title_answ)
+
+
+def title_answ(message):
+    if message.text == '👻':
+        math_part.TITLE = ''
+    else:
+        math_part.TITLE = message.text
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in
+                   ['Название графика', 'Подпись осей', 'Кресты погрешностей', 'Готово']])
+    bot.edit_message_text(
+        chat_id=message.chat.id,
+        message_id=message.message_id - 1,
+        text='Заполните следующие параметры',
+        parse_mode='Markdown',
+        reply_markup=keyboard)
+
+
+@bot.callback_query_handler(func=lambda c: c.data == 'Подпись осей')
+def axes(c):
+    """
+    Функция ловит callback с текстом "Покажи". Присылает пользователю ответ на вопрос.
+    :param c: telebot.types.CallbackQuery
+    :return:
+    """
+    msg = bot.edit_message_text(
+        chat_id=c.message.chat.id,
+        message_id=c.message.message_id,
+        text='Напиши как мне подписать оси через \'/\'. Например: Ось Х/Ось У',
+        parse_mode='Markdown')
+    bot.register_next_step_handler(msg, axes_answ)
+
+
+def axes_answ(message):
+    label = message.text
+    math_part.LABEL_X = label.split('/')[0]
+    math_part.LABEL_Y = label.split('/')[1]
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in
+                   ['Название графика', 'Подпись осей', 'Кресты погрешностей', 'Готово']])
+    bot.edit_message_text(
+        chat_id=message.chat.id,
+        message_id=message.message_id - 1,
+        text='Заполни следующие параметры',
+        parse_mode='Markdown',
+        reply_markup=keyboard)
 
 
 @bot.message_handler(commands=['mnk_constants'])
