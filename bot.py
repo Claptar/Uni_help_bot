@@ -467,8 +467,7 @@ def get_weekday(message):
 
 def get_schedule(message):
     """
-    Функция считывает день недели, вызывает функцию get_timetable из модуля timetable,
-    отправляет пользователю раписание из файла.
+    Функция будет делать вообще не это
     :param message: telebot.types.Message
     :return:
     """
