@@ -60,7 +60,7 @@ for j in range(3, kurs_1.max_column):  # смотрим на значения п
                     if len(time[0][:-2]) == 1:
                         time[0] = '0' + time[0]
                     time = time[0][:-2] + ':' + time[0][-2:] + ' – ' + time[2][:-2] + ':' + time[2][-2:]
-                    group[day][time] = pair
+                    group[day][time] = pair  # записываем значение в расписание
 
         group = pd.DataFrame(group)  # заменяем None на более красивые прочерки
         group.replace(to_replace=[None], value='–', inplace=True)
