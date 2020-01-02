@@ -13,7 +13,7 @@ import timetable.timetable
 from math_module import math_part
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
-TOKEN = '893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0'
+TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
 PATH = os.path.abspath('')
 bot = telebot.TeleBot(TOKEN)
 MESSAGE_NUM = 0
@@ -69,6 +69,10 @@ comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants'
 
 crazy_tokens = 0
 ANSW_ID = 0
+
+#Plot constants
+PLOT_MESSEGE = 0
+PLOT_BUTTONS = ['Название графика', 'Подпись осей', 'Кресты погрешностей', 'Готово', 'MНК']
 
 
 @bot.message_handler(commands=['remove_button'])
@@ -292,150 +296,58 @@ def figure_mnk(message):
     :param message: telebot.types.Message
     :return:
     """
-    bot.send_message(message.chat.id, 'Снова лабки делаешь ?) Ох уж эти линеаризованные графики !...'
+    global MESSAGE_COM
+    bot.send_message(message.chat.id, 'Снова лабки делаешь ?) Ох уж эти графики !...'
                                       ' Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
                                       '😉. И не засиживайся, ложись спать))')
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in
-                   ['Название графика', 'Подпись осей', 'Кресты погрешностей', 'Готово']])
-    bot.send_message(message.chat.id, 'Заполните следующие параметры', reply_markup=keyboard)
-
-
-@bot.callback_query_handler(func=lambda c: c.data == 'Название графика')
-def title(c):
-    """
-    Функция ловит callback с текстом "Покажи". Присылает пользователю ответ на вопрос.
-    :param c: telebot.types.CallbackQuery
-    :return:
-    """
-    msg = bot.edit_message_text(
-        chat_id=c.message.chat.id,
-        message_id=c.message.message_id,
-        text='Напиши как мне назвать график или пришли 👻 если хочешь оставить название пустым',
-        parse_mode='Markdown')
-    bot.register_next_step_handler(msg, title_answ)
-
-
-def title_answ(message):
-    if message.text == '👻':
-        math_part.TITLE = ''
-    else:
-        math_part.TITLE = message.text
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in
-                   ['Название графика', 'Подпись осей', 'Кресты погрешностей', 'Готово']])
-    bot.edit_message_text(
-        chat_id=message.chat.id,
-        message_id=message.message_id - 1,
-        text='Заполните следующие параметры',
-        parse_mode='Markdown',
-        reply_markup=keyboard)
-
-
-@bot.callback_query_handler(func=lambda c: c.data == 'Подпись осей')
-def axes(c):
-    """
-    Функция ловит callback с текстом "Покажи". Присылает пользователю ответ на вопрос.
-    :param c: telebot.types.CallbackQuery
-    :return:
-    """
-    msg = bot.edit_message_text(
-        chat_id=c.message.chat.id,
-        message_id=c.message.message_id,
-        text='Напиши как мне подписать оси через \'/\'. Например: Ось Х/Ось У',
-        parse_mode='Markdown')
-    bot.register_next_step_handler(msg, axes_answ)
-
-
-def axes_answ(message):
-    label = message.text
-    math_part.LABEL_X = label.split('/')[0]
-    math_part.LABEL_Y = label.split('/')[1]
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in
-                   ['Название графика', 'Подпись осей', 'Кресты погрешностей', 'Готово']])
-    bot.edit_message_text(
-        chat_id=message.chat.id,
-        message_id=message.message_id - 1,
-        text='Заполни следующие параметры',
-        parse_mode='Markdown',
-        reply_markup=keyboard)
-
-
-@bot.message_handler(commands=['mnk_constants'])
-def mnk_constants(message):
-    """
-    Функция ловит сообщение с текстом "/mnk_constants". Является первой функцией в сессии рисования графика.
-    Вызывает ax_x()
-    :param message: telebot.types.Message
-    :return:
-    """
-    global MESSAGE_COM
-    bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
-                                      ' Даа, непростая задача, так и быть, помогу тебе ! ')
-    bot.send_message(message.chat.id, 'Пришли мне файл с данными вот в таком формате и всё будет готово😊')
-    with open(f'{PATH}/math_module/example.jpg', 'rb') as photo:
-        msg = bot.send_photo(message.chat.id, photo)
-    MESSAGE_COM = 'mnk_constants'
-    bot.register_next_step_handler(msg, date_mnk)
-
-
-@bot.message_handler(commands=['figure'])
-def figure(message):
-    """
-    Ловит сообщение с текстом "/figure". Является первой функцией в сессии рисования графика. Вызывает ax_x()
-    :param message: telebot.types.Message
-    :return:
-    """
-    global MESSAGE_COM
-    MESSAGE_COM = 'figure'
-    bot.send_message(message.chat.id, 'Ой, а что это у тебя за зависимость такая?) Мне даже самому интересно стало.'
-                                      ' Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
-                                      '😉))')
-    msg = bot.send_message(message.chat.id, 'Скажи, как мне подписать ось х ?')
-    bot.register_next_step_handler(msg, ax_x)
-
-
-def ax_x(message):
-    """
-    Функция вызывается firure(), записывает введёное пользователем название оси Х
-    :param message: telebot.types.Message
-    :return:
-    """
-    math_part.LABEL_X = message.text
-    msg = bot.send_message(message.chat.id, 'А, как мне подписать ось у ?')
-    bot.register_next_step_handler(msg, ax_y)
-
-
-def ax_y(message):
-    """
-    Функция вызывается ax_x(), записывает введённое пользователем название оси У, вызывает ax_y()
-    :param message: telebot.types.Message
-    :return:
-    """
-    math_part.LABEL_Y = message.text
-    msg = bot.send_message(message.chat.id, 'Самое главное: как мне назвать график ?')
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Без названия']])
+    msg = bot.send_message(message.chat.id, 'Как мы назовём график ?'
+                                            ' Если не хочешь называть нажми кнопку ниже 😉', reply_markup=keyboard)
+    MESSAGE_COM = 'figure_mnk'
     bot.register_next_step_handler(msg, tit)
 
 
 def tit(message):
     """
     Функция вызывается ax_x(), записывает введённое пользователем название графика, вызывает data_mnk()
-    :param message:
+    :param message: сообщение пользователя
     :return:
     """
-    if message.text == 'Видимо не в этот раз ...':
-        keyboard = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id, 'Ну ладно... 😥', reply_markup=keyboard)
+    if message.text == 'Без названия':
+        math_part.TITLE = ''
     else:
-        if message.text == 'Попробую ещё раз':
-            keyboard = types.ReplyKeyboardRemove()
-            bot.send_message(message.chat.id, 'Давай попробуем ещё раз😔', reply_markup=keyboard)
         math_part.TITLE = message.text
-        bot.send_message(message.chat.id, 'Пришли мне файл с данными вот в таком формате и всё будет готово😊')
-        with open(f'{PATH}/math_module/example.jpg', 'rb') as photo:
-            msg = bot.send_photo(message.chat.id, photo)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌']])
+    msg = bot.send_message(message.chat.id, 'Прямую по МНК строим ?', reply_markup=keyboard)
+    bot.register_next_step_handler(msg, date_mnk)
+
+def mnk(message):
+    """
+    Функция вызывается tit(), записывается выбор пользователя: строить мнк прямую или нет. Вызывает
+    :param message: сообщение пользователя
+    :return:
+    """
+    if message.text == '✅':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
+        msg = bot.send_message(message.chat.id, 'Пришли данные для крестов погрешностей по осям х и y в '
+                                                'формате "123.213/123.231", если кресты не нужны,'
+                                                ' нажми на кнопку ниже', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, error_bars)
+    elif message.text == '❌':
+        keyboard = types.ReplyKeyboardRemove
+        msg = bot.send_message(message.chat.id,
+                               'Пришли xlsx файл с данными и всё будет готово')
         bot.register_next_step_handler(msg, date_mnk)
+
+def error_bars(message):
+    math_part.ERRORS = map(float, message.text.split('/'))
+    keyboard = types.ReplyKeyboardRemove
+    msg = bot.send_message(message.chat.id,
+                           'Пришли xlsx файл с данными и всё будет готово', keyboard)
+    bot.register_next_step_handler(msg, date_mnk)
 
 
 def date_mnk(message):
@@ -488,7 +400,6 @@ def date_mnk(message):
         msg = bot.send_message(message.chat.id,
                                'Что-то не получилось... Проверь файл который ты прислал😨 ', reply_markup=keyboard)
         bot.register_next_step_handler(msg, tit)
-
 
 @bot.message_handler(commands=['timetable'])
 def get_group(message):
