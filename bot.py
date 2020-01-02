@@ -9,7 +9,7 @@ import telebot
 from telebot import types
 
 import texting.texting_symbols
-import timetable.timetable_old
+import timetable.timetable
 from math_module import math_part
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
@@ -21,6 +21,7 @@ MESSAGE_COM = ''
 Q_NUM = 0
 PAR_NUM = 0
 GROUP_NUM = ''
+COURSE_NUM = 0
 SUBJECT_NOW = ''
 Q_SEQUENCE = []
 SUBJECTS_PATH = {
@@ -69,6 +70,19 @@ comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants'
 
 crazy_tokens = 0
 ANSW_ID = 0
+
+
+def represents_int(s):
+    """
+    Функция, проверяющая, является ли строка числом
+    :param s: строка
+    :return: True, если строку можно представить в виде числа, иначе False
+    """
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
 
 
 @bot.message_handler(commands=['remove_button'])
@@ -231,7 +245,7 @@ def paragraph(c):
     questions = np.array(questions)
     if not Q_SEQUENCE:
         i = 0
-        for q in questions:
+        for _ in questions:
             Q_SEQUENCE.append(i)
             i += 1
         random.shuffle(Q_SEQUENCE)
@@ -430,23 +444,35 @@ def date_mnk(message):
 
 
 @bot.message_handler(commands=['timetable'])
-def get_group(message):
+def get_course(message):
     """
     Функция ловит сообщение с текстом "/timetable".
-    Отправляет пользователю вопрос о номере группы. Вызывает функцию get_weekday().
+    Отправляет пользователю вопрос о номере курса. Вызывает функцию get_group()
     :param message: telebot.types.Message
     :return:
     """
-    if message.text == 'Ладно, сам посмотрю':
-        keyboard = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id, '😞', reply_markup=keyboard)
-    else:
-        bot.send_message(message.chat.id, 'Снова не можешь вспомнить какая пара следующая?)'
-                                          'Ничего, я уже тут!')
-        keyboard = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id,
-                         'Не подскажешь номер своей группы? (В формате Б00-000)', reply_markup=keyboard)
-        bot.register_next_step_handler(message, get_weekday)
+    bot.send_message(message.chat.id, 'Снова не можешь вспомнить какая пара следующая?)'
+                                      'Ничего, я уже тут!')
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in range(1, 7)])
+    msg = bot.send_message(message.chat.id, 'Не подскажешь номер своего курса?', reply_markup=keyboard)
+    bot.register_next_step_handler(msg, get_group)
+
+
+def get_group(message):
+    """
+    Функция сохраняет номер курса и отправляет пользователю вопрос о номере группы.
+    Вызывает функцию get_weekday().
+    :param message: telebot.types.Message
+    :return:
+    """
+    global COURSE_NUM
+    COURSE_NUM = message.text
+    keyboard = types.ReplyKeyboardRemove()
+    bot.send_message(message.chat.id,
+                     'Не подскажешь номер своей группы? (В формате L0N–YFx или YFx)',
+                     reply_markup=keyboard)
+    bot.register_next_step_handler(message, get_weekday)
 
 
 def get_weekday(message):
@@ -460,9 +486,13 @@ def get_weekday(message):
     GROUP_NUM = message.text
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(
-        *[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']])
-    msg = bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, get_schedule)
+        *[types.KeyboardButton(name) for name in [
+            'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'
+        ]
+          ]
+    )
+    bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
+    bot.register_next_step_handler(message, get_schedule)
 
 
 def get_schedule(message):
@@ -471,29 +501,16 @@ def get_schedule(message):
     :param message: telebot.types.Message
     :return:
     """
-    if message.text in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']:
-        timetable.timetable_old.get_timetable(GROUP_NUM, message.text)
-        f = open(f'{PATH}/timetable/class.txt')
-        msg = ''
-        for line in f:
-            bot.send_message(message.chat.id, line)
-            msg += line
-        open(f'{PATH}/timetable/class.txt', 'w').close()
-        if msg != '':
-            keyboard = types.ReplyKeyboardRemove()
-            bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
-        else:
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
-            msg = bot.send_message(message.chat.id,
-                                   'Что-то не получилось... Ты мне точно прислал номер группы в правильном формате ?',
-                                   reply_markup=keyboard)
-            bot.register_next_step_handler(msg, get_group)
+    schedule = timetable.timetable.timetable_by_group(COURSE_NUM, GROUP_NUM, message.text)
+    if schedule:
+        bot.send_message(message.chat.id, schedule)
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
         msg = bot.send_message(message.chat.id,
-                               'Какой интересный день недели, извини, я такого не знаю... ?',
+                               'Что-то не получилось... Ты мне точно прислал номер группы в правильном формате ?',
                                reply_markup=keyboard)
         bot.register_next_step_handler(msg, get_group)
 
