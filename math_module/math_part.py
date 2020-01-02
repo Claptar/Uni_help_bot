@@ -13,6 +13,7 @@ TITLE = ''
 BOT_PLOT = False
 PATH = os.path.abspath('')
 ERROR_BAR = True
+LABEL = []
 
 
 def data_conv(data_file):
@@ -21,7 +22,9 @@ def data_conv(data_file):
     :param data_file: название файла
     :return: [x,y]
     """
-    dataset = pd.read_excel(data_file, header=None)
+    global LABEL
+    dataset = pd.read_excel(data_file)
+    LABEL = dataset.columns
     d = np.array(dataset)
     x = d[:, 0]
     y = d[:, 1]
@@ -57,32 +60,7 @@ def const_dev(x, y):
     return [plt_const(x, y)[2], plt_const(x, y)[3]]
 
 
-def plot_drawer(data_file, x_lb, y_lb, tit):
-    """
-    Функция считывает данные из таблицы и строит график по этим данным
-    :param data_file: Название файла с данными
-    :param x_lb: подпись оси абсцисс
-    :param y_lb: оси ординат
-    :param tit: название графика
-    :return:
-    """
-    dataset = pd.read_excel(data_file, header=None)
-    d = np.array(dataset)
-    x = d[:, 0]
-    y = d[:, 1]
-    plt.plot(x, y, 'ro')
-    plt.xlabel(x_lb)
-    plt.ylabel(y_lb)
-    plt.title(tit)
-    plt.grid(True)
-    if BOT_PLOT:
-        plt.savefig('plot.png')
-    else:
-        plt.show()
-    plt.clf()
-
-
-def plots_drawer(data_file, x_lb, y_lb, tit, xerr, yerr, mnk):
+def plots_drawer(data_file, tit, xerr, yerr, mnk):
     """
     Функция считывает данные из таблицы и строит графики с МНК по этим данным
     :param data_file: Название файла с данными
@@ -94,7 +72,7 @@ def plots_drawer(data_file, x_lb, y_lb, tit, xerr, yerr, mnk):
     :param mnk: type Bool, При True строится прямая мнк
     :return:
     """
-    dataset = pd.read_excel(data_file, header=None)
+    dataset = pd.read_excel(data_file)
     d = np.array(dataset)[1:, :]
     a = []
     b = []
@@ -117,8 +95,8 @@ def plots_drawer(data_file, x_lb, y_lb, tit, xerr, yerr, mnk):
     if mnk:
         for i in range(0, len(x)):
             plt.plot(np.array(x_[i]), a[i]*(np.array(x_[i])) + b[i], 'r')
-    plt.xlabel(x_lb)
-    plt.ylabel(y_lb)
+    plt.xlabel(dataset.columns[0])
+    plt.ylabel(dataset.columns[1])
     lab = np.array(dataset)[0, :]
     lab1 = []
     for i in range(0, len(lab)):
@@ -179,3 +157,6 @@ def error_calc(equation, var_list, point_list, error_list):
         sigma += error_list[number] ** 2 * der ** 2  # считем погрешность
 
     return sigma
+
+
+plots_drawer('123.xlsx', 'График', 0, 0, True)
