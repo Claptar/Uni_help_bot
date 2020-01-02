@@ -12,8 +12,9 @@ LABEL_Y = ''
 TITLE = ''
 BOT_PLOT = False
 PATH = os.path.abspath('')
-ERROR_BAR = True
+ERROR_BAR = False
 LABEL = []
+ERRORS = [0, 0]
 
 
 def data_conv(data_file):
@@ -118,7 +119,7 @@ def mnk_calc(data_file):
     :param data_file: Название файла с данными
     :return: [a - коэф. прямой, b - коэф. прямой, погрешность а, погрешность b]
     """
-    dataset = pd.read_excel(data_file, header=None)
+    dataset = pd.read_excel(data_file)
     d = np.array(dataset)
     a = []
     b = []
@@ -136,7 +137,6 @@ def mnk_calc(data_file):
         d_b.append(r[3])
 
     return [a, b, d_a, d_b]
-
 
 def error_calc(equation, var_list, point_list, error_list):
     """
@@ -157,6 +157,3 @@ def error_calc(equation, var_list, point_list, error_list):
         sigma += error_list[number] ** 2 * der ** 2  # считем погрешность
 
     return sigma
-
-
-plots_drawer('123.xlsx', 'График', 0, 0, True)
