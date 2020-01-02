@@ -9,7 +9,7 @@ import telebot
 from telebot import types
 
 import texting.texting_symbols
-import timetable.timetable
+import timetable.timetable_old
 from math_module import math_part
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
@@ -472,7 +472,7 @@ def get_schedule(message):
     :return:
     """
     if message.text in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']:
-        timetable.timetable.get_timetable(GROUP_NUM, message.text)
+        timetable.timetable_old.get_timetable(GROUP_NUM, message.text)
         f = open(f'{PATH}/timetable/class.txt')
         msg = ''
         for line in f:
@@ -522,7 +522,7 @@ def get_exam_timetable(message):
     :return:
     """
     if message.text in texting.texting_symbols.groups:
-        timetable.timetable.get_exam_timetable(message.text)
+        timetable.timetable_old.get_exam_timetable(message.text)
         f = open(f'{PATH}/timetable/exam.txt')
         for line in f:
             bot.send_message(message.chat.id, line)
