@@ -13,7 +13,7 @@ import timetable.timetable
 from math_module import math_part
 
 base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
-TOKEN = '893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0'
+TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
 PATH = os.path.abspath('')
 bot = telebot.TeleBot(TOKEN)
 MESSAGE_NUM = 0
@@ -69,6 +69,10 @@ comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants'
 
 crazy_tokens = 0
 ANSW_ID = 0
+
+#Plot constants
+PLOT_MESSEGE = 0
+PLOT_BUTTONS = ['Название графика', 'Подпись осей', 'Кресты погрешностей', 'Готово', 'MНК']
 
 
 @bot.message_handler(commands=['remove_button'])
@@ -211,7 +215,7 @@ def subject(c):
     SUBJECT_NOW = c.data
 
 
-@bot.callback_query_handler(func=lambda c: (c.data in SUBJECTS[SUBJECT_NOW].keys()) or (c.data == 'Ещё'))
+@bot.callback_query_handler(func=lambda c: (SUBJECT_NOW != '') or (c.data == 'Ещё'))
 def paragraph(c):
     """
     Функция ловит callback с названием раздела выбранного ранее предмета
@@ -293,88 +297,60 @@ def figure_mnk(message):
     :return:
     """
     global MESSAGE_COM
-    bot.send_message(message.chat.id, 'Снова лабки делаешь ?) Ох уж эти линеаризованные графики !...'
+    bot.send_message(message.chat.id, 'Снова лабки делаешь ?) Ох уж эти графики !...'
                                       ' Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
                                       '😉. И не засиживайся, ложись спать))')
-    msg = bot.send_message(message.chat.id, 'Скажи, как мне подписать ось х ?')
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Без названия']])
+    msg = bot.send_message(message.chat.id, 'Как мы назовём график ?'
+                                            ' Если не хочешь называть нажми кнопку ниже 😉', reply_markup=keyboard)
     MESSAGE_COM = 'figure_mnk'
-    bot.register_next_step_handler(msg, ax_x)
-
-
-@bot.message_handler(commands=['mnk_constants'])
-def mnk_constants(message):
-    """
-    Функция ловит сообщение с текстом "/mnk_constants". Является первой функцией в сессии рисования графика.
-    Вызывает ax_x()
-    :param message: telebot.types.Message
-    :return:
-    """
-    global MESSAGE_COM
-    bot.send_message(message.chat.id, 'Хочешь узнать константы прямых по МНК ?)'
-                                      ' Даа, непростая задача, так и быть, помогу тебе ! ')
-    bot.send_message(message.chat.id, 'Пришли мне файл с данными вот в таком формате и всё будет готово😊')
-    with open(f'{PATH}/math_module/example.jpg', 'rb') as photo:
-        msg = bot.send_photo(message.chat.id, photo)
-    MESSAGE_COM = 'mnk_constants'
-    bot.register_next_step_handler(msg, date_mnk)
-
-
-@bot.message_handler(commands=['figure'])
-def figure(message):
-    """
-    Ловит сообщение с текстом "/figure". Является первой функцией в сессии рисования графика. Вызывает ax_x()
-    :param message: telebot.types.Message
-    :return:
-    """
-    global MESSAGE_COM
-    MESSAGE_COM = 'figure'
-    bot.send_message(message.chat.id, 'Ой, а что это у тебя за зависимость такая?) Мне даже самому интересно стало.'
-                                      ' Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
-                                      '😉))')
-    msg = bot.send_message(message.chat.id, 'Скажи, как мне подписать ось х ?')
-    bot.register_next_step_handler(msg, ax_x)
-
-
-def ax_x(message):
-    """
-    Функция вызывается firure(), записывает введёное пользователем название оси Х
-    :param message: telebot.types.Message
-    :return:
-    """
-    math_part.LABEL_X = message.text
-    msg = bot.send_message(message.chat.id, 'А, как мне подписать ось у ?')
-    bot.register_next_step_handler(msg, ax_y)
-
-
-def ax_y(message):
-    """
-    Функция вызывается ax_x(), записывает введённое пользователем название оси У, вызывает ax_y()
-    :param message: telebot.types.Message
-    :return:
-    """
-    math_part.LABEL_Y = message.text
-    msg = bot.send_message(message.chat.id, 'Самое главное: как мне назвать график ?')
     bot.register_next_step_handler(msg, tit)
 
 
 def tit(message):
     """
     Функция вызывается ax_x(), записывает введённое пользователем название графика, вызывает data_mnk()
-    :param message:
+    :param message: сообщение пользователя
     :return:
     """
-    if message.text == 'Видимо не в этот раз ...':
-        keyboard = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id, 'Ну ладно... 😥', reply_markup=keyboard)
+    if message.text == 'Без названия':
+        math_part.TITLE = ''
     else:
-        if message.text == 'Попробую ещё раз':
-            keyboard = types.ReplyKeyboardRemove()
-            bot.send_message(message.chat.id, 'Давай попробуем ещё раз😔', reply_markup=keyboard)
         math_part.TITLE = message.text
-        bot.send_message(message.chat.id, 'Пришли мне файл с данными вот в таком формате и всё будет готово😊')
-        with open(f'{PATH}/math_module/example.jpg', 'rb') as photo:
-            msg = bot.send_photo(message.chat.id, photo)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌']])
+    msg = bot.send_message(message.chat.id, 'Прямую по МНК строим ?', reply_markup=keyboard)
+    bot.register_next_step_handler(msg, mnk)
+
+
+def mnk(message):
+    """
+    Функция вызывается tit(), записывается выбор пользователя: строить мнк прямую или нет. Вызывает
+    :param message: сообщение пользователя
+    :return:
+    """
+    if message.text == '✅':
+        math_part.ERROR_BAR = True
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
+        msg = bot.send_message(message.chat.id, 'Пришли данные для крестов погрешностей по осям х и y в '
+                                                'формате "123.213/123.231", если кресты не нужны,'
+                                                ' нажми на кнопку ниже', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, error_bars)
+    elif message.text == '❌':
+        keyboard = types.ReplyKeyboardRemove()
+        msg = bot.send_message(message.chat.id,
+                               'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
         bot.register_next_step_handler(msg, date_mnk)
+
+
+def error_bars(message):
+    math_part.ERRORS = list(map(float, message.text.split('/')))
+    keyboard = types.ReplyKeyboardRemove()
+    msg = bot.send_message(message.chat.id,
+                           'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
+    bot.register_next_step_handler(msg, date_mnk)
 
 
 def date_mnk(message):
@@ -384,49 +360,30 @@ def date_mnk(message):
     :param message:
     :return:
     """
-    try:
-        global MESSAGE_COM
-        file_id = message.json.get('document').get('file_id')
-        file_path = bot.get_file(file_id).file_path
-        downloaded_file = bot.download_file(file_path)
-        src = message.document.file_name
-        with open(src, 'wb') as new_file:
-            new_file.write(downloaded_file)
-        a, b, d_a, d_b = math_part.mnk_calc(src)
-        if MESSAGE_COM == 'figure_mnk':
-            math_part.BOT_PLOT = True
-            math_part.plots_drawer(src, math_part.LABEL_X, math_part.LABEL_Y, math_part.TITLE)
-            with open('plot.png', 'rb') as photo:
-                bot.send_photo(message.chat.id, photo)
-            for i in range(0, len(a)):
-                bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
-                                                  f" a = {a[i]} +- {d_a[i], 6}\n"
-                                                  f" b = {b[i]} +- {d_b[i], 6}")
-            os.remove('plot.png')
-            math_part.BOT_PLOT = False
-        elif MESSAGE_COM == 'figure':
-            math_part.BOT_PLOT = True
-            math_part.plot_drawer(src, math_part.LABEL_X, math_part.LABEL_Y, math_part.TITLE)
-            with open('plot.png', 'rb') as photo:
-                bot.send_document(message.chat.id, photo)
-            os.remove('plot.png')
-            math_part.BOT_PLOT = False
-        elif MESSAGE_COM == 'mnk_constants':
-            for i in range(0, len(a)):
-                bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
-                                                  f" a = {a[i]} +- {d_a[i], 6}\n"
-                                                  f" b = {b[i]} +- {d_b[i], 6}")
-        os.remove(src)
-        math_part.TITLE = ''
-        math_part.LABEL_Y = ''
-        math_part.LABEL_X = ''
-    except Exception as e:
-        print(e)
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Видимо не в этот раз ...']])
-        msg = bot.send_message(message.chat.id,
-                               'Что-то не получилось... Проверь файл который ты прислал😨 ', reply_markup=keyboard)
-        bot.register_next_step_handler(msg, tit)
+    file_id = message.json.get('document').get('file_id')
+    file_path = bot.get_file(file_id).file_path
+    downloaded_file = bot.download_file(file_path)
+    src = message.document.file_name
+    with open(src, 'wb') as new_file:
+        new_file.write(downloaded_file)
+    a, b, d_a, d_b = math_part.mnk_calc(src)
+    math_part.BOT_PLOT = True
+    math_part.plots_drawer(src, math_part.TITLE, math_part.ERRORS[0], math_part.ERRORS[1], math_part.ERROR_BAR)
+    with open('plot.pdf', 'rb') as photo:
+        bot.send_document(message.chat.id, photo)
+    for i in range(0, len(a)):
+        bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
+                                          f" a = {a[i]} +- {d_a[i], 6}\n"
+                                          f" b = {b[i]} +- {d_b[i], 6}")
+    os.remove('plot.pdf')
+    with open('plot.png', 'rb') as photo:
+        bot.send_document(message.chat.id, photo)
+    os.remove('plot.png')
+    math_part.BOT_PLOT = False
+    os.remove(src)
+    math_part.TITLE = ''
+    math_part.ERRORS = [0, 0]
+    math_part.ERROR_BAR = False
 
 
 @bot.message_handler(commands=['timetable'])
