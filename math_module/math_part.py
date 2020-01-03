@@ -12,7 +12,9 @@ LABEL_Y = ''
 TITLE = ''
 BOT_PLOT = False
 PATH = os.path.abspath('')
-ERROR_BAR = True
+ERROR_BAR = False
+LABEL = []
+ERRORS = [0, 0]
 
 
 def data_conv(data_file):
@@ -21,7 +23,9 @@ def data_conv(data_file):
     :param data_file: название файла
     :return: [x,y]
     """
-    dataset = pd.read_excel(data_file, header=None)
+    global LABEL
+    dataset = pd.read_excel(data_file)
+    LABEL = dataset.columns
     d = np.array(dataset)
     x = d[:, 0]
     y = d[:, 1]
@@ -57,76 +61,54 @@ def const_dev(x, y):
     return [plt_const(x, y)[2], plt_const(x, y)[3]]
 
 
-def plot_drawer(data_file, x_lb, y_lb, tit):
-    """
-    Функция считывает данные из таблицы и строит график по этим данным
-    :param data_file: Название файла с данными
-    :param x_lb: подпись оси абсцисс
-    :param y_lb: оси ординат
-    :param tit: название графика
-    :return:
-    """
-    dataset = pd.read_excel(data_file, header=None)
-    d = np.array(dataset)
-    x = d[:, 0]
-    y = d[:, 1]
-    plt.plot(x, y, 'ro')
-    plt.xlabel(x_lb)
-    plt.ylabel(y_lb)
-    plt.title(tit)
-    plt.grid(True)
-    if BOT_PLOT:
-        plt.savefig('plot.png')
-    else:
-        plt.show()
-    plt.clf()
-
-
-def plots_drawer(data_file, x_lb, y_lb, tit):
+def plots_drawer(data_file, tit, xerr, yerr, mnk):
     """
     Функция считывает данные из таблицы и строит графики с МНК по этим данным
     :param data_file: Название файла с данными
     :param x_lb: подпись оси абсцисс
     :param y_lb: оси ординат
     :param tit: название графика
+    :param xerr: погрешность по х
+    :param yerr: погрешность по y
+    :param mnk: type Bool, При True строится прямая мнк
     :return:
     """
-    dataset = pd.read_excel(data_file, header=None)
-    d = np.array(dataset)
+    dataset = pd.read_excel(data_file)
+    d = np.array(dataset)[1:, :]
     a = []
     b = []
     x = []
     y = []
     x_ = []
-    for i in range(0, len(d[1, :] - 1), 2):
+    for i in range(0, len(d[0, :] - 1) // 2 * 2, 2):
         r = plt_const(d[:, i], d[:, i + 1])
         x.append(d[:, i])
         y.append(d[:, i + 1])
         a.append(r[0])
         b.append(r[1])
+    if mnk:
+        for i in range(0, len(x)):
+            if xerr != 0 or yerr != 0:
+                plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='k+')
     for i in range(0, len(x)):
-        sigmas_x = np.sum(x[i] * x[i]) / len(x[i]) - (np.sum(x[i]) / len(x[i])) ** 2
-        sigmas_y = np.sum(y[i] * y[i]) / len(y[i]) - (np.sum(y[i]) / len(y[i])) ** 2
-        if sigmas_y > 1:
-            xerr = math.sqrt(sigmas_x)
-        else:
-            xerr = sigmas_x
-
-        if sigmas_y > 1:
-            yerr = math.sqrt(sigmas_y)
-        else:
-            yerr = sigmas_y
-        if ERROR_BAR:
-            #plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='o')
-            print(1)
         delta = (max(x[i]) - min(x[i]))/len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
-        plt.plot(x[i], y[i], 'o', np.array(x_[i]), a[i]*(np.array(x_[i])) + b[i])
-    plt.xlabel(x_lb)
-    plt.ylabel(y_lb)
+        plt.plot(x[i], y[i], 'o')
+    if mnk:
+        for i in range(0, len(x)):
+            plt.plot(np.array(x_[i]), a[i]*(np.array(x_[i])) + b[i], 'r')
+    plt.xlabel(dataset.columns[0])
+    plt.ylabel(dataset.columns[1])
+    lab = np.array(dataset)[0, :]
+    lab1 = []
+    for i in range(0, len(lab)):
+        if type(lab[i]) == str:
+            lab1.append(lab[i])
+    plt.legend(lab1)
     plt.title(tit)
     plt.grid(True)
     if BOT_PLOT:
+        plt.savefig('plot.pdf')
         plt.savefig('plot.png')
     else:
         plt.show()
@@ -139,7 +121,7 @@ def mnk_calc(data_file):
     :param data_file: Название файла с данными
     :return: [a - коэф. прямой, b - коэф. прямой, погрешность а, погрешность b]
     """
-    dataset = pd.read_excel(data_file, header=None)
+    dataset = pd.read_excel(data_file)
     d = np.array(dataset)
     a = []
     b = []
@@ -157,7 +139,6 @@ def mnk_calc(data_file):
         d_b.append(r[3])
 
     return [a, b, d_a, d_b]
-
 
 def error_calc(equation, var_list, point_list, error_list):
     """
