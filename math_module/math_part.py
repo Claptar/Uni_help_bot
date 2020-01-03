@@ -109,6 +109,7 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     plt.grid(True)
     if BOT_PLOT:
         plt.savefig('plot.pdf')
+        plt.savefig('plot.png')
     else:
         plt.show()
     plt.clf()
