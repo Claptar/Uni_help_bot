@@ -72,6 +72,19 @@ crazy_tokens = 0
 ANSW_ID = 0
 
 
+def represents_int(s: str):
+    """
+    Функция, определяющая, может ли строка быть представлена в виде числа.
+    :param s: строка
+    :return: True, если строку можно представить в виде числа, иначе False
+    """
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+
 @bot.message_handler(commands=['remove_button'])
 def button_delete(message):
     try:
@@ -438,12 +451,21 @@ def get_course(message):
     :param message: telebot.types.Message
     :return:
     """
-    bot.send_message(message.chat.id, 'Снова не можешь вспомнить какая пара следующая?)'
-                                      'Ничего, я уже тут!')
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in range(1, 7)])
-    msg = bot.send_message(message.chat.id, 'Не подскажешь номер своего курса?', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, get_group)
+    if message.text == '/timetable':
+        bot.send_message(message.chat.id, 'Снова не можешь вспомнить какая пара следующая? :) '
+                                          'Ничего, я уже тут!')
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in range(1, 7)])
+        msg = bot.send_message(message.chat.id, 'Не подскажешь номер своего курса?', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, get_group)
+    elif message.text == 'Ладно, сам посмотрю':
+        bot.send_message(message.chat.id, 'Без проблем! '
+                                          'Но ты это, заходи, если что :)')
+    elif message.text == 'Попробую ещё раз':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in range(1, 7)])
+        msg = bot.send_message(message.chat.id, 'Не подскажешь номер своего курса?', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, get_group)
 
 
 def get_group(message):
@@ -454,12 +476,20 @@ def get_group(message):
     :return:
     """
     global COURSE_NUM
-    COURSE_NUM = message.text
-    keyboard = types.ReplyKeyboardRemove()
-    bot.send_message(message.chat.id,
-                     'Не подскажешь номер своей группы? (В формате L0N–YFx или YFx)',
-                     reply_markup=keyboard)
-    bot.register_next_step_handler(message, get_weekday)
+    if represents_int(message.text):
+        COURSE_NUM = message.text
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id,
+                         'Не подскажешь номер своей группы? (В формате L0N–YFx или YFx)',
+                         reply_markup=keyboard)
+        bot.register_next_step_handler(message, get_weekday)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
+        msg = bot.send_message(message.chat.id,
+                               'Что-то не получилось... Ты мне точно прислал номер курса?',
+                               reply_markup=keyboard)
+        bot.register_next_step_handler(msg, get_course)
 
 
 def get_weekday(message):
@@ -496,9 +526,10 @@ def get_schedule(message):
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
         msg = bot.send_message(message.chat.id,
-                               'Что-то не получилось... Ты мне точно прислал номер группы в правильном формате ?',
+                               'Что-то не получилось... Ты мне точно прислал номера курса и группы в правильном '
+                               'формате?',
                                reply_markup=keyboard)
-        bot.register_next_step_handler(msg, get_group)
+        bot.register_next_step_handler(msg, get_course)
     else:
         schedule = schedule.to_frame().to_string()
         bot.send_message(message.chat.id, schedule)
