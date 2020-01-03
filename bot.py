@@ -72,19 +72,6 @@ crazy_tokens = 0
 ANSW_ID = 0
 
 
-def represents_int(s: str):
-    """
-    Функция, определяющая, может ли строка быть представлена в виде числа.
-    :param s: строка
-    :return: True, если строку можно представить в виде числа, иначе False
-    """
-    try:
-        int(s)
-        return True
-    except ValueError:
-        return False
-
-
 @bot.message_handler(commands=['remove_button'])
 def button_delete(message):
     try:
@@ -476,7 +463,7 @@ def get_group(message):
     :return:
     """
     global COURSE_NUM
-    if represents_int(message.text):
+    if message.text in range(1, 7):
         COURSE_NUM = message.text
         keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id,
