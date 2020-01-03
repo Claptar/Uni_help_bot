@@ -341,7 +341,7 @@ def mnk(message):
     elif message.text == '❌':
         keyboard = types.ReplyKeyboardRemove()
         msg = bot.send_message(message.chat.id,
-                               'Пришли xlsx файл с данными и всё будет готово', keyboard)
+                               'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
         bot.register_next_step_handler(msg, date_mnk)
 
 
@@ -349,7 +349,7 @@ def error_bars(message):
     math_part.ERRORS = list(map(float, message.text.split('/')))
     keyboard = types.ReplyKeyboardRemove()
     msg = bot.send_message(message.chat.id,
-                           'Пришли xlsx файл с данными и всё будет готово', keyboard)
+                           'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
     bot.register_next_step_handler(msg, date_mnk)
 
 
@@ -369,19 +369,18 @@ def date_mnk(message):
     a, b, d_a, d_b = math_part.mnk_calc(src)
     math_part.BOT_PLOT = True
     math_part.plots_drawer(src, math_part.TITLE, math_part.ERRORS[0], math_part.ERRORS[1], math_part.ERROR_BAR)
-    with open('plot.png', 'rb') as photo:
-        bot.send_photo(message.chat.id, photo)
+    with open('plot.pdf', 'rb') as photo:
+        bot.send_document(message.chat.id, photo)
     for i in range(0, len(a)):
         bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
                                           f" a = {a[i]} +- {d_a[i], 6}\n"
                                           f" b = {b[i]} +- {d_b[i], 6}")
-    os.remove('plot.png')
+    os.remove('plot.pdf')
     math_part.BOT_PLOT = False
     os.remove(src)
     math_part.TITLE = ''
     math_part.ERRORS = [0, 0]
     math_part.ERROR_BAR = False
-    bot.register_next_step_handler(msg, tit)
 
 
 @bot.message_handler(commands=['timetable'])
