@@ -109,8 +109,6 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     fig.write_image('plot.png')
 
 
-plots_drawer('123.xlsx', 'Грааааафик', 0.1, 0.1, True)
-
 def mnk_calc(data_file):
     """
     Функция считывает данные из таблицы и возвращает коэффициенты и погрешности
