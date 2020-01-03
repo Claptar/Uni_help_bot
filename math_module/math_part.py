@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import sympy as sp
+import plotly.graph_objects as go
 
 LABEL_X = ''
 LABEL_Y = ''
@@ -86,32 +87,29 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
         y.append(d[:, i + 1])
         a.append(r[0])
         b.append(r[1])
+    fig = go.Figure()
     for i in range(0, len(x)):
-        if xerr != 0 or yerr != 0:
-            plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='k+')
-    for i in range(0, len(x)):
-        delta = (max(x[i]) - min(x[i]))/len(x[i])
-        x_.append([min(x[i]) - delta, max(x[i]) + delta])
-        plt.plot(x[i], y[i], 'o')
+        fig.add_trace(
+            go.Scatter(
+                x=x[i],
+                y=y[i],
+                error_x=dict(type='constant',
+                             value=xerr),
+                error_y=dict(type='constant',
+                             value=yerr),
+                mode='markers'
+            ))
     if mnk:
-        for i in range(0, len(x)):
-            plt.plot(np.array(x_[i]), a[i]*(np.array(x_[i])) + b[i], 'r')
-    plt.xlabel(dataset.columns[0])
-    plt.ylabel(dataset.columns[1])
-    lab = np.array(dataset)[0, :]
-    lab1 = []
-    for i in range(0, len(lab)):
-        if type(lab[i]) == str:
-            lab1.append(lab[i])
-    plt.legend(lab1)
-    plt.title(tit)
-    plt.grid(True)
+        pass
+    fig.update_layout(title=tit,
+                      xaxis_title=dataset.columns[0],
+                      yaxis_title=dataset.columns[1])
     if BOT_PLOT:
-        plt.savefig('plot.png')
-    else:
-        plt.show()
-    plt.clf()
+        pass
+    fig.write_image('plot.png')
 
+
+plots_drawer('123.xlsx', 'Грааааафик', 0.1, 0.1, True)
 
 def mnk_calc(data_file):
     """
