@@ -3,10 +3,12 @@ pandas==0.24.2
 numpy==1.16.2
 matplotlib==3.1.1
 telebot==0.0.3
-Pillow==6.0.0
 xlrd==1.2.0
 sympy==1.4
 pyautogui
 selenium==3.141.0
 requests==2.22.0
 regex==2019.04.14
+plotly
+orca
+psutil
