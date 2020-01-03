@@ -359,10 +359,11 @@ def date_mnk(message):
     math_part.plots_drawer(src, math_part.TITLE, math_part.ERRORS[0], math_part.ERRORS[1], math_part.ERROR_BAR)
     with open('plot.pdf', 'rb') as photo:
         bot.send_document(message.chat.id, photo)
-    for i in range(0, len(a)):
-        bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
-                                          f" a = {a[i]} +- {d_a[i], 6}\n"
-                                          f" b = {b[i]} +- {d_b[i], 6}")
+    if math_part.ERROR_BAR:
+        for i in range(0, len(a)):
+            bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
+                                              f" a = {a[i]} +- {d_a[i], 6}\n"
+                                              f" b = {b[i]} +- {d_b[i], 6}")
     os.remove('plot.pdf')
     with open('plot.png', 'rb') as photo:
         bot.send_document(message.chat.id, photo)
