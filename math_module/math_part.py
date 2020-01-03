@@ -86,9 +86,10 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
         y.append(d[:, i + 1])
         a.append(r[0])
         b.append(r[1])
-    for i in range(0, len(x)):
-        if xerr != 0 or yerr != 0:
-            plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='k+')
+    if mnk:
+        for i in range(0, len(x)):
+            if xerr != 0 or yerr != 0:
+                plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='k+')
     for i in range(0, len(x)):
         delta = (max(x[i]) - min(x[i]))/len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
@@ -107,7 +108,7 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     plt.title(tit)
     plt.grid(True)
     if BOT_PLOT:
-        plt.savefig('plot.png')
+        plt.savefig('plot.pdf')
     else:
         plt.show()
     plt.clf()
