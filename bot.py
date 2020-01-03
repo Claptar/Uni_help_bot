@@ -12,8 +12,8 @@ import texting.texting_symbols
 import timetable.timetable
 from math_module import math_part
 
-base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
-TOKEN = '893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0'
+base_url = 'https://api.telegram.org/bot854347816:AAE45dNVhPERPv_iYAA4RLpFPAt-xQdKyiM/'
+TOKEN = '854347816:AAE45dNVhPERPv_iYAA4RLpFPAt-xQdKyiM'
 PATH = os.path.abspath('')
 bot = telebot.TeleBot(TOKEN)
 MESSAGE_NUM = 0
@@ -70,19 +70,6 @@ comms = ['help', 'start', 'flash_cards', 'figure_mnk', 'figure', 'mnk_constants'
 
 crazy_tokens = 0
 ANSW_ID = 0
-
-
-def represents_int(s):
-    """
-    Функция, проверяющая, является ли строка числом
-    :param s: строка
-    :return: True, если строку можно представить в виде числа, иначе False
-    """
-    try:
-        int(s)
-        return True
-    except ValueError:
-        return False
 
 
 @bot.message_handler(commands=['remove_button'])
@@ -495,24 +482,28 @@ def get_weekday(message):
     bot.register_next_step_handler(message, get_schedule)
 
 
+pd.options.display.max_colwidth = 100
+
+
 def get_schedule(message):
     """
-    Функция будет делать вообще не это
+    Функция, выдающая расписание на нужный день недели.
     :param message: telebot.types.Message
     :return:
     """
     schedule = timetable.timetable.timetable_by_group(COURSE_NUM, GROUP_NUM, message.text)
-    if schedule:
-        bot.send_message(message.chat.id, schedule)
-        keyboard = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
-    else:
+    if schedule.empty:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
         msg = bot.send_message(message.chat.id,
                                'Что-то не получилось... Ты мне точно прислал номер группы в правильном формате ?',
                                reply_markup=keyboard)
         bot.register_next_step_handler(msg, get_group)
+    else:
+        schedule = schedule.to_frame().to_string()
+        bot.send_message(message.chat.id, schedule)
+        keyboard = types.ReplyKeyboardRemove()
+        bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
 
 
 @bot.message_handler(commands=['exam'])
