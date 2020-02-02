@@ -12,8 +12,8 @@ import texting.texting_symbols
 import timetable.timetable
 from math_module import math_part
 
-base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
-TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
+base_url = 'https://api.telegram.org/bot893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0/'
+TOKEN = '893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0'
 PATH = os.path.abspath('')
 bot = telebot.TeleBot(TOKEN)
 FILE_NAME = ''
