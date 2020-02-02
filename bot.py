@@ -419,6 +419,7 @@ def date_mnk(message):
     :param message:
     :return:
     """
+    global FILE_NAME
     if message.content_type == 'text':
         if message.text == 'Выход':
             keyboard = types.ReplyKeyboardRemove()
@@ -434,7 +435,6 @@ def date_mnk(message):
             bot.register_next_step_handler(msg, date_mnk)
     elif message.content_type == 'document':
         try:
-            global FILE_NAME
             file_id = message.json.get('document').get('file_id')
             file_path = bot.get_file(file_id).file_path
             downloaded_file = bot.download_file(file_path)
@@ -463,7 +463,6 @@ def date_mnk(message):
             math_part.ERRORS = [0, 0]
             math_part.ERROR_BAR = False
         except Exception as e:
-            global FILE_NAME
             os.remove(FILE_NAME)
             print(e)
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
