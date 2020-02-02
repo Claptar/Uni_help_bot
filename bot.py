@@ -12,8 +12,8 @@ import texting.texting_symbols
 import timetable.timetable
 from math_module import math_part
 
-base_url = 'https://api.telegram.org/bot893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0/'
-TOKEN = '893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0'
+base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg/'
+TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
 PATH = os.path.abspath('')
 bot = telebot.TeleBot(TOKEN)
 MESSAGE_NUM = 0
@@ -65,7 +65,8 @@ SUBJECTS = {
         }
 }
 
-comms = ['help', 'start', 'flash_cards', 'plot', 'timetable', 'exam']
+
+comms = ['help', 'start', 'flash_cards', 'plot', 'timetable', 'exam'] #Comands list
 
 crazy_tokens = 0
 ANSW_ID = 0
@@ -289,7 +290,7 @@ def plot(message):
                                       ' Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов'
                                       '😉. И не засиживайся, ложись спать))')
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['Без названия']])
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Без названия', 'Выход']])
     msg = bot.send_message(message.chat.id, 'Как мы назовём график ?'
                                             ' Если не хочешь называть нажми кнопку ниже 😉', reply_markup=keyboard)
     MESSAGE_COM = 'plot'
@@ -302,14 +303,32 @@ def tit(message):
     :param message: сообщение пользователя
     :return:
     """
-    if message.text == 'Без названия':
-        math_part.TITLE = ''
+    global MESSAGE_COM
+    if message.content_type == 'text':
+        if message.text == 'Выход':
+            keyboard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
+            bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        elif message.text == 'Без названия':
+            math_part.TITLE = ''
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌']])
+            msg = bot.send_message(message.chat.id, 'Прямую по МНК строим ?', reply_markup=keyboard)
+            bot.register_next_step_handler(msg, mnk)
+        else:
+            math_part.TITLE = message.text
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌']])
+            msg = bot.send_message(message.chat.id, 'Прямую по МНК строим ?', reply_markup=keyboard)
+            bot.register_next_step_handler(msg, mnk)
+
     else:
-        math_part.TITLE = message.text
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌']])
-    msg = bot.send_message(message.chat.id, 'Прямую по МНК строим ?', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, mnk)
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Без названия']])
+        msg = bot.send_message(message.chat.id, 'Я тебя не понял... Напиши ещё раз название графика !'
+                                                ' Если не хочешь называть нажми кнопку ниже 😉', reply_markup=keyboard)
+        MESSAGE_COM = 'plot'
+        bot.register_next_step_handler(msg, tit)
 
 
 def mnk(message):
@@ -318,19 +337,26 @@ def mnk(message):
     :param message: сообщение пользователя
     :return:
     """
-    if message.text == '✅':
-        math_part.ERROR_BAR = True
+    if message.content_type == 'text':
+        if message.text == '✅':
+            math_part.ERROR_BAR = True
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
+            msg = bot.send_message(message.chat.id, 'Пришли данные для крестов погрешностей по осям х и y в '
+                                                    'формате "123.213/123.231", если кресты не нужны,'
+                                                    ' нажми на кнопку ниже', reply_markup=keyboard)
+            bot.register_next_step_handler(msg, error_bars)
+        elif message.text == '❌':
+            keyboard = types.ReplyKeyboardRemove()
+            msg = bot.send_message(message.chat.id,
+                                   'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
+            bot.register_next_step_handler(msg, date_mnk)
+    else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
-        msg = bot.send_message(message.chat.id, 'Пришли данные для крестов погрешностей по осям х и y в '
-                                                'формате "123.213/123.231", если кресты не нужны,'
-                                                ' нажми на кнопку ниже', reply_markup=keyboard)
-        bot.register_next_step_handler(msg, error_bars)
-    elif message.text == '❌':
-        keyboard = types.ReplyKeyboardRemove()
-        msg = bot.send_message(message.chat.id,
-                               'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
-        bot.register_next_step_handler(msg, date_mnk)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌']])
+        msg = bot.send_message(message.chat.id, 'Прямую по МНК строим ?', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, mnk)
+
 
 
 def error_bars(message):
