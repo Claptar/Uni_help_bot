@@ -312,13 +312,13 @@ def tit(message):
         elif message.text == 'Без названия':
             math_part.TITLE = ''
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌']])
+            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
             msg = bot.send_message(message.chat.id, 'Прямую по МНК строим ?', reply_markup=keyboard)
             bot.register_next_step_handler(msg, mnk)
         else:
             math_part.TITLE = message.text
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌']])
+            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
             msg = bot.send_message(message.chat.id, 'Прямую по МНК строим ?', reply_markup=keyboard)
             bot.register_next_step_handler(msg, mnk)
 
@@ -338,7 +338,12 @@ def mnk(message):
     :return:
     """
     if message.content_type == 'text':
-        if message.text == '✅':
+        if message.text == 'Выход':
+            keyboard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
+            bot.send_sticker(message.chat.id,
+                             'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        elif message.text == '✅':
             math_part.ERROR_BAR = True
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
@@ -351,12 +356,17 @@ def mnk(message):
             msg = bot.send_message(message.chat.id,
                                    'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
             bot.register_next_step_handler(msg, date_mnk)
+        else:
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
+            msg = bot.send_message(message.chat.id, 'Извини, повтори ещё раз... Прямую по МНК строим ?', reply_markup=keyboard)
+            bot.register_next_step_handler(msg, mnk)
+
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌']])
-        msg = bot.send_message(message.chat.id, 'Прямую по МНК строим ?', reply_markup=keyboard)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
+        msg = bot.send_message(message.chat.id, 'Извини, повтори ещё раз... Прямую по МНК строим ?', reply_markup=keyboard)
         bot.register_next_step_handler(msg, mnk)
-
 
 
 def error_bars(message):
