@@ -16,6 +16,7 @@ base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLB
 TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
 PATH = os.path.abspath('')
 bot = telebot.TeleBot(TOKEN)
+FILE_NAME = ''
 MESSAGE_NUM = 0
 MESSAGE_COM = ''
 Q_NUM = 0
@@ -65,16 +66,14 @@ SUBJECTS = {
         }
 }
 
-
-comms = ['help', 'start', 'flash_cards', 'plot', 'timetable', 'exam'] #Comands list
+comms = ['help', 'start', 'flash_cards', 'plot', 'timetable', 'exam']  # Comands list
 
 crazy_tokens = 0
 ANSW_ID = 0
 
-#Plot constants
+# Plot constants
 PLOT_MESSEGE = 0
 PLOT_BUTTONS = ['Название графика', 'Подпись осей', 'Кресты погрешностей', 'Готово', 'MНК']
-
 
 
 @bot.message_handler(commands=['help'])
@@ -312,13 +311,13 @@ def tit(message):
         elif message.text == 'Без названия':
             math_part.TITLE = ''
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌']])
+            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
             msg = bot.send_message(message.chat.id, 'Прямую по МНК строим ?', reply_markup=keyboard)
             bot.register_next_step_handler(msg, mnk)
         else:
             math_part.TITLE = message.text
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌']])
+            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
             msg = bot.send_message(message.chat.id, 'Прямую по МНК строим ?', reply_markup=keyboard)
             bot.register_next_step_handler(msg, mnk)
 
@@ -338,7 +337,12 @@ def mnk(message):
     :return:
     """
     if message.content_type == 'text':
-        if message.text == '✅':
+        if message.text == 'Выход':
+            keyboard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
+            bot.send_sticker(message.chat.id,
+                             'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        elif message.text == '✅':
             math_part.ERROR_BAR = True
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
@@ -347,24 +351,65 @@ def mnk(message):
                                                     ' нажми на кнопку ниже', reply_markup=keyboard)
             bot.register_next_step_handler(msg, error_bars)
         elif message.text == '❌':
-            keyboard = types.ReplyKeyboardRemove()
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+            with open('Example.xlsx', 'rb') as example:
+                bot.send_document(message.chat.id, example)
             msg = bot.send_message(message.chat.id,
-                                   'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
+                                   'Пришли xlsx файл с данными как в example.xlsx и всё будет готово',
+                                   reply_markup=keyboard)
             bot.register_next_step_handler(msg, date_mnk)
+        else:
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
+            msg = bot.send_message(message.chat.id, 'Извини, повтори ещё раз... Прямую по МНК строим ?',
+                                   reply_markup=keyboard)
+            bot.register_next_step_handler(msg, mnk)
+
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌']])
-        msg = bot.send_message(message.chat.id, 'Прямую по МНК строим ?', reply_markup=keyboard)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
+        msg = bot.send_message(message.chat.id, 'Извини, повтори ещё раз... Прямую по МНК строим ?',
+                               reply_markup=keyboard)
         bot.register_next_step_handler(msg, mnk)
 
 
-
 def error_bars(message):
-    math_part.ERRORS = list(map(float, message.text.split('/')))
-    keyboard = types.ReplyKeyboardRemove()
-    msg = bot.send_message(message.chat.id,
-                           'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, date_mnk)
+    if message.content_type == 'text':
+        if message.text == 'Выход':
+            keyboard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
+            bot.send_sticker(message.chat.id,
+                             'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        try:
+            math_part.ERRORS = list(map(float, message.text.split('/')))
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+            with open('Example.xlsx', 'rb') as expl:
+                bot.send_document(message.chat.id, expl)
+            msg = bot.send_message(message.chat.id,
+                                   'Пришли xlsx файл с данными как в example.xlsx и всё будет готово',
+                                   reply_markup=keyboard)
+            bot.register_next_step_handler(msg, date_mnk)
+        except Exception as e:
+            print(e)
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
+            msg = bot.send_message(message.chat.id,
+                                   'Не могу распознать формат данных( Давай ещё раз. '
+                                   'Пришли данные для крестов погрешностей по осям х и y в '
+                                   'формате "123.213/123.231", если кресты не нужны,'
+                                   ' нажми на кнопку ниже', reply_markup=keyboard)
+            bot.register_next_step_handler(msg, error_bars)
+    else:
+        math_part.ERROR_BAR = True
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
+        msg = bot.send_message(message.chat.id, 'Ты прислал что-то не то( Давай ещё раз. '
+                                                'Пришли данные для крестов погрешностей по осям х и y в '
+                                                'формате "123.213/123.231", если кресты не нужны,'
+                                                ' нажми на кнопку ниже', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, error_bars)
 
 
 def date_mnk(message):
@@ -374,31 +419,65 @@ def date_mnk(message):
     :param message:
     :return:
     """
-    file_id = message.json.get('document').get('file_id')
-    file_path = bot.get_file(file_id).file_path
-    downloaded_file = bot.download_file(file_path)
-    src = message.document.file_name
-    with open(src, 'wb') as new_file:
-        new_file.write(downloaded_file)
-    a, b, d_a, d_b = math_part.mnk_calc(src)
-    math_part.BOT_PLOT = True
-    math_part.plots_drawer(src, math_part.TITLE, math_part.ERRORS[0], math_part.ERRORS[1], math_part.ERROR_BAR)
-    with open('plot.pdf', 'rb') as photo:
-        bot.send_document(message.chat.id, photo)
-    if math_part.ERROR_BAR:
-        for i in range(0, len(a)):
-            bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
-                                              f" a = {a[i]} +- {d_a[i], 6}\n"
-                                              f" b = {b[i]} +- {d_b[i], 6}")
-    os.remove('plot.pdf')
-    with open('plot.png', 'rb') as photo:
-        bot.send_document(message.chat.id, photo)
-    os.remove('plot.png')
-    math_part.BOT_PLOT = False
-    os.remove(src)
-    math_part.TITLE = ''
-    math_part.ERRORS = [0, 0]
-    math_part.ERROR_BAR = False
+    if message.content_type == 'text':
+        if message.text == 'Выход':
+            keyboard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
+            bot.send_sticker(message.chat.id,
+                             'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        else:
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+            msg = bot.send_message(message.chat.id,
+                                   'Ты точно прислал xlsx файл ? Давай ещё раз ! '
+                                   'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
+            bot.register_next_step_handler(msg, date_mnk)
+    elif message.content_type == 'document':
+        try:
+            global FILE_NAME
+            file_id = message.json.get('document').get('file_id')
+            file_path = bot.get_file(file_id).file_path
+            downloaded_file = bot.download_file(file_path)
+            FILE_NAME = message.document.file_name
+            with open(FILE_NAME, 'wb') as new_file:
+                new_file.write(downloaded_file)
+            a, b, d_a, d_b = math_part.mnk_calc(FILE_NAME) # TODO разделить рассчёт погрешностей констант и рассчёт самих констант
+            math_part.BOT_PLOT = True
+            math_part.plots_drawer(FILE_NAME, math_part.TITLE, math_part.ERRORS[0], math_part.ERRORS[1], math_part.ERROR_BAR)
+            keyboard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, 'Принимай работу !)', reply_markup=keyboard)
+            with open('plot.pdf', 'rb') as photo:
+                bot.send_document(message.chat.id, photo)
+            if math_part.ERROR_BAR:
+                for i in range(0, len(a)):
+                    bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
+                                                      f" a = {a[i]} +- {d_a[i], 6}\n"
+                                                      f" b = {b[i]} +- {d_b[i], 6}")
+            os.remove('plot.pdf')
+            with open('plot.png', 'rb') as photo:
+                bot.send_document(message.chat.id, photo)
+            os.remove('plot.png')
+            math_part.BOT_PLOT = False
+            os.remove(FILE_NAME)
+            math_part.TITLE = ''
+            math_part.ERRORS = [0, 0]
+            math_part.ERROR_BAR = False
+        except Exception as e:
+            global FILE_NAME
+            os.remove(FILE_NAME)
+            print(e)
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+            msg = bot.send_message(message.chat.id,
+                                   'Ты точно прислал xlsx файл как в примере ? Давай ещё раз !', reply_markup=keyboard)
+            bot.register_next_step_handler(msg, date_mnk)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+        msg = bot.send_message(message.chat.id,
+                               'Ты точно прислал xlsx файл ? Давай ещё раз ! '
+                               'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, date_mnk)
 
 
 @bot.message_handler(commands=['timetable'])
