@@ -16,6 +16,7 @@ base_url = 'https://api.telegram.org/bot838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLB
 TOKEN = '838117295:AAGUldfunZu6Cyx-kJkCucQuH3pCLBD4Jcg'
 PATH = os.path.abspath('')
 bot = telebot.TeleBot(TOKEN)
+FILE_NAME = ''
 MESSAGE_NUM = 0
 MESSAGE_COM = ''
 Q_NUM = 0
@@ -352,6 +353,8 @@ def mnk(message):
         elif message.text == '❌':
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+            with open('Example.xlsx', 'rb') as example:
+                bot.send_document(message.chat.id, example)
             msg = bot.send_message(message.chat.id,
                                    'Пришли xlsx файл с данными как в example.xlsx и всё будет готово',
                                    reply_markup=keyboard)
@@ -381,12 +384,15 @@ def error_bars(message):
         try:
             math_part.ERRORS = list(map(float, message.text.split('/')))
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+            with open('Example.xlsx', 'rb') as expl:
+                bot.send_document(message.chat.id, expl)
             msg = bot.send_message(message.chat.id,
                                    'Пришли xlsx файл с данными как в example.xlsx и всё будет готово',
                                    reply_markup=keyboard)
             bot.register_next_step_handler(msg, date_mnk)
-        except ValueError:
+        except Exception as e:
+            print(e)
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
             msg = bot.send_message(message.chat.id,
@@ -419,17 +425,25 @@ def date_mnk(message):
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             bot.send_sticker(message.chat.id,
                              'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        else:
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+            msg = bot.send_message(message.chat.id,
+                                   'Ты точно прислал xlsx файл ? Давай ещё раз ! '
+                                   'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
+            bot.register_next_step_handler(msg, date_mnk)
     elif message.content_type == 'document':
         try:
+            global FILE_NAME
             file_id = message.json.get('document').get('file_id')
             file_path = bot.get_file(file_id).file_path
             downloaded_file = bot.download_file(file_path)
-            src = message.document.file_name
-            with open(src, 'wb') as new_file:
+            FILE_NAME = message.document.file_name
+            with open(FILE_NAME, 'wb') as new_file:
                 new_file.write(downloaded_file)
-            a, b, d_a, d_b = math_part.mnk_calc(src) # TODO разделить рассчёт погрешностей констант и рассчёт самих констант
+            a, b, d_a, d_b = math_part.mnk_calc(FILE_NAME) # TODO разделить рассчёт погрешностей констант и рассчёт самих констант
             math_part.BOT_PLOT = True
-            math_part.plots_drawer(src, math_part.TITLE, math_part.ERRORS[0], math_part.ERRORS[1], math_part.ERROR_BAR)
+            math_part.plots_drawer(FILE_NAME, math_part.TITLE, math_part.ERRORS[0], math_part.ERRORS[1], math_part.ERROR_BAR)
             keyboard = types.ReplyKeyboardRemove()
             bot.send_message(message.chat.id, 'Принимай работу !)', reply_markup=keyboard)
             with open('plot.pdf', 'rb') as photo:
@@ -444,11 +458,14 @@ def date_mnk(message):
                 bot.send_document(message.chat.id, photo)
             os.remove('plot.png')
             math_part.BOT_PLOT = False
-            os.remove(src)
+            os.remove(FILE_NAME)
             math_part.TITLE = ''
             math_part.ERRORS = [0, 0]
             math_part.ERROR_BAR = False
-        except ValueError:
+        except Exception as e:
+            global FILE_NAME
+            os.remove(FILE_NAME)
+            print(e)
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
             msg = bot.send_message(message.chat.id,
