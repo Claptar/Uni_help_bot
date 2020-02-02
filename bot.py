@@ -370,11 +370,36 @@ def mnk(message):
 
 
 def error_bars(message):
-    math_part.ERRORS = list(map(float, message.text.split('/')))
-    keyboard = types.ReplyKeyboardRemove()
-    msg = bot.send_message(message.chat.id,
-                           'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, date_mnk)
+    if message.content_type == 'text':
+        if message.text == 'Выход':
+            keyboard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
+            bot.send_sticker(message.chat.id,
+                             'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        try:
+            math_part.ERRORS = list(map(float, message.text.split('/')))
+            keyboard = types.ReplyKeyboardRemove()
+            msg = bot.send_message(message.chat.id,
+                                   'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
+            bot.register_next_step_handler(msg, date_mnk)
+        except ValueError:
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
+            msg = bot.send_message(message.chat.id,
+                                   'Не могу распознать формат данных( Давай ещё раз. '
+                                   'Пришли данные для крестов погрешностей по осям х и y в '
+                                   'формате "123.213/123.231", если кресты не нужны,'
+                                   ' нажми на кнопку ниже', reply_markup=keyboard)
+            bot.register_next_step_handler(msg, error_bars)
+    else:
+        math_part.ERROR_BAR = True
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
+        msg = bot.send_message(message.chat.id, 'Ты прислал что-то не то( Давай ещё раз. '
+                                                'Пришли данные для крестов погрешностей по осям х и y в '
+                                                'формате "123.213/123.231", если кресты не нужны,'
+                                                ' нажми на кнопку ниже', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, error_bars)
 
 
 def date_mnk(message):
