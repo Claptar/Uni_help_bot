@@ -441,7 +441,6 @@ def get_start_schedule(message):
     Узнает номер дня недели сегодня/завтра и по этому значению обращается в функцию get_schedule_by_group().
     :return:
     """
-    pass
     week = tuple(['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'])
     if message.text == 'На сегодня':
         today = datetime.datetime.today().weekday()
