@@ -46,8 +46,13 @@ def plt_const(x, y):
     r = np.sum(x*y)/len(x) - av_x*av_y
     a = r/sigmas_x
     b = av_y - a*av_x
-    d_a = 2 * math.sqrt((sigmas_y / sigmas_x - a ** 2) / (len(x) - 2))
-    d_b = d_a * math.sqrt(sigmas_x + av_x ** 2)
+    try:
+        d_a = 2 * math.sqrt((sigmas_y / sigmas_x - a ** 2) / (len(x) - 2))
+        d_b = d_a * math.sqrt(sigmas_x + av_x ** 2)
+    except Exception as e:
+        print(e)
+        d_a = 'error'
+        d_b = 'error'
     return [a, b, d_a, d_b]
 
 
@@ -139,6 +144,7 @@ def mnk_calc(data_file):
         d_b.append(r[3])
 
     return [a, b, d_a, d_b]
+
 
 def error_calc(equation, var_list, point_list, error_list):
     """
