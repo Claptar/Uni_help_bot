@@ -9,8 +9,10 @@ import telebot
 from telebot import types
 
 import texting.texting_symbols
-import timetable.timetable
 from math_module import math_part
+
+import timetable.timetable
+import datetime
 
 base_url = 'https://api.telegram.org/bot854347816:AAE45dNVhPERPv_iYAA4RLpFPAt-xQdKyiM/'
 TOKEN = '854347816:AAE45dNVhPERPv_iYAA4RLpFPAt-xQdKyiM'
@@ -110,8 +112,10 @@ def start(message):
     :param message: telebot.types.Message
     :return:
     """
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
     bot.send_message(message.chat.id, 'Привет-привет 🙃 Я очень люблю помогать людям,'
-                                      ' напиши /help чтобы узнать, что я умею. ')
+                                      ' напиши /help чтобы узнать, что я умею. ', reply_markup=keyboard)
 
 
 @bot.message_handler(commands=['pb'])
@@ -430,6 +434,37 @@ def date_mnk(message):
         bot.register_next_step_handler(msg, tit)
 
 
+@bot.message_handler(func=lambda message: message.text in ['На сегодня', 'На завтра'])
+def get_start_schedule(message):
+    """
+    Функция ловит сообщение с текстом "Расписание на сегодня/завтра".
+    Узнает номер дня недели сегодня/завтра и по этому значению обращается в функцию get_schedule_by_group().
+    :return:
+    """
+    pass
+    week = tuple(['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'])
+    if message.text == 'На сегодня':
+        today = datetime.datetime.today().weekday()
+        schedule = timetable.timetable.timetable_by_group(3, '7113', week[today])
+        schedule = schedule.to_frame()
+        for row in schedule.iterrows():
+            string: str = row[0] + '\n' + '\n' + row[1][0]
+            bot.send_message(message.chat.id, string)
+        bot.send_message(message.chat.id, 'Чем ещё я могу помочь?')
+
+    elif message.text == 'На завтра':
+        today = datetime.datetime.today().weekday()
+        yesterday = 0
+        if today in range(6):
+            yesterday = today + 1
+        schedule = timetable.timetable.timetable_by_group(3, '7113', week[yesterday])
+        schedule = schedule.to_frame()
+        for row in schedule.iterrows():
+            string: str = row[0] + '\n' + '\n' + row[1][0]
+            bot.send_message(message.chat.id, string)
+        bot.send_message(message.chat.id, 'Чем ещё я могу помочь?')
+
+
 @bot.message_handler(commands=['timetable'])
 def get_course(message):
     """
@@ -438,19 +473,25 @@ def get_course(message):
     :param message: telebot.types.Message
     :return:
     """
-    if message.text == '/timetable':
+    if message.text == '/timetable': # инициализация блока
         bot.send_message(message.chat.id, 'Снова не можешь вспомнить какая пара следующая? :) '
                                           'Ничего, я уже тут!')
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in range(1, 7)])
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
         msg = bot.send_message(message.chat.id, 'Не подскажешь номер своего курса?', reply_markup=keyboard)
         bot.register_next_step_handler(msg, get_group)
-    elif message.text == 'Ладно, сам посмотрю':
+    elif message.text == 'Ладно, сам посмотрю': # если из какой-то другой функции пришло сообщение о выходе:
+        keyboard = types.ReplyKeyboardRemove()
         bot.send_message(message.chat.id, 'Без проблем! '
-                                          'Но ты это, заходи, если что :)')
-    elif message.text == 'Попробую ещё раз':
+                                          'Но ты это, заходи, если что :)',
+                         reply_markup=keyboard
+                         )
+        bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+    elif message.text == 'Попробую ещё раз': # если произошла какая-то ошибка в считывании данных в других функциях
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in range(1, 7)])
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
         msg = bot.send_message(message.chat.id, 'Не подскажешь номер своего курса?', reply_markup=keyboard)
         bot.register_next_step_handler(msg, get_group)
 
@@ -463,18 +504,39 @@ def get_group(message):
     :return:
     """
     global COURSE_NUM
-    if message.text in range(1, 7):
-        COURSE_NUM = message.text
-        keyboard = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id,
-                         'Не подскажешь номер своей группы? (В формате L0N–YFx или YFx)',
-                         reply_markup=keyboard)
-        bot.register_next_step_handler(message, get_weekday)
+    if message.content_type == 'text':
+        if message.text == 'Выход':
+            keyboard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
+            bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        elif message.text in map(str, range(1, 7)):
+            COURSE_NUM = int(message.text)
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(
+                *[types.KeyboardButton(name) for name in ['Выход']
+                  ]
+            )
+            bot.send_message(message.chat.id,
+                             'Не подскажешь номер своей группы? (В формате L0N–YFx или YFx)',
+                             reply_markup=keyboard)
+            bot.register_next_step_handler(message, get_weekday)
+        else:
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in [
+                'Попробую ещё раз', 'Ладно, сам посмотрю', 'Выход'
+            ]
+                           ]
+                         )
+            msg = bot.send_message(message.chat.id,
+                                   'Что-то не получилось... Ты мне точно прислал номер курса?',
+                                   reply_markup=keyboard)
+            bot.register_next_step_handler(msg, get_course)
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
         msg = bot.send_message(message.chat.id,
-                               'Что-то не получилось... Ты мне точно прислал номер курса?',
+                               'Что-то не получилось... Ты мне точно прислал номера курса и группы в правильном '
+                               'формате?',
                                reply_markup=keyboard)
         bot.register_next_step_handler(msg, get_course)
 
@@ -486,17 +548,31 @@ def get_weekday(message):
     :param message: telebot.types.Message
     :return:
     """
-    global GROUP_NUM
-    GROUP_NUM = message.text
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(
-        *[types.KeyboardButton(name) for name in [
-            'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'
-        ]
-          ]
-    )
-    bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
-    bot.register_next_step_handler(message, get_schedule)
+    if message.content_type == 'text':
+        if message.text == 'Выход':
+            keyboard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
+            bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        else:
+            global GROUP_NUM
+            GROUP_NUM = message.text
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(
+                *[types.KeyboardButton(name) for name in [
+                    'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Выход'
+                ]
+                  ]
+            )
+            bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
+            bot.register_next_step_handler(message, get_schedule)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
+        msg = bot.send_message(message.chat.id,
+                               'Что-то не получилось... Ты мне точно прислал номера курса и группы в правильном '
+                               'формате?',
+                               reply_markup=keyboard)
+        bot.register_next_step_handler(msg, get_course)
 
 
 pd.options.display.max_colwidth = 100
@@ -508,8 +584,29 @@ def get_schedule(message):
     :param message: telebot.types.Message
     :return:
     """
-    schedule = timetable.timetable.timetable_by_group(COURSE_NUM, GROUP_NUM, message.text)
-    if schedule.empty:
+    if message.content_type == 'text':
+        if message.text == 'Выход':
+            keyboard = types.ReplyKeyboardRemove()
+            bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
+            bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        else:
+            schedule = timetable.timetable.timetable_by_group(COURSE_NUM, GROUP_NUM, message.text)
+            if schedule.empty:
+                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
+                msg = bot.send_message(message.chat.id,
+                                       'Что-то не получилось... Ты мне точно прислал номера курса и группы в правильном'
+                                       ' формате?',
+                                       reply_markup=keyboard)
+                bot.register_next_step_handler(msg, get_course)
+            else:
+                schedule = schedule.to_frame()
+                for row in schedule.iterrows():
+                    string: str = row[0] + '\n' + '\n' + row[1][0]
+                    bot.send_message(message.chat.id, string)
+                keyboard = types.ReplyKeyboardRemove()
+                bot.send_message(message.chat.id, 'Чем ещё я могу помочь?', reply_markup=keyboard)
+    else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
         msg = bot.send_message(message.chat.id,
@@ -517,11 +614,6 @@ def get_schedule(message):
                                'формате?',
                                reply_markup=keyboard)
         bot.register_next_step_handler(msg, get_course)
-    else:
-        schedule = schedule.to_frame().to_string()
-        bot.send_message(message.chat.id, schedule)
-        keyboard = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id, 'Чем я ещё могу помочь?', reply_markup=keyboard)
 
 
 @bot.message_handler(commands=['exam'])

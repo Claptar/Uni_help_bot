@@ -43,14 +43,14 @@ def get_timetable(table: openpyxl.worksheet) -> dict:
     groups = {}  # список расписаний для групп
 
     for j in range(3, table.max_column):  # смотрим на значения по столбцам
-        name = table.cell(1, j).value  # номер группы
+        name = table.cell(5, j).value  # номер группы
         if name in ['Дни', 'Часы']:  # если это не номер группы, то пропускаем столбец
             continue
         # иначе если столбец - это номер группы, то составляем для него расписание
         elif name is not None:
             # group - словарь с расписанием для группы
             group = dict(Понедельник={}, Вторник={}, Среда={}, Четверг={}, Пятница={}, Суббота={}, Воскресенье={})
-            for k in range(2, table.max_row):  # проходимся по столбцу
+            for k in range(6, table.max_row):  # проходимся по столбцу
                 # если клетки относятся ко дню недели (не разделители)
                 if get_value_merged(table, table.cell(k, 1)) in group.keys():
                     day = get_value_merged(table, table.cell(k, 1))  # значение дня недели
