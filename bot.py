@@ -310,7 +310,8 @@ def tit(message):
     global MESSAGE_COM
     if message.content_type == 'text':
         if message.text == 'Выход':
-            keyboard = types.ReplyKeyboardRemove()
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра')
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
         elif message.text == 'Без названия':
@@ -343,7 +344,8 @@ def mnk(message):
     """
     if message.content_type == 'text':
         if message.text == 'Выход':
-            keyboard = types.ReplyKeyboardRemove()
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра')
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             bot.send_sticker(message.chat.id,
                              'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
@@ -382,7 +384,8 @@ def mnk(message):
 def error_bars(message):
     if message.content_type == 'text':
         if message.text == 'Выход':
-            keyboard = types.ReplyKeyboardRemove()
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра')
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             bot.send_sticker(message.chat.id,
                              'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
@@ -427,7 +430,8 @@ def date_mnk(message):
     global FILE_NAME
     if message.content_type == 'text':
         if message.text == 'Выход':
-            keyboard = types.ReplyKeyboardRemove()
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра')
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             bot.send_sticker(message.chat.id,
                              'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
@@ -449,7 +453,8 @@ def date_mnk(message):
             a, b, d_a, d_b = math_part.mnk_calc(FILE_NAME) # TODO разделить рассчёт погрешностей констант и рассчёт самих констант
             math_part.BOT_PLOT = True
             math_part.plots_drawer(FILE_NAME, math_part.TITLE, math_part.ERRORS[0], math_part.ERRORS[1], math_part.ERROR_BAR)
-            keyboard = types.ReplyKeyboardRemove()
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра')
             bot.send_message(message.chat.id, 'Принимай работу !)', reply_markup=keyboard)
             with open('plot.pdf', 'rb') as photo:
                 bot.send_document(message.chat.id, photo)
