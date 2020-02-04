@@ -572,7 +572,7 @@ def get_group(message):
         else:
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(*[types.KeyboardButton(name) for name in [
-                'Попробую ещё раз', 'Ладно, сам посмотрю', 'Выход'
+                'Попробую ещё раз', 'Ладно, сам посмотрю'
             ]
                            ]
                          )
