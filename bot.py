@@ -311,7 +311,7 @@ def tit(message):
     if message.content_type == 'text':
         if message.text == 'Выход':
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра')
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
         elif message.text == 'Без названия':
