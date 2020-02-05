@@ -2,8 +2,10 @@ import openpyxl
 import timetable
 import pickle
 
-groups = []
+groups = []  # список расписаний для каждого курса
 
+# считываем расписания из экселевских файлов
+# меняем их на новые в каждом семе, при замене, возмножно, нужно внести правки в функция timetable.get_timetable()
 kurs_1_doc = openpyxl.load_workbook('1_kurs_vesna_2020_chernovik.xlsm')
 kurs_1 = kurs_1_doc.active
 groups.append(timetable.get_timetable(kurs_1))
@@ -34,6 +36,6 @@ groups.append(timetable.get_timetable(kurs_4))
 
 # groups.append({**groups_6_faki, **groups_6_fupm})
 
-for i in range(len(groups)):
+for i in range(len(groups)):  # запись расписаний в удобный для хранения формат .pickle
     with open('{}_kurs.pickle'.format(i + 1), 'wb') as handle:
         pickle.dump(groups[i], handle, protocol=pickle.HIGHEST_PROTOCOL)
