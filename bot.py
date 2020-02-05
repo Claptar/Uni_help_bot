@@ -15,8 +15,8 @@ import timetable.timetable
 import datetime
 
 # Токен бота
-base_url = 'https://api.telegram.org/bot854347816:AAE45dNVhPERPv_iYAA4RLpFPAt-xQdKyiM/'
-TOKEN = '854347816:AAE45dNVhPERPv_iYAA4RLpFPAt-xQdKyiM'
+base_url = 'https://api.telegram.org/bot893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0/'
+TOKEN = '893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0'
 PATH = os.path.abspath('')
 bot = telebot.TeleBot(TOKEN)
 FILE_NAME = ''
