@@ -504,6 +504,7 @@ def get_start_schedule(message):
     if message.text == 'На сегодня':  # расписание на сегодня
         # проверка работы функции на рандомной группе
         schedule = timetable.timetable.timetable_by_group(3, '7113', week[today])
+        schedule = schedule.to_frame()
         STRING = ''  # "строка" с расписанием, которую отправляем сообщением
         for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
             # время пары - жирный + наклонный шрифт, название пары на следующей строке
@@ -518,6 +519,7 @@ def get_start_schedule(message):
             tomorrow = today + 1
         # тест на рандомной группе
         schedule = timetable.timetable.timetable_by_group(3, '7113', week[tomorrow])
+        schedule = schedule.to_frame()
         STRING = ''  # "строка" с расписанием, которую отправляем сообщением
         for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
             # время пары - жирный + наклонный шрифт, название пары на следующей строке
