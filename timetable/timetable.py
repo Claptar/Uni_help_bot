@@ -69,7 +69,7 @@ def get_timetable(table: openpyxl.worksheet) -> dict:
             group.replace(to_replace=[None], value='😴', inplace=True)
             groups[name] = group  # заносим расписание для группы в словарь
 
-    return groups
+    return groups  # словарь с группами
 
 
 def timetable_by_group(grade: int, group: str, day: str) -> pd.DataFrame or str:
