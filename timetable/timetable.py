@@ -10,8 +10,8 @@ def within_range(bounds: tuple, cell: openpyxl.cell) -> bool:
     :param cell:
     :return: True, если merged клетка, иначе False
     """
-    column_start, row_start, column_end, row_end = bounds
-    row = cell.row
+    column_start, row_start, column_end, row_end = bounds  # границы merged клетки
+    row = cell.row  # проверка, находится ли клетка в этом слиянии
     if row_start <= row <= row_end:
         column = cell.column
         if column_start <= column <= column_end:
@@ -27,7 +27,7 @@ def get_value_merged(sheet: openpyxl.worksheet, cell: openpyxl.cell) -> any:
     :param cell:
     :return: значение, лежащее в клетке
     """
-    for merged in sheet.merged_cells:
+    for merged in sheet.merged_cells:  # смотрим в списке слитых клеток (структура данных openpyxl.worksheet)
         if within_range(merged.bounds, cell):
             return sheet.cell(merged.min_row, merged.min_col).value
     return cell.value
@@ -65,26 +65,25 @@ def get_timetable(table: openpyxl.worksheet) -> dict:
                         time = time[0][:-2] + ':' + time[0][-2:] + ' – ' + time[2][:-2] + ':' + time[2][-2:]
                         group[day][time] = pair  # записываем значение в расписание
 
-            group = pd.DataFrame(group)  # заменяем None на более красивые прочерки
-            group.replace(to_replace=[None], value='–', inplace=True)
-            groups[name] = group
+            group = pd.DataFrame(group)  # заменяем None на спящие смайлики
+            group.replace(to_replace=[None], value='😴', inplace=True)
+            groups[name] = group  # заносим расписание для группы в словарь
 
     return groups
 
 
-def timetable_by_group(grade: int, group: str, day: str = 'week') -> pd.DataFrame or str:
+def timetable_by_group(grade: int, group: str, day: str) -> pd.DataFrame or str:
     """
     Функция, выдающая расписание для нужной группы на требуемый день
     :param grade: номер курса
     :param group: номер группы
-    :param day: день недели, расписание на который нужно вызвать, по умолчанию выдается расписание на неделю
+    :param day: день недели, расписание на который нужно вызвать
     :return: расписание в формате pd.DataFrame
     """
+    # датафреймы с расписаниями для каждого курса хранятся в файлах формата .pickle
     with open('timetable/{}_kurs.pickle'.format(grade), 'rb') as handle:
         curr_groups = pickle.load(handle)
-    if group in curr_groups.keys() and day == 'week':  # если номер группы есть в списке, то выдаем нужное расписание
-        return curr_groups[group]
-    elif group in curr_groups.keys() and day != 'week':
+    if group in curr_groups.keys():  # если номер группы есть в списке, то выдаем нужное расписание
         return curr_groups[group][day]
     else:  # иначе выдаем пустой датафрейм
         return pd.DataFrame()
