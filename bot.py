@@ -70,6 +70,7 @@ SUBJECTS = {
         }
 }
 
+
 comms = ['help', 'start', 'flash_cards', 'plot', 'timetable', 'exam']  # Comands list
 
 crazy_tokens = 0
@@ -511,7 +512,8 @@ def get_start_schedule(message):
             string: str = '<b>' + '<i>' + row[0] + '</i>' + '</b>' + '\n' + row[1][0]
             STRING += string + '\n\n'  # между парами пропуск (1 enter)
         bot.send_message(message.chat.id, STRING, parse_mode='HTML')  # parse_mode - чтобы читал измененный шрифт
-        keyboard = types.ReplyKeyboardRemove()  # убираем клавиатуру
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
         bot.send_message(message.chat.id, 'Чем ещё я могу помочь?', reply_markup=keyboard)
     elif message.text == 'На завтра':  # расписание на завтра
         tomorrow = 0  # номер дня завтра, если это воскресенье (6), то уже стоит
@@ -526,7 +528,8 @@ def get_start_schedule(message):
             string: str = '<b>' + '<i>' + row[0] + '</i>' + '</b>' + '\n' + row[1][0]
             STRING += string + '\n\n'  # между парами пропуск (1 enter)
         bot.send_message(message.chat.id, STRING, parse_mode='HTML')  # parse_mode - чтобы читал измененный шрифт
-        keyboard = types.ReplyKeyboardRemove()  # сворачиваем клавиатуру
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
         bot.send_message(message.chat.id, 'Чем ещё я могу помочь?', reply_markup=keyboard)
 
 
@@ -547,7 +550,8 @@ def get_course(message):
         msg = bot.send_message(message.chat.id, 'Не подскажешь номер своего курса?', reply_markup=keyboard)
         bot.register_next_step_handler(msg, get_group)
     elif message.text == 'Ладно, сам посмотрю':  # если после ошибки в считывании данных пришло сообщение о выходе:
-        keyboard = types.ReplyKeyboardRemove()  # убираем кнопки
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
         bot.send_message(message.chat.id, 'Без проблем! '
                                           'Но ты это, заходи, если что :)',
                          reply_markup=keyboard
@@ -573,7 +577,8 @@ def get_group(message):
     global COURSE_NUM  # вызываем глобальную переменную с номером курса
     if message.content_type == 'text':  # проверка типа сообщения, является ли оно текстовым, а не файлом
         if message.text == 'Выход':  # если из функции get_course() пришло сообщение о выходе
-            keyboard = types.ReplyKeyboardRemove()  # убираем кнопки
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             # стикос "Ты заходи есчо"
             bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
@@ -618,7 +623,8 @@ def get_weekday(message):
     """
     if message.content_type == 'text':  # проверяем, является ли сообщение текстовым
         if message.text == 'Выход':  # если из get_group() прилетело сообщение о выходе
-            keyboard = types.ReplyKeyboardRemove()  # убираем кнопки
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
         else:  # иначе запоминаем текст сообщения (проверку на формат текста не делал)
@@ -654,7 +660,8 @@ def get_schedule(message):
     """
     if message.content_type == 'text':  # проверка типа сообщения - текст или нет
         if message.text == 'Выход':  # если из функции get_group() прилетело сообщение о выходе
-            keyboard = types.ReplyKeyboardRemove()  # убираем кнопки
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
         else:  # иначе проверяем, есть ли расписание для этой группы в файле
@@ -675,7 +682,8 @@ def get_schedule(message):
                     string: str = '<b>' + '<i>' + row[0] + '</i>' + '</b>' + '\n' + row[1][0]
                     STRING += string + '\n\n'
                 bot.send_message(message.chat.id, STRING, parse_mode='HTML')
-                keyboard = types.ReplyKeyboardRemove()  # убираем клаву, спрашиваем, чем можем быть еще полезны
+                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+                keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
                 bot.send_message(message.chat.id, 'Чем ещё я могу помочь?', reply_markup=keyboard)
     else:  # если сообщение не текстовое, то говорим об ошибке формате
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -696,7 +704,8 @@ def ask_group(message):
     :return:
     """
     if message.text == 'Ладно, сам посмотрю':
-        keyboard = types.ReplyKeyboardRemove()
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
         bot.send_message(message.chat.id, '😞', reply_markup=keyboard)
     else:
         bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)')
