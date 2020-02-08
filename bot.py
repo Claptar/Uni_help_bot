@@ -708,13 +708,8 @@ def ask_group(message):
     :param message: telebot.types.Message
     :return:
     """
-    if message.text == 'Ладно, сам посмотрю':
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
-        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
-        bot.send_message(message.chat.id, '😞', reply_markup=keyboard)
-    else:
-        bot.send_message(message.chat.id, 'Не подскажешь номер своей группы? (В формате Б00-000)')
-        bot.register_next_step_handler(message, get_exam_timetable)
+    bot.send_message(message.chat.id, 'Ещё не время... Но ты не забывай...')
+    bot.send_sticker(message.chat.id, 'AAMCAgADGQEAAwRePwjGcmRgBOWkA5OQnIuJcfa7RQAC9h8AAqKKlgGxlxn-y7jkucY0OQ8ABAEAB20AA6peAAIYBA')
 
 
 def get_exam_timetable(message):
