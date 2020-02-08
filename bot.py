@@ -447,7 +447,7 @@ def date_mnk(message):
             keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
             msg = bot.send_message(message.chat.id,
                                    'Переименуй файл, пожалуйста🥺 И присылай снова, я подожду', reply_markup=keyboard)
-            bot.send_sticker(message.chat.id, 'AAMCAgADGQEAAwNePwdtTuGS9fai7eR8ECw3qQe0pwACxQUAAvoLtgipmNsAAd08atYVe7cNAAQBAAdtAAOQlQACGAQ')
+            bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAMDXj8HbU7hkvX2ou3kfBAsN6kHtKcAAsUFAAL6C7YIqZjbAAHdPGrWGAQ')
             bot.register_next_step_handler(msg, date_mnk)
         else:
             try:
@@ -709,7 +709,7 @@ def ask_group(message):
     :return:
     """
     bot.send_message(message.chat.id, 'Ещё не время... Но ты не забывай...')
-    bot.send_sticker(message.chat.id, 'AAMCAgADGQEAAwRePwjGcmRgBOWkA5OQnIuJcfa7RQAC9h8AAqKKlgGxlxn-y7jkucY0OQ8ABAEAB20AA6peAAIYBA')
+    bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAMDXj8HbU7hkvX2ou3kfBAsN6kHtKcAAsUFAAL6C7YIqZjbAAHdPGrWGAQ')
 
 
 def get_exam_timetable(message):
