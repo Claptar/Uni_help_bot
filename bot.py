@@ -446,7 +446,8 @@ def date_mnk(message):
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
             msg = bot.send_message(message.chat.id,
-                                   'Переименуй файл, пожалуйста🥺', reply_markup=keyboard)
+                                   'Переименуй файл, пожалуйста🥺 И присылай снова, я подожду', reply_markup=keyboard)
+            bot.send_sticker(message.chat.id, 'AAMCAgADGQEAAwNePwdtTuGS9fai7eR8ECw3qQe0pwACxQUAAvoLtgipmNsAAd08atYVe7cNAAQBAAdtAAOQlQACGAQ')
             bot.register_next_step_handler(msg, date_mnk)
         else:
             try:
