@@ -709,7 +709,7 @@ def ask_group(message):
     :return:
     """
     bot.send_message(message.chat.id, 'Ещё не время... Но ты не забывай...')
-    bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAMDXj8HbU7hkvX2ou3kfBAsN6kHtKcAAsUFAAL6C7YIqZjbAAHdPGrWGAQ')
+    bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAMEXj8IxnJkYATlpAOTkJyLiXH2u0UAAvYfAAKiipYBsZcZ_su45LkYBA')
 
 
 def get_exam_timetable(message):
