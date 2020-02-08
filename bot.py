@@ -442,44 +442,51 @@ def date_mnk(message):
                                    'Пришли xlsx файл с данными и всё будет готово', reply_markup=keyboard)
             bot.register_next_step_handler(msg, date_mnk)
     elif message.content_type == 'document':
-        try:
-            file_id = message.json.get('document').get('file_id')
-            file_path = bot.get_file(file_id).file_path
-            downloaded_file = bot.download_file(file_path)
-            FILE_NAME = message.document.file_name
-            with open(FILE_NAME, 'wb') as new_file:
-                new_file.write(downloaded_file)
-            a, b, d_a, d_b = math_part.mnk_calc(
-                FILE_NAME)  # TODO разделить рассчёт погрешностей констант и рассчёт самих констант
-            math_part.BOT_PLOT = True
-            math_part.plots_drawer(FILE_NAME, math_part.TITLE, math_part.ERRORS[0], math_part.ERRORS[1], math_part.ERROR_BAR)
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
-            bot.send_message(message.chat.id, 'Принимай работу !)', reply_markup=keyboard)
-            with open('plot.pdf', 'rb') as photo:
-                bot.send_document(message.chat.id, photo)
-            if math_part.ERROR_BAR:
-                for i in range(0, len(a)):
-                    bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
-                                                      f" a = {a[i]} +- {d_a[i], 6}\n"
-                                                      f" b = {b[i]} +- {d_b[i], 6}")
-            os.remove('plot.pdf')
-            with open('plot.png', 'rb') as photo:
-                bot.send_document(message.chat.id, photo)
-            os.remove('plot.png')
-            math_part.BOT_PLOT = False
-            os.remove(FILE_NAME)
-            math_part.TITLE = ''
-            math_part.ERRORS = [0, 0]
-            math_part.ERROR_BAR = False
-        except Exception as e:
-            os.remove(FILE_NAME)
-            print(e)
+        if message.document.file_name == 'Example.xlsx':
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
             msg = bot.send_message(message.chat.id,
-                                   'Ты точно прислал xlsx файл как в примере ? Давай ещё раз !', reply_markup=keyboard)
+                                   'Переименуй файл, пожалуйста🥺', reply_markup=keyboard)
             bot.register_next_step_handler(msg, date_mnk)
+        else:
+            try:
+                file_id = message.json.get('document').get('file_id')
+                file_path = bot.get_file(file_id).file_path
+                downloaded_file = bot.download_file(file_path)
+                FILE_NAME = message.document.file_name
+                with open(FILE_NAME, 'wb') as new_file:
+                    new_file.write(downloaded_file)
+                a, b, d_a, d_b = math_part.mnk_calc(FILE_NAME)
+                math_part.BOT_PLOT = True
+                math_part.plots_drawer(FILE_NAME, math_part.TITLE, math_part.ERRORS[0], math_part.ERRORS[1], math_part.ERROR_BAR)
+                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+                bot.send_message(message.chat.id, 'Принимай работу !)', reply_markup=keyboard)
+                with open('plot.pdf', 'rb') as photo:
+                    bot.send_document(message.chat.id, photo)
+                if math_part.ERROR_BAR:
+                    for i in range(0, len(a)):
+                        bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
+                                                          f" a = {a[i]} +- {d_a[i], 6}\n"
+                                                          f" b = {b[i]} +- {d_b[i], 6}")
+                os.remove('plot.pdf')
+                with open('plot.png', 'rb') as photo:
+                    bot.send_document(message.chat.id, photo)
+                os.remove('plot.png')
+                math_part.BOT_PLOT = False
+                if FILE_NAME != 'Example.xlsx':
+                    os.remove(FILE_NAME)
+                math_part.TITLE = ''
+                math_part.ERRORS = [0, 0]
+                math_part.ERROR_BAR = False
+            except Exception as e:
+                os.remove(FILE_NAME)
+                print(e)
+                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+                msg = bot.send_message(message.chat.id,
+                                       'Ты точно прислал xlsx файл как в примере ? Давай ещё раз !', reply_markup=keyboard)
+                bot.register_next_step_handler(msg, date_mnk)
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
