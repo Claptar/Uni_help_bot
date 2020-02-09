@@ -83,7 +83,9 @@ def timetable_by_group(grade: int, group: str, day: str) -> pd.DataFrame or str:
     # датафреймы с расписаниями для каждого курса хранятся в файлах формата .pickle
     with open('timetable/{}_kurs.pickle'.format(grade), 'rb') as handle:
         curr_groups = pickle.load(handle)
-    if group in curr_groups.keys():  # если номер группы есть в списке, то выдаем нужное расписание
+    if group in curr_groups.keys() and day in [  # дни недели
+                    'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'
+                ]:  # если номер группы есть в списке, то выдаем нужное расписание
         return curr_groups[group][day]
     else:  # иначе выдаем пустой датафрейм
         return pd.DataFrame()
