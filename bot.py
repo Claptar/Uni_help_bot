@@ -13,7 +13,6 @@ from math_module import math_part
 
 import timetable.timetable
 import datetime
-
 # Токен бота
 base_url = 'https://api.telegram.org/bot893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0/'
 TOKEN = '893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0'
