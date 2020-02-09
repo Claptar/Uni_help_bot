@@ -7,6 +7,7 @@ import pandas as pd
 import requests
 import telebot
 from telebot import types
+from db import *
 
 import texting.texting_symbols
 from math_module import math_part
@@ -15,10 +16,10 @@ import timetable.timetable
 import datetime
 
 # Токен бота
-base_url = 'https://api.telegram.org/bot893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0/'
-TOKEN = '893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0'
+URL = 'https://telegg.ru/orig/bot'
+TOKEN = '1033841103:AAGQrkJ9rbY9V8FB1PB8XpJ3uVDlM1cHKS8'
 PATH = os.path.abspath('')
-bot = telebot.TeleBot(TOKEN)
+bot = telebot.TeleBot(token=TOKEN)
 FILE_NAME = ''
 MESSAGE_NUM = 0
 MESSAGE_COM = ''
@@ -592,6 +593,8 @@ def get_group(message):
             bot.send_message(message.chat.id,  # просим пользователя ввести номер группы
                              'Не подскажешь номер своей группы? (В формате L0N–YFx или YFx)',
                              reply_markup=keyboard)
+            init_db()
+            add_message(user_id=str(message.chat.id), text=str(message))
             bot.register_next_step_handler(message, get_weekday)
         else:  # если сообщение не "Выход" и не номер курса, то говорим об ошибке и отправляем в get_course()
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
