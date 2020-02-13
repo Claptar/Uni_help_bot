@@ -76,6 +76,7 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     :param mnk: type Bool, При True строится прямая мнк
     :return:
     """
+    fig, ax = plt.subplots()
     dataset = pd.read_excel(data_file)
     d = np.array(dataset)[0:, :]
     a = []
@@ -92,24 +93,49 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     if mnk:
         for i in range(0, len(x)):
             if xerr != 0 or yerr != 0:
-                plt.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='k+')
+                ax.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='k+')
     for i in range(0, len(x)):
         delta = (max(x[i]) - min(x[i]))/len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
-        plt.plot(x[i], y[i], 'o')
+        ax.plot(x[i], y[i], 'o')
     if mnk:
         for i in range(0, len(x)):
-            plt.plot(np.array(x_[i]), a[i]*(np.array(x_[i])) + b[i], 'r')
-    plt.xlabel(dataset.columns[0])
-    plt.ylabel(dataset.columns[1])
+            ax.plot(np.array(x_[i]), a[i]*(np.array(x_[i])) + b[i], 'r')
+    ax.set_xlabel(dataset.columns[0])
+    ax.set_ylabel(dataset.columns[1])
     lab = np.array(dataset)[0, :]
     lab1 = []
     for i in range(0, len(lab)):
         if type(lab[i]) == str:
             lab1.append(lab[i])
-    plt.legend(lab1)
-    plt.title(tit)
-    plt.grid(True)
+    ax.legend(lab1)
+    ax.set_title(tit)
+    ax.grid(True)
+    # Находим координаты углов графика
+    xmin, xmax = ax.get_xlim()
+    ymin, ymax = ax.get_ylim()
+    # Добавляем горизонтальную стрелку на ось
+    ax.annotate("",
+                xy=(xmax, ymin), xycoords='data',
+                xytext=(xmin, ymin), textcoords='data',
+                arrowprops=dict(facecolor='black',
+                                shrink=0,
+                                width=0.1,
+                                headwidth=6,
+                                headlength=10,
+                                connectionstyle="arc3"),
+                )
+    # Добавляем вертикальную стрелку на ось
+    ax.annotate("",
+                xy=(xmin, ymax), xycoords='data',
+                xytext=(xmin, ymin), textcoords='data',
+                arrowprops=dict(facecolor='black',
+                                shrink=0,
+                                width=0.1,
+                                headwidth=6,
+                                headlength=10,
+                                connectionstyle="arc3"),
+                )
     if BOT_PLOT:
         plt.savefig('plot.pdf')
         plt.savefig('plot.png')
@@ -163,3 +189,6 @@ def error_calc(equation, var_list, point_list, error_list):
         sigma += error_list[number] ** 2 * der ** 2  # считем погрешность
 
     return sigma
+
+
+plots_drawer('Example.xlsx', '', 0, 0, False)
