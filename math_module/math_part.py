@@ -70,8 +70,6 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     """
     Функция считывает данные из таблицы и строит графики с МНК по этим данным
     :param data_file: Название файла с данными
-    :param x_lb: подпись оси абсцисс
-    :param y_lb: оси ординат
     :param tit: название графика
     :param xerr: погрешность по х
     :param yerr: погрешность по y
@@ -79,7 +77,7 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     :return:
     """
     dataset = pd.read_excel(data_file)
-    d = np.array(dataset)[1:, :]
+    d = np.array(dataset)[0:, :]
     a = []
     b = []
     x = []
