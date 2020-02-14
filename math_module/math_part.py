@@ -189,6 +189,3 @@ def error_calc(equation, var_list, point_list, error_list):
         sigma += error_list[number] ** 2 * der ** 2  # считем погрешность
 
     return sigma
-
-
-plots_drawer('Example.xlsx', '', 0, 0, False)
