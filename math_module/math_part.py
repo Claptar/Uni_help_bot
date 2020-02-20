@@ -103,7 +103,7 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     for i in range(0, len(x)):
         delta = (max(x[i]) - min(x[i]))/len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
-        ax.plot(x[i], y[i], 'o')
+        ax.plot(x[i], y[i], '.')
     if mnk:
         for i in range(0, len(x)):
             ax.plot(np.array(x_[i]), a[i]*(np.array(x_[i])) + b[i], 'r')
@@ -147,8 +147,14 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     # Добавляем промежуточную сетку
     ax.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
     if BOT_PLOT:
-        plt.savefig('plot.pdf')
-        plt.savefig('plot.png')
+        plt.savefig('plot1.pdf')
+        plt.savefig('plot1.png')
+    else:
+        plt.show()
+    ax.plot(x[i], y[i], 'o')
+    if BOT_PLOT:
+        plt.savefig('plot2.pdf')
+        plt.savefig('plot2.png')
     else:
         plt.show()
     plt.clf()
