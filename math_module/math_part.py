@@ -148,14 +148,12 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     ax.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
     if BOT_PLOT:
         plt.savefig('plot1.pdf')
-        plt.savefig('plot1.png')
     else:
         plt.show()
     for i in range(0, len(x)):
         ax.plot(x[i], y[i], 'o')
     if BOT_PLOT:
         plt.savefig('plot2.pdf')
-        plt.savefig('plot2.png')
     else:
         plt.show()
     plt.clf()
