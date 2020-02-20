@@ -470,8 +470,6 @@ def date_mnk(message):
                                                           f" a = {a[i]} +- {d_a[i], 6}\n"
                                                           f" b = {b[i]} +- {d_b[i], 6}")
                 os.remove('plot1.pdf')
-                with open('plot1.png', 'rb') as photo:
-                    bot.send_document(message.chat.id, photo)
                 with open('plot2.pdf', 'rb') as photo:
                     bot.send_document(message.chat.id, photo)
                 os.remove('plot2.pdf')
