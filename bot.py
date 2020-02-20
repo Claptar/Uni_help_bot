@@ -472,10 +472,6 @@ def date_mnk(message):
                 os.remove('plot1.pdf')
                 with open('plot1.png', 'rb') as photo:
                     bot.send_document(message.chat.id, photo)
-                os.remove('plot1.png')
-                with open('plot2.png', 'rb') as photo:
-                    bot.send_document(message.chat.id, photo)
-                os.remove('plot2.png')
                 with open('plot2.pdf', 'rb') as photo:
                     bot.send_document(message.chat.id, photo)
                 os.remove('plot2.pdf')
