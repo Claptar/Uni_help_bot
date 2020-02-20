@@ -462,17 +462,23 @@ def date_mnk(message):
                 keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
                 bot.send_message(message.chat.id, 'Принимай работу !)', reply_markup=keyboard)
-                with open('plot.pdf', 'rb') as photo:
+                with open('plot1.pdf', 'rb') as photo:
                     bot.send_document(message.chat.id, photo)
                 if math_part.ERROR_BAR:
                     for i in range(0, len(a)):
                         bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
                                                           f" a = {a[i]} +- {d_a[i], 6}\n"
                                                           f" b = {b[i]} +- {d_b[i], 6}")
-                os.remove('plot.pdf')
-                with open('plot.png', 'rb') as photo:
+                os.remove('plot1.pdf')
+                with open('plot1.png', 'rb') as photo:
                     bot.send_document(message.chat.id, photo)
-                os.remove('plot.png')
+                os.remove('plot1.png')
+                with open('plot2.png', 'rb') as photo:
+                    bot.send_document(message.chat.id, photo)
+                os.remove('plot2.png')
+                with open('plot2.pdf', 'rb') as photo:
+                    bot.send_document(message.chat.id, photo)
+                os.remove('plot2.pdf')
                 math_part.BOT_PLOT = False
                 if FILE_NAME != 'Example.xlsx':
                     os.remove(FILE_NAME)
