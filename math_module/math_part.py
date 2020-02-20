@@ -81,7 +81,8 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     :param mnk: type Bool, При True строится прямая мнк
     :return:
     """
-    fig, ax = plt.subplots()
+    fig = plt.figure(dpi=300)
+    ax = fig.add_subplot()
     dataset = pd.read_excel(data_file)
     d = np.array(dataset)[0:, :]
     a = []
@@ -144,7 +145,7 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     ax.minorticks_on()
     # Настраиваем основную стеку графика
     ax.grid(which='major', linestyle='-', linewidth='0.5', color='black')
-    # добавляем промежуточную сетку
+    # Добавляем промежуточную сетку
     ax.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
     if BOT_PLOT:
         plt.savefig('plot.pdf')
