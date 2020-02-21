@@ -70,7 +70,7 @@ SUBJECTS = {
 }
 
 
-comms = ['help', 'start', 'flash_cards', 'plot', 'timetable', 'exam']  # Comands list
+comms = ['help', 'start','plot', 'timetable', 'exam']  # Comands list
 
 crazy_tokens = 0
 ANSW_ID = 0
