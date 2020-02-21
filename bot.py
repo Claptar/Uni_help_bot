@@ -7,7 +7,6 @@ import pandas as pd
 import requests
 import telebot
 from telebot import types
-from boto.s3.connection import S3Connection
 
 import texting.texting_symbols
 from math_module import math_part
@@ -18,7 +17,7 @@ import datetime
 base_url = 'https://api.telegram.org/bot893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0/'
 TOKEN = '893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0'
 
-token = S3Connection(os.environ['TOKEN'])
+token = os.environ['TOKEN']
 bot = telebot.TeleBot(token)
 
 PATH = os.path.abspath('')

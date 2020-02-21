@@ -12,4 +12,3 @@ regex==2019.04.14
 plotly
 orca
 psutil
-boto
