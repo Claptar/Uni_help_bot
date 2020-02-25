@@ -7,9 +7,7 @@ xlrd==1.2.0
 sympy==1.4
 pyautogui
 selenium==3.141.0
-requests==2.7.0
+requests
 regex==2019.04.14
-plotly
-orca
 psutil
 psycopg2

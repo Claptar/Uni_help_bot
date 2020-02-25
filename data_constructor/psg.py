@@ -90,9 +90,10 @@ def update_group_num(chat_id, group_num):
     con.close()
 
 
-def create_table():
+def create_table(name):
     """
-    Создает таблицу с название CHEL6I
+    Создает таблицу с название name
+    :param name: Название будующей таблицы
     :return:
     """
     global USER, HOST, DATABASE, PASS
@@ -103,7 +104,7 @@ def create_table():
         host=HOST,
         port="5432")
     cur = con.cursor()
-    cur.execute('''CREATE TABLE CHEL6I  
+    cur.execute(f'''CREATE TABLE {name}  
          (CHAT_ID INT PRIMARY KEY NOT NULL,
          GROUP_NUM TEXT NOT NULL,
          COURSE INT);''')
