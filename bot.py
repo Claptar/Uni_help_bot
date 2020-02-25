@@ -537,7 +537,8 @@ def get_start_schedule(message):
     today = datetime.datetime.today().weekday()  # today - какой сегодня день недели (от 0 до 6)
     if message.text == 'На сегодня':  # расписание на сегодня
         # проверка работы функции на рандомной группе
-        schedule = timetable.timetable.timetable_by_group(3, '7113', week[today])
+        student = psg.get_student(message.chat.id)
+        schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[today])
         schedule = schedule.to_frame()
         STRING = ''  # "строка" с расписанием, которую отправляем сообщением
         for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
