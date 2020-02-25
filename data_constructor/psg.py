@@ -1,8 +1,15 @@
 import psycopg2
 import pandas as pd
+import os
+
+USER = os.environ['USER']
+PASS = os.environ['PASS']
+HOST = os.environ['TABLE_HOST']
+DATABASE = os.environ['DATABASE']
 
 
 def insert_data(chat_id, group_num, course):
+    global USER, HOST, DATABASE, PASS
     """
     В таблицу с названием CHEL6I добавляются данные пользователя
     :param chat_id: id чата бота с пользователем
@@ -11,10 +18,10 @@ def insert_data(chat_id, group_num, course):
     :return:
     """
     con = psycopg2.connect(
-        database="d35o9bn6qjau2u",
-        user="yxnigwjuiafqql",
-        password="1c2787f4a7bb154a724accb47df8e6ad049d8825faa3f8a0f5c128ded8c56f4f",
-        host="ec2-54-195-247-108.eu-west-1.compute.amazonaws.com",
+        database=DATABASE,
+        user=USER,
+        password=PASS,
+        host=HOST,
         port="5432")
     cur = con.cursor()
     cur.execute(
@@ -29,11 +36,12 @@ def read_data():
     Возвращает pandas dataframe с данными всех пользователей
     :return:
     """
+    global USER, HOST, DATABASE, PASS
     con = psycopg2.connect(
-        database="d35o9bn6qjau2u",
-        user="yxnigwjuiafqql",
-        password="1c2787f4a7bb154a724accb47df8e6ad049d8825faa3f8a0f5c128ded8c56f4f",
-        host="ec2-54-195-247-108.eu-west-1.compute.amazonaws.com",
+        database=DATABASE,
+        user=USER,
+        password=PASS,
+        host=HOST,
         port="5432")
     cursor = con.cursor()
     data = pd.read_sql("SELECT * FROM CHEL6I", con)
@@ -48,11 +56,12 @@ def update_course(chat_id, course):
     :param course:  новый номер курса пользователя
     :return:
     """
+    global USER, HOST, DATABASE, PASS
     con = psycopg2.connect(
-        database="d35o9bn6qjau2u",
-        user="yxnigwjuiafqql",
-        password="1c2787f4a7bb154a724accb47df8e6ad049d8825faa3f8a0f5c128ded8c56f4f",
-        host="ec2-54-195-247-108.eu-west-1.compute.amazonaws.com",
+        database=DATABASE,
+        user=USER,
+        password=PASS,
+        host=HOST,
         port="5432")
     cur = con.cursor()
     cur.execute(f"UPDATE CHEL6I set COURSE = {course} where CHAT_ID = {chat_id}")
@@ -67,11 +76,12 @@ def update_group_num(chat_id, group_num):
     :param group_num: новый номер группы пользователя
     :return:
     """
+    global USER, HOST, DATABASE, PASS
     con = psycopg2.connect(
-        database="d35o9bn6qjau2u",
-        user="yxnigwjuiafqql",
-        password="1c2787f4a7bb154a724accb47df8e6ad049d8825faa3f8a0f5c128ded8c56f4f",
-        host="ec2-54-195-247-108.eu-west-1.compute.amazonaws.com",
+        database=DATABASE,
+        user=USER,
+        password=PASS,
+        host=HOST,
         port="5432")
     cur = con.cursor()
     cur.execute(f"UPDATE CHEL6I set GROUP_NUM = '{group_num}' where CHAT_ID = {chat_id}")
@@ -84,11 +94,12 @@ def create_table():
     Создает таблицу с название CHEL6I
     :return:
     """
+    global USER, HOST, DATABASE, PASS
     con = psycopg2.connect(
-        database="d35o9bn6qjau2u",
-        user="yxnigwjuiafqql",
-        password="1c2787f4a7bb154a724accb47df8e6ad049d8825faa3f8a0f5c128ded8c56f4f",
-        host="ec2-54-195-247-108.eu-west-1.compute.amazonaws.com",
+        database=DATABASE,
+        user=USER,
+        password=PASS,
+        host=HOST,
         port="5432")
     cur = con.cursor()
     cur.execute('''CREATE TABLE CHEL6I  
