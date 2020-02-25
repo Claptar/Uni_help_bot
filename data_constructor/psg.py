@@ -45,7 +45,7 @@ def read_data():
         host=HOST,
         port="5432")
     cursor = con.cursor()
-    data = pd.read_sql("SELECT * FROM CHEL6I", con, index_col=0)
+    data = pd.read_sql("SELECT * FROM CHEL6I", con, index_col='chat_id')
     con.close()
     return data
 
