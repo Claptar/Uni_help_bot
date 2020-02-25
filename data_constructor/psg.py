@@ -1,6 +1,7 @@
 import psycopg2
 import pandas as pd
 import os
+import numpy as np
 
 USER = os.environ['USER']
 PASS = os.environ['PASS']
@@ -108,3 +109,8 @@ def create_table():
          COURSE INT);''')
     con.commit()
     con.close()
+
+
+def get_student(chat_id):
+    data = read_data()
+    return np.array(data.loc[chat_id])
