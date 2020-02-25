@@ -105,7 +105,7 @@ def help_def(message):
 @bot.message_handler(commands=['start'])
 def check(message):
     data = psg.read_data()
-    if message.chat.id in data['chat_id'].unique():
+    if message.chat.id in data.index:
         pass
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -554,7 +554,8 @@ def get_start_schedule(message):
         if today in range(6):  # если не воскресенье, то значение today + 1
             tomorrow = today + 1
         # тест на рандомной группе
-        schedule = timetable.timetable.timetable_by_group(3, '7113', week[tomorrow])
+        student = psg.get_student(message.chat.id)
+        schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[tomorrow])
         schedule = schedule.to_frame()
         STRING = ''  # "строка" с расписанием, которую отправляем сообщением
         for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
