@@ -1,5 +1,7 @@
 import requests
 
+SEM = 0
+TASK = 0
 
 def kor_page(sem_num, zad_num):
     url = f'https://mipt1.ru/1_2_3_4_5_kor.php?sem={sem_num}&zad={zad_num}'

@@ -1,7 +1,7 @@
 import os
 import random
 import re
-
+from koryavov import kor
 import numpy as np
 import pandas as pd
 import requests
@@ -100,6 +100,34 @@ def help_def(message):
                                       '\n/exam - Подскажу расписание экзаменов, но ты сам захотел...'
                                       ' Я не люблю напоминать'
                                       'о плохом...\n')
+
+
+@bot.message_handler(commands=['start'])
+def koryavov1(message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in range(1, 5)])  # кнопки c номерами семестров
+    msg = bot.send_message(message.chat.id, 'Выбери номер семестра общей физики: \n'
+                                            '1) Механика \n'
+                                            '2) Термеодинамика \n'
+                                            '3) Электричество \n'
+                                            '4) Оптика\n'
+                                            '5) Атомная и ядерная физика', reply_markup=keyboard)
+    bot.register_next_step_handler(msg, task_number)
+
+
+def task_number(message):
+    kor.SEM = int(message.text)
+    keyboard = types.ReplyKeyboardRemove()
+    msg = bot.send_message(message.chat.id, 'Отлично, напиши теперь номер задачи', reply_markup=keyboard)
+    bot.register_next_step_handler(msg, task_page)
+
+
+def task_page(message):
+    kor.TASK = int(message.text)
+    reply = 'Информация взята с сайта mipt1.ru \n\n' + kor.kor_page(kor.SEM, kor.TASK)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+    keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+    bot.send_message(message.chat.id, reply, reply_markup=keyboard)
 
 
 @bot.message_handler(commands=['start'])
