@@ -102,7 +102,7 @@ def help_def(message):
                                       'о плохом...\n')
 
 
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=['koryavov'])
 def koryavov1(message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in range(1, 5)])  # кнопки c номерами семестров
