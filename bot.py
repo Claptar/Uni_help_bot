@@ -105,7 +105,7 @@ def help_def(message):
 @bot.message_handler(commands=['koryavov'])
 def koryavov1(message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in range(1, 5)])  # кнопки c номерами семестров
+    keyboard.add(*[types.KeyboardButton(name) for name in range(1, 6)])  # кнопки c номерами семестров
     msg = bot.send_message(message.chat.id, 'Выбери номер семестра общей физики: \n'
                                             '1) Механика \n'
                                             '2) Термеодинамика \n'
@@ -123,7 +123,7 @@ def task_number(message):
 
 
 def task_page(message):
-    kor.TASK = int(message.text)
+    kor.TASK = float(message.text)
     reply = 'Информация взята с сайта mipt1.ru \n\n' + kor.kor_page(kor.SEM, kor.TASK)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
     keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
