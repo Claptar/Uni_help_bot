@@ -8,6 +8,12 @@ groups = [{} for i in range(5)]  # список расписаний для ка
 # считываем расписания из экселевских файлов
 # меняем их на новые в каждом семе, при замене, возмножно, нужно внести правки в функция timetable.get_timetable()
 def timetable_by_kurs(file_name, course):
+    """
+    Функция для считывания расписания курса из файла .xslx с несколькими листами (sheets)
+    :param file_name: имя файла с расписанием
+    :param course: номер курса
+    :return: добавляет в список groups pd.DataFrame с расписанием курса
+    """
     kurs = openpyxl.load_workbook(file_name)
     for sheet in kurs.worksheets:
         groups[course].update(timetable.get_timetable(sheet))
