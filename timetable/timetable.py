@@ -94,7 +94,8 @@ def timetable_by_group(grade: int, group: str, day: str) -> pd.DataFrame:
 def check_group(group_num: str, course_num: int) -> bool:
     """
     Функция, которая проверяет наличие группы в списке групп по номеру курса
-    :param group_num: str
+    :param group_num: str Номер группы
+    :param course_num: int Номер курса
     :return: True or False
     """
     flag = False
