@@ -123,7 +123,7 @@ def edit_values(message):
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
         msg = bot.send_message(message.chat.id, 'Введи номер своей группы', reply_markup=keyboard)
-        bot.register_next_step_handler(msg, task_number)
+        bot.register_next_step_handler(msg, edit_group)
     elif message.text == 'Выход':
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
