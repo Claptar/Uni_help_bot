@@ -659,7 +659,6 @@ def get_start_schedule(message):
         # проверка работы функции на рандомной группе
         student = psg.get_student(message.chat.id)
         schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[today])
-        schedule = schedule.to_frame()
         STRING = ''  # "строка" с расписанием, которую отправляем сообщением
         for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
             # время пары - жирный + наклонный шрифт, название пары на следующей строке
@@ -676,7 +675,6 @@ def get_start_schedule(message):
         # тест на рандомной группе
         student = psg.get_student(message.chat.id)
         schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[tomorrow])
-        schedule = schedule.to_frame()
         STRING = ''  # "строка" с расписанием, которую отправляем сообщением
         for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
             # время пары - жирный + наклонный шрифт, название пары на следующей строке
@@ -737,7 +735,7 @@ def get_group(message):
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             # стикос "Ты заходи есчо"
             bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
-        elif message.text in map(str, range(1, 7)):  # если прилетел номер курса
+        elif message.text in map(str, range(1, 6)):  # если прилетел номер курса
             COURSE_NUM = int(message.text)  # запоминаем номер курса (число)
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(
@@ -830,7 +828,6 @@ def get_schedule(message):
                                        reply_markup=keyboard)
                 bot.register_next_step_handler(msg, get_course)  # да-да, отсылаем в самую первую функцию)))
             else:  # иначе переводим табличку с расписанием на день (pd.Series) в pd.DataFrame
-                schedule = schedule.to_frame()
                 STRING = ''  # проходимся по всем строчкам расписания, записываем в STRING готовое сообщение,
                 # которое отправим пользователю ( см. функцию get_start_schedule() )
                 for row in schedule.iterrows():
