@@ -98,6 +98,20 @@ def help_def(message):
                                       'Информация берётся с замечательного сайта mipt1.ru')
 
 
+@bot.message_handler(commands=['profile'])
+def choose_edit(message):
+    """
+    Функция ловит сообщение с командой '/profile' и спрашивает у пользователя
+     какие данные он хочет изменить в базе данных
+    :param message:
+    :return:
+    """
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Номер курса', 'Номер группы']])  # кнопки c номерами семестров
+    msg = bot.send_message(message.chat.id, 'Что именно ты хочешь изменить ?', reply_markup=keyboard)
+    bot.register_next_step_handler(msg, task_number)
+
+
 @bot.message_handler(commands=['koryavov'])
 def koryavov1(message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -112,18 +126,26 @@ def koryavov1(message):
 
 
 def task_number(message):
-    kor.SEM = int(message.text)
-    keyboard = types.ReplyKeyboardRemove()
-    msg = bot.send_message(message.chat.id, 'Отлично, напиши теперь номер задачи', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, task_page)
+    if message.text.isdigit():
+        kor.SEM = int(message.text)
+        keyboard = types.ReplyKeyboardRemove()
+        msg = bot.send_message(message.chat.id, 'Отлично, напиши теперь номер задачи', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, task_page)
+    else:
+        msg = bot.send_message(message.chat.id, 'Чёт не так, давай ещё раз')
+        bot.register_next_step_handler(msg, koryavov1)
 
 
 def task_page(message):
-    kor.TASK = float(message.text)
-    reply = 'Информация взята с сайта mipt1.ru \n\n' + kor.kor_page(kor.SEM, kor.TASK)
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
-    keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
-    bot.send_message(message.chat.id, reply, reply_markup=keyboard)
+    if math_part.is_digit(message.text):
+        kor.TASK = float(message.text)
+        reply = 'Информация взята с сайта mipt1.ru \n\n' + kor.kor_page(kor.SEM, kor.TASK)
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+        bot.send_message(message.chat.id, reply, reply_markup=keyboard)
+    else:
+        msg = bot.send_message(message.chat.id, 'Чёт не так, давай ещё раз')
+        bot.register_next_step_handler(msg, task_number)
 
 
 @bot.message_handler(commands=['start'])
