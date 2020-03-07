@@ -91,18 +91,15 @@ def timetable_by_group(grade: int, group: str, day: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def check_group(group_num: str) -> bool:
+def check_group(group_num: str, course_num: int) -> bool:
     """
     Функция, которая проверяет наличие группы в списке групп
     :param group_num: str
     :return: True or False
     """
     flag = False
-    for i in range(1, 6):
-        with open('timetable/{}_kurs.pickle'.format(i), 'rb') as handle:
-            curr_groups = pickle.load(handle)
-        if group_num in curr_groups.keys():
-            flag = True
-        else:
-            continue
+    with open('timetable/{}_kurs.pickle'.format(course_num), 'rb') as handle:
+        curr_groups = pickle.load(handle)
+    if group_num in curr_groups.keys():
+        flag = True
     return flag
