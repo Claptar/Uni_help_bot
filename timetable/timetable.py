@@ -48,6 +48,8 @@ def get_timetable(table: openpyxl.worksheet) -> dict:
             continue
         # иначе если столбец - это номер группы, то составляем для него расписание
         elif name is not None:
+            if type(name) == int:
+                name = str(name)
             # group - словарь с расписанием для группы
             group = dict(Понедельник={}, Вторник={}, Среда={}, Четверг={}, Пятница={}, Суббота={}, Воскресенье={})
             for k in range(2, table.max_row + 1):  # проходимся по столбцу
