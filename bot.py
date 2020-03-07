@@ -1,29 +1,23 @@
+from telebot import types
+from data_constructor import psg
+from math_module import math_part
+from koryavov import kor
+
 import os
 import random
 import re
-from koryavov import kor
 import numpy as np
 import pandas as pd
 import requests
 import telebot
-from telebot import types
-
-from data_constructor import psg
-
 import texting.texting_symbols
-from math_module import math_part
-
 import timetable.timetable
 import datetime
-# Токен бота 
-base_url = 'https://api.telegram.org/bot893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0/'
-TOKEN = '893576564:AAFGQbneULhW7iUIsLwqJY3WZpFPe78oSR0'
 
-token = os.environ['TOKEN']
+token = os.environ['TOKEN']  # Токен для бота берётся из переменных окружения
 bot = telebot.TeleBot(token)
 
-PATH = os.path.abspath('')
-FILE_NAME = ''
+PATH = os.path.abspath('')  # Путь текущей директории
 MESSAGE_NUM = 0
 MESSAGE_COM = ''
 Q_NUM = 0
@@ -484,7 +478,6 @@ def date_mnk(message):
     :param message:
     :return:
     """
-    global FILE_NAME
     if message.content_type == 'text':
         if message.text == 'Выход':
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
