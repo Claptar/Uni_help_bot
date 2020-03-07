@@ -698,7 +698,7 @@ def get_weekday(message):
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(
                 *[types.KeyboardButton(name) for name in [  # дни недели для тыков и кнопка для выхода
-                    'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Выход'
+                    'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье', 'Выход'
                 ]
                   ]
             )
