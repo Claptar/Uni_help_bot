@@ -626,7 +626,7 @@ def get_course(message):
     elif message.text == 'Попробую ещё раз':  # если после ошибки в считывании данных в других функциях пришло
         # сообщение попробовать ввести значения еще раз
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in range(1, 7)])  # то же, что и в блоке инициализации
+        keyboard.add(*[types.KeyboardButton(name) for name in range(1, 6)])  # то же, что и в блоке инициализации
         keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
         msg = bot.send_message(message.chat.id, 'Не подскажешь номер своего курса?', reply_markup=keyboard)
         bot.register_next_step_handler(msg, get_group)
