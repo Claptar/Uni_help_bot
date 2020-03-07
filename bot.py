@@ -167,7 +167,7 @@ def edit_group(message):
         keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра', 'Выход']])
         bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
         bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
-    elif message.text in []:
+    elif timetable.timetable.check_group(message.text):
         psg.update_group_num(message.chat.id, message.text)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра', 'Выход']])
@@ -199,8 +199,10 @@ def task_number(message):
         msg = bot.send_message(message.chat.id, 'Отлично, напиши теперь номер задачи', reply_markup=keyboard)
         bot.register_next_step_handler(msg, task_page)
     else:
-        msg = bot.send_message(message.chat.id, 'Чёт не так, давай ещё раз')
-        bot.register_next_step_handler(msg, koryavov1)
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in range(1, 6)])  # кнопки c номерами семестров
+        msg = bot.send_message(message.chat.id, 'Чёт не так, давай ещё раз. Выбери номер семестра:')
+        bot.register_next_step_handler(msg, task_number)
 
 
 def task_page(message):
@@ -211,8 +213,8 @@ def task_page(message):
         keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
         bot.send_message(message.chat.id, reply, reply_markup=keyboard)
     else:
-        msg = bot.send_message(message.chat.id, 'Чёт не так, давай ещё раз')
-        bot.register_next_step_handler(msg, task_number)
+        msg = bot.send_message(message.chat.id, 'Чёт не так, давай ещё раз. Введи номер задачи.')
+        bot.register_next_step_handler(msg, task_page)
 
 
 @bot.message_handler(commands=['start'])
