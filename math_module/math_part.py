@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import sympy as sp
 
-
 # Глобальная переменная для записи названия графика
 TITLE = ''
 # Переменная, в которую мы записываем запускает ли функцию файл bot.py
@@ -20,6 +19,22 @@ ERROR_BAR = False
 LABEL = []
 # Пер
 ERRORS = [0, 0]
+
+
+def is_digit(string):
+    """
+    Проверка на то, является ли строка числом или нет
+    :param string: Подозреваемая строка
+    :return: bool
+    """
+    if string.isdigit():
+        return True
+    else:
+        try:
+            float(string)
+            return True
+        except ValueError:
+            return False
 
 
 def data_conv(data_file):
@@ -44,13 +59,13 @@ def plt_const(x, y):
     :param y: Массив оридинат точек
     :return: [значение углового коэфф a, значение коэфф b, значение погрешности a, значение погрешности b]
     """
-    av_x = np.sum(x)/len(x)
-    av_y = np.sum(y)/len(y)
-    sigmas_x = np.sum(x*x)/len(x) - (np.sum(x)/len(x))**2
-    sigmas_y = np.sum(y*y)/len(y) - (np.sum(y)/len(y))**2
-    r = np.sum(x*y)/len(x) - av_x*av_y
-    a = r/sigmas_x
-    b = av_y - a*av_x
+    av_x = np.sum(x) / len(x)
+    av_y = np.sum(y) / len(y)
+    sigmas_x = np.sum(x * x) / len(x) - (np.sum(x) / len(x)) ** 2
+    sigmas_y = np.sum(y * y) / len(y) - (np.sum(y) / len(y)) ** 2
+    r = np.sum(x * y) / len(x) - av_x * av_y
+    a = r / sigmas_x
+    b = av_y - a * av_x
     try:
         d_a = 2 * math.sqrt((sigmas_y / sigmas_x - a ** 2) / (len(x) - 2))
         d_b = d_a * math.sqrt(sigmas_x + av_x ** 2)
@@ -101,12 +116,12 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
             if xerr != 0 or yerr != 0:
                 ax.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='k+')
     for i in range(0, len(x)):
-        delta = (max(x[i]) - min(x[i]))/len(x[i])
+        delta = (max(x[i]) - min(x[i])) / len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
         ax.plot(x[i], y[i], '.')
     if mnk:
         for i in range(0, len(x)):
-            ax.plot(np.array(x_[i]), a[i]*(np.array(x_[i])) + b[i], 'r')
+            ax.plot(np.array(x_[i]), a[i] * (np.array(x_[i])) + b[i], 'r')
     ax.set_xlabel(dataset.columns[0])
     ax.set_ylabel(dataset.columns[1])
     lab = np.array(dataset)[0, :]
