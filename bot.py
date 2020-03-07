@@ -569,7 +569,6 @@ def get_start_schedule(message):
         # проверка работы функции на рандомной группе
         student = psg.get_student(message.chat.id)
         schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[today])
-        schedule = schedule.to_frame()
         STRING = ''  # "строка" с расписанием, которую отправляем сообщением
         for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
             # время пары - жирный + наклонный шрифт, название пары на следующей строке
@@ -586,7 +585,6 @@ def get_start_schedule(message):
         # тест на рандомной группе
         student = psg.get_student(message.chat.id)
         schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[tomorrow])
-        schedule = schedule.to_frame()
         STRING = ''  # "строка" с расписанием, которую отправляем сообщением
         for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
             # время пары - жирный + наклонный шрифт, название пары на следующей строке

@@ -84,14 +84,14 @@ def timetable_by_group(grade: int, group: str, day: str) -> pd.DataFrame:
     with open('timetable/{}_kurs.pickle'.format(grade), 'rb') as handle:
         curr_groups = pickle.load(handle)
     if group in curr_groups.keys() and day in [  # дни недели
-                    'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'
-                ]:  # если номер группы есть в списке, то выдаем нужное расписание
-        return curr_groups[group][day]
+        'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'
+    ]:  # если номер группы есть в списке, то выдаем нужное расписание
+        return curr_groups[group][day].to_frame()
     else:  # иначе выдаем пустой датафрейм
         return pd.DataFrame()
 
 
-def check_group(group_num : str) -> bool:
+def check_group(group_num: str) -> bool:
     """
     Функция, которая проверяет наличие группы в списке групп
     :param group_num: str
