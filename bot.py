@@ -107,9 +107,76 @@ def choose_edit(message):
     :return:
     """
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['Номер курса', 'Номер группы']])  # кнопки c номерами семестров
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Номер курса', 'Номер группы', 'Выход']])  # кнопки c номерами семестров
     msg = bot.send_message(message.chat.id, 'Что именно ты хочешь изменить ?', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, task_number)
+    bot.register_next_step_handler(msg, edit_values)
+
+
+def edit_values(message):
+    if message.text == 'Номер курса':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])
+        msg = bot.send_message(message.chat.id, 'Введи номер своего курса', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, edit_course)
+    if message.text == 'Номер группы':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+        msg = bot.send_message(message.chat.id, 'Введи номер своей группы', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, task_number)
+    elif message.text == 'Выход':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра', 'Выход']])
+        bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
+        bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Номер курса', 'Номер группы', 'Выход']])
+        msg = bot.send_message(message.chat.id, 'Чёт не так, давай ещё раз', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, edit_values)
+
+
+def edit_course(message):
+    if message.text.isdigit():
+        course_num = message.text.isdigit()
+        if 1 <= course_num <= 5:
+            psg.update_course(message.chat.id, course_num)
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра', 'Выход']])
+            bot.send_message(message.chat.id, 'Всё, готово, проверяй)', reply_markup=keyboard)
+        else:
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])
+            msg = bot.send_message(message.chat.id, 'Ты мне прислал некорректный номер курса.'
+                                              ' Значение должно быть от 1 до 5. Выбери ещё раз.', reply_markup=keyboard)
+            bot.register_next_step_handler(msg, edit_course)
+    elif message.text == 'Выход':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра', 'Выход']])
+        bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
+        bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])
+        msg = bot.send_message(message.chat.id, 'Чёт не так, выбери номер курса ещё раз', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, edit_course)
+
+
+def edit_group(message):
+    if message.text == 'Выход':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра', 'Выход']])
+        bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
+        bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+    elif message.text in []:
+        psg.update_group_num(message.chat.id, message.text)
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра', 'Выход']])
+        bot.send_message(message.chat.id, 'Всё, готово, проверяй)', reply_markup=keyboard)
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+        msg = bot.send_message(message.chat.id, 'Чёт не так, напиши номер группы ещё раз', reply_markup=keyboard)
+        bot.register_next_step_handler(msg, edit_course)
 
 
 @bot.message_handler(commands=['koryavov'])
