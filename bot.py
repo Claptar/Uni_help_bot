@@ -109,7 +109,10 @@ def choose_edit(message):
     """
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Номер курса', 'Номер группы', 'Выход']])  # кнопки c номерами семестров
-    msg = bot.send_message(message.chat.id, 'Что именно ты хочешь изменить ?', reply_markup=keyboard)
+    student = psg.get_student(message.chat.id)
+    msg = bot.send_message(message.chat.id, f'Сейчас у тебя указано, что ты учишься на {student[1]} курсе'
+                                            f'в {student[0]} группе.'
+                                            f' Что именно ты хочешь изменить ?', reply_markup=keyboard)
     bot.register_next_step_handler(msg, edit_values)
 
 
@@ -643,38 +646,43 @@ def get_start_schedule(message):
     Узнает номер дня недели сегодня/завтра и по этому значению обращается в функцию get_schedule_by_group()?.
     :return:
     """
-    # список дней для удобной конвертации номеров дней недели (0,1, ..., 6) в их названия
-    week = tuple(['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'])
-    today = datetime.datetime.today().weekday()  # today - какой сегодня день недели (от 0 до 6)
-    if message.text == 'На сегодня':  # расписание на сегодня
-        # проверка работы функции на рандомной группе
-        student = psg.get_student(message.chat.id)
-        schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[today])
-        STRING = ''  # "строка" с расписанием, которую отправляем сообщением
-        for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
-            # время пары - жирный + наклонный шрифт, название пары на следующей строке
-            string: str = '<b>' + '<i>' + row[0] + '</i>' + '</b>' + '\n' + row[1][0]
-            STRING += string + '\n\n'  # между парами пропуск (1 enter)
-        bot.send_message(message.chat.id, STRING, parse_mode='HTML')  # parse_mode - чтобы читал измененный шрифт
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
-        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
-        bot.send_message(message.chat.id, 'Чем ещё я могу помочь?', reply_markup=keyboard)
-    elif message.text == 'На завтра':  # расписание на завтра
-        tomorrow = 0  # номер дня завтра, если это воскресенье (6), то уже стоит
-        if today in range(6):  # если не воскресенье, то значение today + 1
-            tomorrow = today + 1
-        # тест на рандомной группе
-        student = psg.get_student(message.chat.id)
-        schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[tomorrow])
-        STRING = ''  # "строка" с расписанием, которую отправляем сообщением
-        for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
-            # время пары - жирный + наклонный шрифт, название пары на следующей строке
-            string: str = '<b>' + '<i>' + row[0] + '</i>' + '</b>' + '\n' + row[1][0]
-            STRING += string + '\n\n'  # между парами пропуск (1 enter)
-        bot.send_message(message.chat.id, STRING, parse_mode='HTML')  # parse_mode - чтобы читал измененный шрифт
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
-        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
-        bot.send_message(message.chat.id, 'Чем ещё я могу помочь?', reply_markup=keyboard)
+    student = psg.get_student(message.chat.id)
+    if timetable.timetable.check_group(student[0], student[1]):
+        # список дней для удобной конвертации номеров дней недели (0,1, ..., 6) в их названия
+        week = tuple(['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'])
+        today = datetime.datetime.today().weekday()  # today - какой сегодня день недели (от 0 до 6)
+        if message.text == 'На сегодня':  # расписание на сегодня
+            # проверка работы функции на рандомной группе
+            student = psg.get_student(message.chat.id)
+            schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[today])
+            STRING = ''  # "строка" с расписанием, которую отправляем сообщением
+            for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
+                # время пары - жирный + наклонный шрифт, название пары на следующей строке
+                string: str = '<b>' + '<i>' + row[0] + '</i>' + '</b>' + '\n' + row[1][0]
+                STRING += string + '\n\n'  # между парами пропуск (1 enter)
+            bot.send_message(message.chat.id, STRING, parse_mode='HTML')  # parse_mode - чтобы читал измененный шрифт
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+            bot.send_message(message.chat.id, 'Чем ещё я могу помочь?', reply_markup=keyboard)
+        elif message.text == 'На завтра':  # расписание на завтра
+            tomorrow = 0  # номер дня завтра, если это воскресенье (6), то уже стоит
+            if today in range(6):  # если не воскресенье, то значение today + 1
+                tomorrow = today + 1
+            # тест на рандомной группе
+            student = psg.get_student(message.chat.id)
+            schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[tomorrow])
+            STRING = ''  # "строка" с расписанием, которую отправляем сообщением
+            for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
+                # время пары - жирный + наклонный шрифт, название пары на следующей строке
+                string: str = '<b>' + '<i>' + row[0] + '</i>' + '</b>' + '\n' + row[1][0]
+                STRING += string + '\n\n'  # между парами пропуск (1 enter)
+            bot.send_message(message.chat.id, STRING, parse_mode='HTML')  # parse_mode - чтобы читал измененный шрифт
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+            bot.send_message(message.chat.id, 'Чем ещё я могу помочь?', reply_markup=keyboard)
+        else:
+            bot.send_message(message.chat.id, 'Не могу найти расписание для указанных тобой номера курса и группы('
+                                              'Нажми /profile чтобы проверить корректность данных.')
 
 
 @bot.message_handler(commands=['timetable'])
