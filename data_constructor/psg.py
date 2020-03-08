@@ -113,5 +113,10 @@ def create_table(name):
 
 
 def get_student(chat_id):
+    """
+    Функция по chat_id пользователя возвращеет значения его номера группы и номера курса
+    :param chat_id: int
+    :return: [group_num, course_num]
+    """
     data = read_data()
     return np.array(data.loc[chat_id])
