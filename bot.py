@@ -785,10 +785,10 @@ def get_weekday(message):
             global GROUP_NUM  # глобальная переменная - номер группы
             GROUP_NUM = message.text
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            # дни недели для тыков и кнопка для выхода
-            keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник'])
-            keyboard.add(*[types.KeyboardButton(name) for name in ['Среда', 'Четверг', 'Пятница'])
-            keyboard.add(*[types.KeyboardButton(name) for name in ['Суббота', 'Выход'])
+            # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник']])
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Среда', 'Четверг', 'Пятница']])
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Суббота', 'Выход']])
             bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
             bot.register_next_step_handler(message, get_schedule)
     else:  # если сообщение не текстовое, то говорим об ошибке формата, отсылаем в функцию get_course()
