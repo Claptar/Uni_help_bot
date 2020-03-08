@@ -699,7 +699,7 @@ def get_course(message):
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in range(1, 4)])  # кнопки c номерами курсов
         keyboard.add(*[types.KeyboardButton(name) for name in [4, 5, 'Выход']])  # кнопка для выхода из функции
-        msg = bot.send_message(message.chat.id, 'Не подскажешь номер своего курса?', reply_markup=keyboard)
+        msg = bot.send_message(message.chat.id, 'Не подскажешь номер курса?', reply_markup=keyboard)
         bot.register_next_step_handler(msg, get_group)
     elif message.text == 'Ладно, сам посмотрю':  # если после ошибки в считывании данных пришло сообщение о выходе:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
@@ -782,7 +782,7 @@ def get_weekday(message):
         else:  # иначе запоминаем текст сообщения (проверку на формат текста не делал)
             global GROUP_NUM  # глобальная переменная - номер группы
             if message.text == 'Моя группа':
-                GROUP_NUM = psg.get_student(message.chat.id)
+                GROUP_NUM = psg.get_student(message.chat.id)[0]
             else:
                 GROUP_NUM = message.text
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
