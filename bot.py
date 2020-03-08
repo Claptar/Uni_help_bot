@@ -201,7 +201,7 @@ def task_number(message):
 
 def task_page(message):
     if math_part.is_digit(message.text):
-        kor.TASK = float(message.text)
+        kor.TASK = message.text
         reply = 'Информация взята с сайта mipt1.ru \n\n' + kor.kor_page(kor.SEM, kor.TASK)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
         keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
