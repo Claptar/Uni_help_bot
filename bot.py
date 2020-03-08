@@ -699,8 +699,8 @@ def get_course(message):
         bot.send_message(message.chat.id, 'Снова не можешь вспомнить какая пара следующая? :) '
                                           'Ничего, я уже тут!')
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in range(1, 6)])  # кнопки c номерами курсов
-        keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])  # кнопка для выхода из функции
+        keyboard.add(*[types.KeyboardButton(name) for name in range(1, 4)])  # кнопки c номерами курсов
+        keyboard.add(*[types.KeyboardButton(name) for name in [4, 5, 'Выход']])  # кнопка для выхода из функции
         msg = bot.send_message(message.chat.id, 'Не подскажешь номер своего курса?', reply_markup=keyboard)
         bot.register_next_step_handler(msg, get_group)
     elif message.text == 'Ладно, сам посмотрю':  # если после ошибки в считывании данных пришло сообщение о выходе:
@@ -785,14 +785,10 @@ def get_weekday(message):
             global GROUP_NUM  # глобальная переменная - номер группы
             GROUP_NUM = message.text
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in [  # дни недели для тыков и кнопка для выхода
-                    ['Понедельник', 'Вторник'],
-                    ['Среда', 'Четверг', 'Пятница'],
-                    ['Суббота', 'Выход']
-                ]
-                  ]
-            )
+            # дни недели для тыков и кнопка для выхода
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник'])
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Среда', 'Четверг', 'Пятница'])
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Суббота', 'Выход'])
             bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
             bot.register_next_step_handler(message, get_schedule)
     else:  # если сообщение не текстовое, то говорим об ошибке формата, отсылаем в функцию get_course()
