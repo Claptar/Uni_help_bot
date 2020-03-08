@@ -680,9 +680,9 @@ def get_start_schedule(message):
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
             keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
             bot.send_message(message.chat.id, 'Чем ещё я могу помочь?', reply_markup=keyboard)
-        else:
-            bot.send_message(message.chat.id, 'Не могу найти расписание для указанных тобой номера курса и группы('
-                                              'Нажми /profile чтобы проверить корректность данных.')
+    else:
+        bot.send_message(message.chat.id, 'Не могу найти расписание для указанных тобой номера курса и группы('
+                                          'Нажми /profile чтобы проверить корректность данных.')
 
 
 @bot.message_handler(commands=['timetable'])
