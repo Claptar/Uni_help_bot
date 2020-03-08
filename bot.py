@@ -110,7 +110,7 @@ def choose_edit(message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Номер курса', 'Номер группы', 'Выход']])  # кнопки c номерами семестров
     student = psg.get_student(message.chat.id)
-    msg = bot.send_message(message.chat.id, f'Сейчас у тебя указано, что ты учишься на {student[1]} курсе'
+    msg = bot.send_message(message.chat.id, f'Сейчас у тебя указано, что ты учишься на {student[1]} курсе '
                                             f'в {student[0]} группе.'
                                             f' Что именно ты хочешь изменить ?', reply_markup=keyboard)
     bot.register_next_step_handler(msg, edit_values)
