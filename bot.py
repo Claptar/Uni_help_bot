@@ -715,7 +715,7 @@ def get_course(message):
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in range(1, 4)])  # то же, что и в блоке инициализации
         keyboard.add(*[types.KeyboardButton(name) for name in [4, 5, 'Выход']])
-        msg = bot.send_message(message.chat.id, 'Не подскажешь номер своего курса?', reply_markup=keyboard)
+        msg = bot.send_message(message.chat.id, 'Не подскажешь номер курса?', reply_markup=keyboard)
         bot.register_next_step_handler(msg, get_group)
 
 
@@ -738,11 +738,11 @@ def get_group(message):
             COURSE_NUM = int(message.text)  # запоминаем номер курса (число)
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(
-                *[types.KeyboardButton(name) for name in ['Выход']  # кнопка для выхода из функции
+                *[types.KeyboardButton(name) for name in ['Моя группа', 'Выход']  # кнопка для выхода из функции
                   ]
             )
             bot.send_message(message.chat.id,  # просим пользователя ввести номер группы
-                             'Не подскажешь номер своей группы? (В формате L0N–YFx или YFx)',
+                             'Не подскажешь номер группы? (В формате L0N–YFx или YFx)',
                              reply_markup=keyboard)
             bot.register_next_step_handler(message, get_weekday)
         else:  # если сообщение не "Выход" и не номер курса, то говорим об ошибке и отправляем в get_course()
@@ -781,7 +781,10 @@ def get_weekday(message):
             bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
         else:  # иначе запоминаем текст сообщения (проверку на формат текста не делал)
             global GROUP_NUM  # глобальная переменная - номер группы
-            GROUP_NUM = message.text
+            if message.text == 'Моя группа':
+                GROUP_NUM = psg.get_student(message.chat.id)
+            else:
+                GROUP_NUM = message.text
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
             keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник']])
