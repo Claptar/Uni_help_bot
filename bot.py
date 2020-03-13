@@ -885,13 +885,16 @@ def get_schedule(message):
     :param message: telebot.types.Message
     :return:
     """
+    global COURSE_NUM, GROUP_NUM
     if message.content_type == 'text':  # проверка типа сообщения - текст или нет
         if message.text == 'Выход':  # если из функции get_group() прилетело сообщение о выходе
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
             keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
-        else:
+        elif message.text in ['Понедельник', 'Вторник',
+                              'Среда', 'Четверг',
+                              'Пятница', 'Суббота']:  # если прилетел день недели
             schedule = timetable.timetable.timetable_by_group(COURSE_NUM, GROUP_NUM, message.text)
             STRING = ''  # проходимся по всем строчкам расписания, записываем в STRING готовое сообщение,
             # которое отправим пользователю ( см. функцию get_start_schedule() )
@@ -902,6 +905,14 @@ def get_schedule(message):
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
             keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
             bot.send_message(message.chat.id, 'Чем ещё я могу помочь?', reply_markup=keyboard)
+        else:
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
+            msg = bot.send_message(message.chat.id,
+                                   'Что-то не получилось... Ты мне точно прислал день недели в правильном '
+                                   'формате?',
+                                   reply_markup=keyboard)
+            bot.register_next_step_handler(msg, get_weekday)
     else:  # если сообщение не текстовое, то говорим об ошибке формате
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
