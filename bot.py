@@ -787,6 +787,27 @@ def get_group(message):
                              'Не подскажешь номер группы? (В формате L0N–YFx или YFx)',
                              reply_markup=keyboard)
             bot.register_next_step_handler(message, get_weekday)
+        elif message.text == 'Ладно, сам посмотрю':  # если после ошибки в считывании данных пришло сообщение о выходе:
+            keyboard = types.ReplyKeyboardMarkup(
+                resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+            bot.send_message(message.chat.id, 'Без проблем! '
+                                              'Но ты это, заходи, если что :)',
+                             reply_markup=keyboard
+                             )
+            # стикос "Ты заходи есчо"
+            bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        elif message.text == 'Попробую ещё раз':  # если после ошибки в считывании данных в других функциях пришло
+            # сообщение попробовать ввести значения еще раз
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(
+                *[types.KeyboardButton(name) for name in ['Моя группа', 'Выход']  # кнопка для выхода из функции
+                  ]
+            )
+            bot.send_message(message.chat.id,  # просим пользователя ввести номер группы
+                             'Не подскажешь номер группы? (В формате L0N–YFx или YFx)',
+                             reply_markup=keyboard)
+            bot.register_next_step_handler(message, get_weekday)
         else:  # если сообщение не "Выход" и не номер курса, то говорим об ошибке и отправляем в get_course()
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(*[types.KeyboardButton(name) for name in [
@@ -795,14 +816,15 @@ def get_group(message):
                            ]
                          )
             msg = bot.send_message(message.chat.id,
-                                   'Что-то не получилось... Ты мне точно прислал номер курса?',
+                                   'Что-то не получилось... Ты мне точно прислал номер курса в правильном '
+                                   'формате?',
                                    reply_markup=keyboard)
             bot.register_next_step_handler(msg, get_course)
     else:  # если сообщение не является текстом, то говорим об ошибке формата и отправляем в get_course()
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
         msg = bot.send_message(message.chat.id,
-                               'Что-то не получилось... Ты мне точно прислал номера курса в правильном '
+                               'Что-то не получилось... Ты мне точно прислал номер курса в правильном '
                                'формате?',
                                reply_markup=keyboard)
         bot.register_next_step_handler(msg, get_course)
@@ -840,18 +862,18 @@ def get_weekday(message):
                 keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
                 msg = bot.send_message(message.chat.id,
-                                       'Что-то не получилось... Ты мне точно прислал номера курса и группы в правильном'
+                                       'Что-то не получилось... Ты мне точно прислал номер группы в правильном'
                                        ' формате?',
                                        reply_markup=keyboard)
-                bot.register_next_step_handler(msg, get_course)
-    else:  # если сообщение не текстовое, то говорим об ошибке формата, отсылаем в функцию get_course()
+                bot.register_next_step_handler(msg, get_group)
+    else:  # если сообщение не текстовое, то говорим об ошибке формата, отсылаем в функцию get_group()
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
         msg = bot.send_message(message.chat.id,
-                               'Что-то не получилось... Ты мне точно прислал номера курса и группы в правильном '
+                               'Что-то не получилось... Ты мне точно прислал номера группы в правильном '
                                'формате?',
                                reply_markup=keyboard)
-        bot.register_next_step_handler(msg, get_course)
+        bot.register_next_step_handler(msg, get_group)
 
 
 pd.options.display.max_colwidth = 100
@@ -869,34 +891,25 @@ def get_schedule(message):
             keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
-        else:  # иначе проверяем, есть ли расписание для этой группы в файле
+        else:
             schedule = timetable.timetable.timetable_by_group(COURSE_NUM, GROUP_NUM, message.text)
-            if schedule.empty:  # если расписание пустое, то говорим об ошибке формата, просим ввести данные заново
-                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
-                msg = bot.send_message(message.chat.id,
-                                       'Что-то не получилось... Ты мне точно прислал номера курса и группы в правильном'
-                                       ' формате?',
-                                       reply_markup=keyboard)
-                bot.register_next_step_handler(msg, get_course)  # да-да, отсылаем в самую первую функцию)))
-            else:  # иначе переводим табличку с расписанием на день (pd.Series) в pd.DataFrame
-                STRING = ''  # проходимся по всем строчкам расписания, записываем в STRING готовое сообщение,
-                # которое отправим пользователю ( см. функцию get_start_schedule() )
-                for row in schedule.iterrows():
-                    string: str = '<b>' + '<i>' + row[0] + '</i>' + '</b>' + '\n' + row[1][0]
-                    STRING += string + '\n\n'
-                bot.send_message(message.chat.id, STRING, parse_mode='HTML')
-                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
-                keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
-                bot.send_message(message.chat.id, 'Чем ещё я могу помочь?', reply_markup=keyboard)
+            STRING = ''  # проходимся по всем строчкам расписания, записываем в STRING готовое сообщение,
+            # которое отправим пользователю ( см. функцию get_start_schedule() )
+            for row in schedule.iterrows():
+                string: str = '<b>' + '<i>' + row[0] + '</i>' + '</b>' + '\n' + row[1][0]
+                STRING += string + '\n\n'
+            bot.send_message(message.chat.id, STRING, parse_mode='HTML')
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+            bot.send_message(message.chat.id, 'Чем ещё я могу помочь?', reply_markup=keyboard)
     else:  # если сообщение не текстовое, то говорим об ошибке формате
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
         msg = bot.send_message(message.chat.id,
-                               'Что-то не получилось... Ты мне точно прислал номера курса и группы в правильном '
+                               'Что-то не получилось... Ты мне точно прислал день недели в правильном '
                                'формате?',
                                reply_markup=keyboard)
-        bot.register_next_step_handler(msg, get_course)  # ну и последний разок сходим в самую первую функцию)
+        bot.register_next_step_handler(msg, get_weekday)
 
 
 @bot.message_handler(commands=['exam'])
