@@ -844,11 +844,29 @@ def get_weekday(message):
             keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        elif message.text == 'Ладно, сам посмотрю':  # если после ошибки в считывании данных пришло сообщение о выходе:
+            keyboard = types.ReplyKeyboardMarkup(
+                resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
+            keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+            bot.send_message(message.chat.id, 'Без проблем! '
+                                              'Но ты это, заходи, если что :)',
+                             reply_markup=keyboard
+                             )
+            # стикос "Ты заходи есчо"
+            bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
+        elif message.text == 'Попробую ещё раз':
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник']])
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Среда', 'Четверг']])
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Пятница', 'Суббота']])
+            keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+            bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
+            bot.register_next_step_handler(message, get_schedule)
+        elif message.text == 'Моя группа':
+            GROUP_NUM = psg.get_student(message.chat.id)[0]
         else:
-            if message.text == 'Моя группа':
-                GROUP_NUM = psg.get_student(message.chat.id)[0]
-            else:
-                GROUP_NUM = message.text
+            GROUP_NUM = message.text
             if timetable.timetable.check_group(GROUP_NUM, COURSE_NUM):
                 keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
