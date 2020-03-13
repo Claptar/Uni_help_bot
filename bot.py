@@ -865,6 +865,23 @@ def get_weekday(message):
             bot.register_next_step_handler(message, get_schedule)
         elif message.text == 'Моя группа':
             GROUP_NUM = psg.get_student(message.chat.id)[0]
+            if timetable.timetable.check_group(GROUP_NUM, COURSE_NUM):
+                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
+                keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник']])
+                keyboard.add(*[types.KeyboardButton(name) for name in ['Среда', 'Четверг']])
+                keyboard.add(*[types.KeyboardButton(name) for name in ['Пятница', 'Суббота']])
+                keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+                bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
+                bot.register_next_step_handler(message, get_schedule)
+            else:
+                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
+                msg = bot.send_message(message.chat.id,
+                                       'Что-то не получилось... Ты мне точно прислал номер группы в правильном'
+                                       ' формате?',
+                                       reply_markup=keyboard)
+                bot.register_next_step_handler(msg, get_group)
         else:
             GROUP_NUM = message.text
             if timetable.timetable.check_group(GROUP_NUM, COURSE_NUM):
