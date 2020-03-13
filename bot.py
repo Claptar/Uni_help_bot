@@ -274,7 +274,7 @@ def group_num(message):
         NEW_STUDENT.append(int(message.text))
         keyboard = types.ReplyKeyboardRemove()
         msg = bot.send_message(message.chat.id, 'Отлично, а теперь не подскажешь номер своей группы ?'
-                                                ' (В формате L0N–YFx или YFx)', reply_markup=keyboard)
+                                                ' (В формате L0N–YFx или YFx )', reply_markup=keyboard)
         bot.register_next_step_handler(msg, end)
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -815,26 +815,35 @@ def get_weekday(message):
     :param message: telebot.types.Message
     :return:
     """
+    global GROUP_NUM, COURSE_NUM  # глобальные переменные
     if message.content_type == 'text':  # проверяем, является ли сообщение текстовым
         if message.text == 'Выход':  # если из get_group() прилетело сообщение о выходе
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
             keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
             bot.send_message(message.chat.id, 'Передумал ? Ну ладно...', reply_markup=keyboard)
             bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ')
-        else:  # иначе запоминаем текст сообщения (проверку на формат текста не делал)
-            global GROUP_NUM  # глобальная переменная - номер группы
+        else:
             if message.text == 'Моя группа':
                 GROUP_NUM = psg.get_student(message.chat.id)[0]
             else:
                 GROUP_NUM = message.text
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
-            keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник']])
-            keyboard.add(*[types.KeyboardButton(name) for name in ['Среда', 'Четверг']])
-            keyboard.add(*[types.KeyboardButton(name) for name in ['Пятница', 'Суббота']])
-            keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
-            bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
-            bot.register_next_step_handler(message, get_schedule)
+            if timetable.timetable.check_group(GROUP_NUM, COURSE_NUM):
+                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
+                keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник']])
+                keyboard.add(*[types.KeyboardButton(name) for name in ['Среда', 'Четверг']])
+                keyboard.add(*[types.KeyboardButton(name) for name in ['Пятница', 'Суббота']])
+                keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+                bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
+                bot.register_next_step_handler(message, get_schedule)
+            else:
+                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
+                msg = bot.send_message(message.chat.id,
+                                       'Что-то не получилось... Ты мне точно прислал номера курса и группы в правильном'
+                                       ' формате?',
+                                       reply_markup=keyboard)
+                bot.register_next_step_handler(msg, get_course)
     else:  # если сообщение не текстовое, то говорим об ошибке формата, отсылаем в функцию get_course()
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
