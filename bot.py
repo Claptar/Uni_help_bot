@@ -999,6 +999,8 @@ def get_message_text(message):
         msg = bot.send_message(message.chat.id, 'Пришли мне сообщение в формате "chat_id/message_text"')
         bot.register_next_step_handler(msg, send_message)
     else:
+        print(pers_id)
+        print(admins)
         bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n'
                                           'Напиши /help, чтобы узнать, что я умею.\n')
 
