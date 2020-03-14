@@ -1004,11 +1004,14 @@ def get_message_text(message):
 
 
 def send_message(message):
-    chat_id = int(message.text.split('/')[0])
-    text = message.text.split('/')[1]
-    bot.send_message(chat_id, text)
-    bot.send_message(message.chat.id, 'Готово')
-
+    try:
+        chat_id = int(message.text.split('/')[0])
+        text = message.text.split('/')[1]
+        bot.send_message(chat_id, text)
+        bot.send_message(message.chat.id, 'Готово')
+    except Exception as e:
+        bot.send_message(message.chat.id, 'Попробуй ещё раз')
+        print(e)
 
 @bot.message_handler(content_types=['text'])
 def chatting(message):
