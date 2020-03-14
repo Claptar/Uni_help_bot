@@ -16,8 +16,6 @@ import datetime
 
 token = os.environ['TOKEN']  # Токен для бота берётся из переменных окружения
 bot = telebot.TeleBot(token)
-
-PATH = os.path.abspath('')  # Путь текущей директории
 MESSAGE_NUM = 0
 MESSAGE_COM = ''
 Q_NUM = 0
@@ -69,7 +67,7 @@ SUBJECTS = {
 }
 
 
-comms = ['help', 'start','plot', 'timetable', 'exam']  # Comands list
+comms = ['help', 'start', 'plot', 'timetable', 'exam']  # Comands list
 
 crazy_tokens = 0
 ANSW_ID = 0
@@ -77,8 +75,6 @@ ANSW_ID = 0
 # Plot constants
 PLOT_MESSEGE = 0
 PLOT_BUTTONS = ['Название графика', 'Подпись осей', 'Кресты погрешностей', 'Готово', 'MНК']
-
-NEW_STUDENT = []
 
 
 @bot.message_handler(commands=['help'])
@@ -259,6 +255,7 @@ def check(message):
     if message.chat.id in data.index:
         pass
     else:
+        psg.insert_data(message.chat.id, 'Б00-228', 0)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in range(1, 6)])  # кнопки c номерами курсов
         msg = bot.send_message(message.chat.id, 'Привет-привет 🙃 Давай знакомиться! Меня зовут A2.'
@@ -269,10 +266,8 @@ def check(message):
 
 
 def group_num(message):
-    global NEW_STUDENT
     if (message.text.isdigit()) and (1 <= int(message.text) <= 5):
-        NEW_STUDENT.append(message.chat.id)
-        NEW_STUDENT.append(int(message.text))
+        psg.update_course(message.chat.id, int(message.text))
         keyboard = types.ReplyKeyboardRemove()
         msg = bot.send_message(message.chat.id, 'Отлично, а теперь не подскажешь номер своей группы?'
                                                 ' (В формате Б00–228 или 777, как в расписании)', reply_markup=keyboard)
@@ -287,10 +282,7 @@ def group_num(message):
 
 
 def end(message):
-    global NEW_STUDENT
-    NEW_STUDENT.append(message.text)
-    psg.insert_data(NEW_STUDENT[0], NEW_STUDENT[2], NEW_STUDENT[1])
-    NEW_STUDENT = []
+    psg.update_group_num(message.chat.id, message.text)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
     keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
     bot.send_message(message.chat.id, 'Отлично, вот мы и познакомились 🙃 Я очень люблю помогать людям,'
@@ -313,7 +305,7 @@ def sub(message):
     :param message: telebot.types.Message
     :return:
     """
-    global Q_NUM, PATH, SUBJECT_NOW, SUBJECTS
+    global Q_NUM, SUBJECT_NOW, SUBJECTS
     if message.text in SUBJECTS.keys():
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS[message.text].keys()])
@@ -346,18 +338,19 @@ def par(message):
     :param message: telebot.types.Message
     :return:
     """
-    global Q_NUM, PATH, PAR_NUM, SUBJECTS, SUBJECT_NOW
+    global Q_NUM, PAR_NUM, SUBJECTS, SUBJECT_NOW
+    path = os.path.abspath('')
     if (message.text in SUBJECTS[SUBJECT_NOW].keys()) or (message.text == 'Ещё'):
         if message.text in SUBJECTS[SUBJECT_NOW].keys():
             PAR_NUM = SUBJECTS[SUBJECT_NOW][message.text]
-        questions = pd.read_excel(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/flash_data.xlsx',
+        questions = pd.read_excel(f'{path}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/flash_data.xlsx',
                                   header=None)
         d = np.array(questions)
         for i in range(0, len(d)):
             Q_NUM = i
             question = d[Q_NUM, 0]
             bot.send_message(message.chat.id, question)
-            with open(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
+            with open(f'{path}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
                 bot.send_photo(message.chat.id, photo)
 
 
@@ -384,7 +377,7 @@ def subject(c):
     :param c: telebot.types.CallbackQuery
     :return:
     """
-    global Q_NUM, PATH, SUBJECT_NOW, SUBJECTS
+    global Q_NUM, SUBJECT_NOW, SUBJECTS
     keyboard = types.InlineKeyboardMarkup()
     keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in SUBJECTS[c.data].keys()])
     bot.edit_message_text(
@@ -404,13 +397,14 @@ def paragraph(c):
     :param c: telebot.types.CallbackQuery
     :return:
     """
-    global Q_NUM, PATH, PAR_NUM, SUBJECTS, SUBJECT_NOW, Q_SEQUENCE
+    global Q_NUM, PAR_NUM, SUBJECTS, SUBJECT_NOW, Q_SEQUENCE
+    path = os.path.abspath('')
     if ANSW_ID:
         bot.delete_message(c.message.chat.id, ANSW_ID)
     if c.data in SUBJECTS[SUBJECT_NOW].keys():
         PAR_NUM = SUBJECTS[SUBJECT_NOW][c.data]
     # импортирую список вопросов
-    questions = pd.read_excel(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/flash_data.xlsx',
+    questions = pd.read_excel(f'{path}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/flash_data.xlsx',
                               header=None)
     # преобразования списка в numpy массив
     questions = np.array(questions)
@@ -441,9 +435,10 @@ def answer(c):
     :return:
     """
     global Q_NUM, PAR_NUM, ANSW_ID
+    path = os.path.abspath('')
     keyboard = types.InlineKeyboardMarkup()
     keyboard.add(*[types.InlineKeyboardButton(text=name, callback_data=name) for name in ['Ещё', 'Всё, хватит']])
-    with open(f'{PATH}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
+    with open(f'{path}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/{Q_NUM + 1}.png', 'rb') as photo:
         bot.edit_message_text(
             chat_id=c.message.chat.id,
             message_id=c.message.message_id,
@@ -985,11 +980,12 @@ def get_exam_timetable(message):
     :return:
     """
     if message.text in texting.texting_symbols.groups:
+        path = os.path.abspath('')
         timetable.timetable_old.get_exam_timetable(message.text)
-        f = open(f'{PATH}/timetable/exam.txt')
+        f = open(f'{path}/timetable/exam.txt')
         for line in f:
             bot.send_message(message.chat.id, line)
-        open(f'{PATH}/timetable/exam.txt', 'w').close()
+        open(f'{path}/timetable/exam.txt', 'w').close()
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Попробую ещё раз', 'Ладно, сам посмотрю']])
@@ -999,6 +995,28 @@ def get_exam_timetable(message):
         bot.register_next_step_handler(msg, ask_group)
 
 
+@bot.message_handler(commands=['god_voice'])
+def get_message_text(message):
+    pers_id = message.chat.id
+    admins = [int(os.environ['ADMIN_1']), int(os.environ['ADMIN_2']), int(os.environ['ADMIN_3'])]
+    if pers_id in admins:
+        msg = bot.send_message(message.chat.id, 'Пришли мне сообщение в формате "chat_id/message_text"')
+        bot.register_next_step_handler(msg, send_message)
+    else:
+        bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n'
+                                          'Напиши /help, чтобы узнать, что я умею.\n')
+
+
+def send_message(message):
+    try:
+        chat_id = int(message.text.split('/')[0])
+        text = message.text.split('/')[1]
+        bot.send_message(chat_id, text)
+        bot.send_message(message.chat.id, 'Готово')
+    except Exception as e:
+        bot.send_message(message.chat.id, 'Попробуй ещё раз')
+        print(e)
+
 @bot.message_handler(content_types=['text'])
 def chatting(message):
     """
@@ -1007,7 +1025,7 @@ def chatting(message):
     :return: циклично возвращает одно вспомогательное сообщение, два смайлика,
     две цитаты, одну фотку собаки при последовательной отправке незнакомого текста
     """
-    global crazy_tokens, PATH
+    global crazy_tokens
     crazy_tokens += 1
     if crazy_tokens <= 1:
         bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n'
