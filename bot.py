@@ -781,7 +781,7 @@ def get_group(message):
                   ]
             )
             bot.send_message(message.chat.id,  # просим пользователя ввести номер группы
-                             'Не подскажешь номер группы? (В формате L0N–YFx или YFx)',
+                             'Не подскажешь номер группы? (В формате Б00–228 или 777, как в расписании)',
                              reply_markup=keyboard)
             bot.register_next_step_handler(message, get_weekday)
         elif message.text == 'Ладно, сам посмотрю':  # если после ошибки в считывании данных пришло сообщение о выходе:
