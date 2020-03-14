@@ -269,8 +269,8 @@ def group_num(message):
     if (message.text.isdigit()) and (1 <= int(message.text) <= 5):
         psg.update_course(message.chat.id, int(message.text))
         keyboard = types.ReplyKeyboardRemove()
-        msg = bot.send_message(message.chat.id, 'Отлично, а теперь не подскажешь номер своей группы?'
-                                                ' (В формате Б00–228 или 777, как в расписании)', reply_markup=keyboard)
+        msg = bot.send_message(message.chat.id, 'Отлично, а теперь не подскажешь номер своей группы?\n'
+                                                '(В формате Б00–228 или 777, как в расписании)', reply_markup=keyboard)
         bot.register_next_step_handler(msg, end)
     else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
