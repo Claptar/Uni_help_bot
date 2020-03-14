@@ -9,7 +9,7 @@ HOST = os.environ['TABLE_HOST']
 DATABASE = os.environ['DATABASE']
 
 
-def insert_data(chat_id, group_num, course):
+def insert_data(chat_id, group_num: str, course: int):
     global USER, HOST, DATABASE, PASS
     """
     В таблицу с названием CHEL6I добавляются данные пользователя

@@ -78,8 +78,6 @@ ANSW_ID = 0
 PLOT_MESSEGE = 0
 PLOT_BUTTONS = ['Название графика', 'Подпись осей', 'Кресты погрешностей', 'Готово', 'MНК']
 
-NEW_STUDENT = []
-
 
 @bot.message_handler(commands=['help'])
 def help_def(message):
@@ -259,6 +257,7 @@ def check(message):
     if message.chat.id in data.index:
         pass
     else:
+        psg.insert_data(message.chat.id, 'Б00-228', 0)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in range(1, 6)])  # кнопки c номерами курсов
         msg = bot.send_message(message.chat.id, 'Привет-привет 🙃 Давай знакомиться ! Меня зовут A2.'
@@ -268,10 +267,8 @@ def check(message):
 
 
 def group_num(message):
-    global NEW_STUDENT
     if (message.text.isdigit()) and (1 <= int(message.text) <= 5):
-        NEW_STUDENT.append(message.chat.id)
-        NEW_STUDENT.append(int(message.text))
+        psg.update_course(message.chat.id, int(message.text))
         keyboard = types.ReplyKeyboardRemove()
         msg = bot.send_message(message.chat.id, 'Отлично, а теперь не подскажешь номер своей группы ?'
                                                 ' (В формате L0N–YFx или YFx )', reply_markup=keyboard)
@@ -284,10 +281,7 @@ def group_num(message):
 
 
 def end(message):
-    global NEW_STUDENT
-    NEW_STUDENT.append(message.text)
-    psg.insert_data(NEW_STUDENT[0], NEW_STUDENT[2], NEW_STUDENT[1])
-    NEW_STUDENT = []
+    psg.update_group_num(message.chat.id, message.text)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
     keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
     bot.send_message(message.chat.id, 'Отлично, вот мы ипознакомились 🙃 Я очень люблю помогать людям,'
