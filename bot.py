@@ -991,6 +991,25 @@ def get_exam_timetable(message):
         bot.register_next_step_handler(msg, ask_group)
 
 
+@bot.message_handler(commands=['god_voice'])
+def get_message_text(message):
+    pers_id = message.chat.id
+    admins = [os.environ['ADMIN_1'], os.environ['ADMIN_2'], os.environ['ADMIN_3']]
+    if pers_id in admins:
+        msg = bot.send_message(message.chat.id, 'Пришли мне сообщение в формате "chat_id/message_text"')
+        bot.register_next_step_handler(msg, send_message)
+    else:
+        bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n'
+                                          'Напиши /help, чтобы узнать, что я умею.\n')
+
+
+def send_message(message):
+    chat_id = int(message.text.split('/')[0])
+    text = message.text.split('/')[1]
+    bot.send_message(chat_id, text)
+    bot.send_message(message.chat.id, 'Готово')
+
+
 @bot.message_handler(content_types=['text'])
 def chatting(message):
     """
@@ -1042,25 +1061,6 @@ def get_image_url():
         url = get_url()
         file_extension = re.search("([^.]*)$", url).group(1).lower()
     return url
-
-
-@bot.message_handler(commands=['god_voice'])
-def get_message_text(message):
-    pers_id = message.chat.id
-    admins = [os.environ['ADMIN_1'], os.environ['ADMIN_2'], os.environ['ADMIN_3']]
-    if pers_id in admins:
-        msg = bot.send_message(message.chat.id, 'Пришли мне сообщение в формате "chat_id/message_text"')
-        bot.register_next_step_handler(msg, send_message)
-    else:
-        bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n'
-                                          'Напиши /help, чтобы узнать, что я умею.\n')
-
-
-def send_message(message):
-    chat_id = int(message.text.split('/')[0])
-    text = message.text.split('/')[1]
-    bot.send_message(chat_id, text)
-    bot.send_message(message.chat.id, 'Готово')
 
 
 bot.polling()
