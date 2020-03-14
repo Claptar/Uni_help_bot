@@ -994,13 +994,11 @@ def get_exam_timetable(message):
 @bot.message_handler(commands=['god_voice'])
 def get_message_text(message):
     pers_id = message.chat.id
-    admins = [os.environ['ADMIN_1'], os.environ['ADMIN_2'], os.environ['ADMIN_3']]
+    admins = [int(os.environ['ADMIN_1']), int(os.environ['ADMIN_2']), int(os.environ['ADMIN_3'])]
     if pers_id in admins:
         msg = bot.send_message(message.chat.id, 'Пришли мне сообщение в формате "chat_id/message_text"')
         bot.register_next_step_handler(msg, send_message)
     else:
-        print(pers_id)
-        print(admins)
         bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n'
                                           'Напиши /help, чтобы узнать, что я умею.\n')
 
