@@ -105,11 +105,25 @@ def choose_edit(message):
     """
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Номер курса', 'Номер группы', 'Выход']])  # кнопки c номерами семестров
-    student = psg.get_student(message.chat.id)
-    msg = bot.send_message(message.chat.id, f'Сейчас у тебя указано, что ты учишься на {student[1]} курсе '
+    try:
+        student = psg.get_student(message.chat.id)
+        msg = bot.send_message(message.chat.id, f'Сейчас у тебя указано, что ты учишься на {student[1]} курсе '
                                             f'в {student[0]} группе.'
                                             f' Что именно ты хочешь изменить?', reply_markup=keyboard)
-    bot.register_next_step_handler(msg, edit_values)
+        bot.register_next_step_handler(msg, edit_values)
+    except Exception as e:
+        print('АШИПКА')
+        print(e)
+        bot.send_message(os.environ['ADMIN_1'], f'Посмотри логи у чувака'
+                                                f' user = {message.from_user} id={message.chat.id}'
+                                                f' пошла по пизде 109 строчка...')
+        bot.send_message(os.environ['ADMIN_2'], f'Посмотри логи у чувака'
+                                                f' user = {message.from_user} id={message.chat.id}'
+                                                f' пошла по пизде 109 строчка...')
+        bot.send_message(message.chat.id, 'Извини, что-то пошло не так, команда устранения ошибок уже взялась за дело,'
+                                          ' попробуй эту функцию позже) Чтобы проблема решилась быстрее'
+                                          ' ты можешь написать @Error404NF')
+
 
 
 def edit_values(message):
