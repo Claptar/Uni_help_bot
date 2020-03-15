@@ -120,7 +120,7 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
             ax.plot(x[i], y[i], 'o')
     if mnk:
         for i in range(0, len(x)):
-            ax.plot(np.array(x_[i]), a[i] * (np.array(x_[i])) + b[i], 'r')
+            ax.plot(np.array(x_[i]), a[i] * (np.array(x_[i])) + b[i], 'r--')
     ax.set_xlabel(dataset.columns[0])
     ax.set_ylabel(dataset.columns[1])
     lab = np.array(dataset)[0, :]
