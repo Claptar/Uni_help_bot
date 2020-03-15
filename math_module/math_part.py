@@ -114,7 +114,7 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     for i in range(0, len(x)):
         delta = (max(x[i]) - min(x[i])) / len(x[i])
         x_.append([min(x[i]) - delta, max(x[i]) + delta])
-        if len(x[0] > 15):
+        if len(x[0]) > 15:
             ax.plot(x[i], y[i], '.')
         else:
             ax.plot(x[i], y[i], 'o')
