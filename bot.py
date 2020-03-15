@@ -666,8 +666,8 @@ def date_mnk(message):
                 if math_part.ERROR_BAR:
                     for i in range(0, len(a)):
                         bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
-                                                          f" a = {a[i]} +- {d_a[i], 6}\n"
-                                                          f" b = {b[i]} +- {d_b[i], 6}")
+                                                          f" a = {a[i]} +- {d_a[i]}\n"
+                                                          f" b = {b[i]} +- {d_b[i]}")
                 with open('plot.pdf', 'rb') as photo:
                     bot.send_document(message.chat.id, photo)
                 os.remove('plot.pdf')
