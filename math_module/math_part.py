@@ -59,16 +59,12 @@ def plt_const(x, y):
     :param y: Массив оридинат точек
     :return: [значение углового коэфф a, значение коэфф b, значение погрешности a, значение погрешности b]
     """
-    av_x = np.sum(x) / len(x)
-    av_y = np.sum(y) / len(y)
-    sigmas_x = np.sum(x * x) / len(x) - (np.sum(x) / len(x)) ** 2
-    sigmas_y = np.sum(y * y) / len(y) - (np.sum(y) / len(y)) ** 2
-    r = np.sum(x * y) / len(x) - av_x * av_y
-    a = r / sigmas_x
-    b = av_y - a * av_x
+    r = (x*y).mean() - x.mean() * y.mean()
+    a = r / x.var()
+    b = y.mean() - a * x.mean()
     try:
-        d_a = 2 * math.sqrt((sigmas_y / sigmas_x - a ** 2) / (len(x) - 2))
-        d_b = d_a * math.sqrt(sigmas_x + av_x ** 2)
+        d_a = 2 * math.sqrt((y.var() / x.var() - a ** 2) / (len(x) - 2))
+        d_b = d_a * math.sqrt(x.var() + x.mean() ** 2)
     except Exception as e:
         print(e)
         d_a = 'error'
@@ -96,7 +92,7 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     :param mnk: type Bool, При True строится прямая мнк
     :return:
     """
-    fig = plt.figure(dpi=300)
+    fig = plt.figure(dpi=120)
     ax = fig.add_subplot()
     dataset = pd.read_excel(data_file)
     d = np.array(dataset)[0:, :]
