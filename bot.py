@@ -125,7 +125,6 @@ def choose_edit(message):
                                           ' ты можешь написать @Error404NF')
 
 
-
 def edit_values(message):
     if message.content_type == 'text':
         if message.text == 'Номер курса':
@@ -703,13 +702,27 @@ def get_start_schedule(message):
     Узнает номер дня недели сегодня/завтра и по этому значению обращается в функцию timetable_by_group().
     :return:
     """
-    student = psg.get_student(message.chat.id)
+    try:
+        student = psg.get_student(message.chat.id)
+    except Exception as e:
+        print('АШИПКА')
+        print(e)
+        bot.send_message(os.environ['ADMIN_1'], f'Посмотри логи у чувака'
+                                                f' user = {message.from_user} id={message.chat.id}'
+                                                f' пошла по пизде 706 строчка...')
+        bot.send_message(os.environ['ADMIN_2'], f'Посмотри логи у чувака'
+                                                f' user = {message.from_user} id={message.chat.id}'
+                                                f' пошла по пизде 706 строчка...')
+        bot.send_message(message.chat.id, 'Извини, что-то пошло не так, команда устранения ошибок уже взялась за дело,'
+                                          ' попробуй эту функцию позже) Чтобы проблема решилась быстрее'
+                                          ' ты можешь написать @Error404NF')
+        return 'Что-то пошло по пизде'
+
     if timetable.timetable.check_group(student[0], student[1]):
         # список дней для удобной конвертации номеров дней недели (0,1, ..., 6) в их названия
         week = tuple(['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'])
         today = datetime.datetime.today().weekday()  # today - какой сегодня день недели (от 0 до 6)
         if message.text == 'На сегодня':  # расписание на сегодня
-            student = psg.get_student(message.chat.id)
             schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[today])
             STRING = ''  # "строка" с расписанием, которую отправляем сообщением
             for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
@@ -725,7 +738,6 @@ def get_start_schedule(message):
             if today in range(6):  # если не воскресенье, то значение today + 1
                 tomorrow = today + 1
             # тест на рандомной группе
-            student = psg.get_student(message.chat.id)
             schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[tomorrow])
             STRING = ''  # "строка" с расписанием, которую отправляем сообщением
             for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
