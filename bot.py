@@ -1096,4 +1096,4 @@ def get_image_url():
     return url
 
 
-bot.polling()
+bot.polling(none_stop=True)
