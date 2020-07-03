@@ -15,7 +15,8 @@ logging.basicConfig(level=logging.INFO)
 API_TOKEN = '893576564:AAHxlCPFCfcewfz2_0rlygYfJzCbhz4HYJs'
 
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
 
 class Form(StatesGroup):
@@ -64,7 +65,7 @@ async def process_name(message: types.Message):
     """
     Запись номера курса
     """
-    await psg.insert_data(message.chat.id, 'Б00-228', message.text)
+    psg.insert_data(message.chat.id, 'Б00-229', message.text)
     await Form.next()
     keyboard = types.ReplyKeyboardRemove()
     await bot.send_message(message.chat.id, 'Отлично, а теперь не подскажешь номер своей группы?\n'
@@ -73,7 +74,7 @@ async def process_name(message: types.Message):
 
 @dp.message_handler(state=Form.group)
 async def process_age(message: types.Message):
-    await psg.update_group_num(message.chat.id, message.text)
+    psg.update_group_num(message.chat.id, message.text)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
     keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
     await bot.send_message(message.chat.id, 'Отлично, вот мы и познакомились 🙃 Я очень люблю помогать людям, напиши '
