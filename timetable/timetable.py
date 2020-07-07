@@ -5,26 +5,25 @@ import pickle
 
 def within_range(bounds: tuple, cell: openpyxl.cell) -> bool:
     """
-    Функция, определяющая, является ли клетка слитой или нет
-    :param bounds:
-    :param cell:
+    Функция, определяющая, входит ли клетка в состав большой слитой или нет.
+    :param bounds: границы merged клеток
+    :param cell: сама клетка
     :return: True, если merged клетка, иначе False
     """
     column_start, row_start, column_end, row_end = bounds  # границы merged клетки
     row = cell.row  # проверка, находится ли клетка в этом слиянии
-    if row_start <= row <= row_end:
-        column = cell.column
-        if column_start <= column <= column_end:
-            return True
-    return False
+    if row_start <= row <= row_end:  #              ___________________
+        column = cell.column  #                     |value|empty|empty|
+        if column_start <= column <= column_end:  # |empty|empty|empty|  Пример merged клетки
+            return True  #                          |empty|empty|empty|
+    return False  #
 
 
 def get_value_merged(sheet: openpyxl.worksheet, cell: openpyxl.cell) -> any:
     """
-    Функция, возвращающая значение, лежащее в клетке, вне зависимости от того,
-    является ли клетка merged, или нет
-    :param sheet:
-    :param cell:
+    Функция, возвращающая значение, лежащее в клетке, вне зависимости от того, является ли клетка merged, или нет.
+    :param sheet: таблица с расписанием
+    :param cell: клетка таблицы
     :return: значение, лежащее в клетке
     """
     for merged in sheet.merged_cells:  # смотрим в списке слитых клеток (структура данных openpyxl.worksheet)
@@ -35,10 +34,10 @@ def get_value_merged(sheet: openpyxl.worksheet, cell: openpyxl.cell) -> any:
 
 def get_timetable(table: openpyxl.worksheet) -> dict:
     """
-    Функция, которая из таблицы Excel с расписанием выделяет расписание для каждой группы
-    :param table: 
+    Функция, которая из таблицы Excel с расписанием выделяет расписание для каждой группы.
+    :param table: таблица с расписанием
     :return: Словарь, ключи в котором являются номерами групп, а
-    значение, соответствующее ключу – расписание для этой группы
+    значение, соответствующее ключу - расписание для этой группы.
     """
     groups = {}  # список расписаний для групп
 
@@ -48,7 +47,7 @@ def get_timetable(table: openpyxl.worksheet) -> dict:
             continue
         # иначе если столбец - это номер группы, то составляем для него расписание
         elif name is not None:
-            if type(name) == int:
+            if type(name) == int:  # если номер группы - просто число, преобразуем его в строку
                 name = str(name)
             # group - словарь с расписанием для группы
             group = dict(Понедельник={}, Вторник={}, Среда={}, Четверг={}, Пятница={}, Суббота={}, Воскресенье={})
@@ -74,20 +73,20 @@ def get_timetable(table: openpyxl.worksheet) -> dict:
     return groups  # словарь с группами
 
 
-def timetable_by_group(grade: int, group: str, day: str) -> pd.DataFrame:
+def timetable_by_group(course: int, group: str, day: str) -> pd.DataFrame:
     """
-    Функция, выдающая расписание для нужной группы на требуемый день
-    :param grade: номер курса
+    Функция, выдающая расписание для нужной группы на требуемый день.
+    :param course: номер курса
     :param group: номер группы
     :param day: день недели, расписание на который нужно вызвать
-    :return: расписание в формате pd.DataFrame
+    :return: расписание в формате pd.DataFrame()
     """
     # датафреймы с расписаниями для каждого курса хранятся в файлах формата .pickle
-    with open('timetable/{}_kurs.pickle'.format(grade), 'rb') as handle:
+    with open('timetable/{}_kurs.pickle'.format(course), 'rb') as handle:
         curr_groups = pickle.load(handle)
-    if group in curr_groups.keys() and day in [  # дни недели
-        'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'
-    ]:  # если номер группы есть в списке, то выдаем нужное расписание
+    # если номер группы есть в списке, то выдаем нужное расписание
+    if group in curr_groups.keys() and day in ['Понедельник', 'Вторник', 'Среда',
+                                               'Четверг', 'Пятница', 'Суббота', 'Воскресенье']:
         return curr_groups[group][day].to_frame()
     else:  # иначе выдаем пустой датафрейм
         return pd.DataFrame()
@@ -95,9 +94,9 @@ def timetable_by_group(grade: int, group: str, day: str) -> pd.DataFrame:
 
 def check_group(group_num: str, course_num: int) -> bool:
     """
-    Функция, которая проверяет наличие группы в списке групп по номеру курса
-    :param group_num: str Номер группы
-    :param course_num: int Номер курса
+    Функция, которая проверяет наличие группы в списке групп по номеру курса.
+    :param group_num: номер группы
+    :param course_num: номер курса
     :return: True or False
     """
     flag = False

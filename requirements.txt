@@ -1,3 +1,4 @@
+aiogram
 openpyxl
 pyTelegramBotAPI==3.6.7
 pandas==0.24.2
