@@ -141,14 +141,14 @@ async def process_my_group_weekday(message: types.Message, state: FSMContext):
         keyboard.add(*[types.KeyboardButton(name) for name in ['Пятница', 'Суббота']])
         keyboard.add(*[types.KeyboardButton(name) for name in ['Воскресенье', 'Выход']])
         await bot.send_message(message.chat.id,
-                               'Расписание на какой день неделиты хочешь узнать?',
+                               'Расписание на какой день недели ты хочешь узнать?',
                                reply_markup=keyboard)
     else:  # если в базе данных для этого пользователя указано несуществующее сочетание курс-группа
         keyboard = types.ReplyKeyboardMarkup(
             resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
         keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
         await bot.send_message(message.chat.id,
-                               'Не могу найти расписание для указанных тобой номера курса и группы 😞\n'
+                               'Не могу найти расписание для указанных тобой номеров курса и группы 😞\n'
                                'Нажми /profile чтобы проверить корректность данных.',
                                reply_markup=keyboard)
         await state.finish()  # в случае ошибки выключаем машину состояний
@@ -253,7 +253,9 @@ async def process_group(message: types.Message, state: FSMContext):
             keyboard.add(*[types.KeyboardButton(name) for name in ['Среда', 'Четверг']])
             keyboard.add(*[types.KeyboardButton(name) for name in ['Пятница', 'Суббота']])
             keyboard.add(*[types.KeyboardButton(name) for name in ['Воскресенье', 'Выход']])
-            await bot.send_message(message.chat.id, 'Расписание на какой день ты хочешь узнать?', reply_markup=keyboard)
+            await bot.send_message(message.chat.id,
+                                   'Расписание на какой день недели ты хочешь узнать?',
+                                   reply_markup=keyboard)
         else:  # в случае отсутствия такой пары курс-группа в расписании, просим пользователя заново ввести номер группы
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])  # кнопка для выхода из функции
