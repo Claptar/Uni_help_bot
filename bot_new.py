@@ -1,13 +1,13 @@
 import os
 import logging
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import ParseMode
 from aiogram.utils import executor
-from data_constructor import psg
+
 from math_module import math_part
 from koryavov import kor
 from data_constructor import psg
@@ -21,6 +21,11 @@ API_TOKEN = '893576564:AAHxlCPFCfcewfz2_0rlygYfJzCbhz4HYJs'
 bot = Bot(token=API_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
+
+
+class Start(StatesGroup):
+    course = State()
+    group = State()
 
 
 class Form(StatesGroup):
@@ -44,6 +49,7 @@ class Koryavov(StatesGroup):
     task_num_state = State()
     task_num = 0
 
+
 @dp.message_handler(commands=['help'])
 async def help_def(message):
     """
@@ -62,7 +68,7 @@ async def cmd_start(message: types.Message):
     Conversation's entry point
     """
     # Set state
-    await Form.course.set()
+    await Start.course.set()
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(str(name)) for name in range(1, 5)])  # кнопки c номерами курсов
     await bot.send_message(message.chat.id, 'Привет-привет 🙃 Давай знакомиться! Меня зовут A2.'
@@ -72,7 +78,7 @@ async def cmd_start(message: types.Message):
 
 
 # Check course number. Age gotta be digit from 1 to 4
-@dp.message_handler(lambda message: not message.text.isdigit() or not 1 <= int(message.text) < 5, state=Form.course)
+@dp.message_handler(lambda message: not message.text.isdigit() or not 1 <= int(message.text) < 5, state=Start.course)
 async def process_age_invalid(message: types.Message):
     """
     Если номер курса введен некорректно
@@ -80,19 +86,19 @@ async def process_age_invalid(message: types.Message):
     return await message.reply("Выбери номер курса из предложенных, пожалуйста)")
 
 
-@dp.message_handler(lambda message: message.text.isdigit(), state=Form.course)
+@dp.message_handler(lambda message: message.text.isdigit(), state=Start.course)
 async def process_name(message: types.Message):
     """
     Запись номера курса
     """
     Form.student['Course'] = message.text
-    await Form.group.set()
+    await Start.group.set()
     keyboard = types.ReplyKeyboardRemove()
     await bot.send_message(message.chat.id, 'Отлично, а теперь не подскажешь номер своей группы?\n'
                                             '(В формате Б00–228 или 777, как в расписании)', reply_markup=keyboard)
 
 
-@dp.message_handler(state=Form.group)
+@dp.message_handler(state=Start.group)
 async def process_age(message: types.Message, state: FSMContext):
     psg.insert_data(message.chat.id, message.text, int(Form.student['Course']))
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
@@ -135,7 +141,7 @@ async def choose_edit(message: types.Message):
 
 
 @dp.message_handler(Text(equals=['Номер курса', 'Номер группы']), state=Profile.profile)
-def edit_values(message: types.Message):
+async def edit_values(message: types.Message):
     if message.text == 'Номер курса':
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 'Выход']])
@@ -150,14 +156,14 @@ def edit_values(message: types.Message):
 
 # If input is smth else
 @dp.message_handler(state=Profile.profile)
-def stupid_text(message: types.Message):
+async def stupid_text(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Номер курса', 'Номер группы', 'Выход']])
     await bot.send_message(message.chat.id, 'Что-то не так, давай ещё раз', reply_markup=keyboard)
 
 
 @dp.message_handler(lambda message: message.text.isdigit(), state=Profile.course_num)
-def edit_course(message: types.Message, state: FSMContext):
+async def edit_course(message: types.Message, state: FSMContext):
     psg.update_course(message.chat.id, int(message.text))
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
@@ -167,14 +173,14 @@ def edit_course(message: types.Message, state: FSMContext):
 
 # if input is smth except int
 @dp.message_handler(state=Profile.course_num)
-def smt_wrong(message: types.Message):
+async def smt_wrong(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 'Выход']])
     await bot.send_message(message.chat.id, 'Что-то не так, выбери номер курса ещё раз', reply_markup=keyboard)
 
 
 @dp.message_handler(lambda message: message.content_type == types.message.ContentType.TEXT, state=Profile.group_num)
-def edit_group(message: types.Message, state: FSMContext):
+async def edit_group(message: types.Message, state: FSMContext):
     psg.update_group_num(message.chat.id, message.text)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
@@ -183,14 +189,14 @@ def edit_group(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(state=Profile.group_num)
-def group_num_error(message: types.Message):
+async def group_num_error(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
     await bot.send_message(message.chat.id, 'Что-то не так, введи номер своей группы ещё раз', reply_markup=keyboard)
 
 
 @dp.message_handler(commands='koryavov')
-def koryavov1(message: types.Message):
+async def koryavov1(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])  # кнопки c номерами семестров
     await bot.send_message(message.chat.id, 'Выбери номер семестра общей физики: \n'
@@ -203,7 +209,7 @@ def koryavov1(message: types.Message):
 
 
 @dp.message_handler(lambda message: message.text.isdigit(), state=Koryavov.sem_num_state)
-def sem_num(message: types.Message):
+async def sem_num(message: types.Message):
     Koryavov.sem_num = int(message.text)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
@@ -213,14 +219,14 @@ def sem_num(message: types.Message):
 
 # If some invalide input
 @dp.message_handler(state=Koryavov.sem_num_state)
-def kor_sem_inv_input(message: types.Message):
+async def kor_sem_inv_input(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])  # кнопки c номерами семестров
     await bot.send_message(message.chat.id, 'Что-то не так, давай ещё раз. Выбери номер семестра:')
 
 
 @dp.message_handler(lambda message: math_part.is_digit(message.text), state=Koryavov.task_num_state)
-def task_page(message: types.Message, state: FSMContext):
+async def task_page(message: types.Message, state: FSMContext):
     Koryavov.task_num = message.text
     reply = 'Информация взята с сайта mipt1.ru \n\n' + kor.kor_page(Koryavov.sem_num, Koryavov.task_num)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -231,7 +237,7 @@ def task_page(message: types.Message, state: FSMContext):
 
 # If some invalide input
 @dp.message_handler(state=Koryavov.task_num_state)
-def kor_task_inv_input(message: types.Message):
+async def kor_task_inv_input(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
     await bot.send_message(message.chat.id, 'Что-то не так, давай ещё раз. Введи номер задачи.', reply_markup=keyboard)
@@ -319,7 +325,7 @@ async def initiate_timetable(message: types.Message):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                                    or message.text not in ['Моя группа', 'Другая группа', 'Выход'],
+                    or message.text not in ['Моя группа', 'Другая группа', 'Выход'],
                     state=Form.choose_group, content_types=types.message.ContentType.ANY)
 async def initiate_invalid(message: types.Message):
     """
@@ -362,8 +368,8 @@ async def process_my_group_weekday(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                                    or message.text not in ['Понедельник', 'Вторник', 'Среда', 'Четверг',
-                                                            'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
+                    or message.text not in ['Понедельник', 'Вторник', 'Среда', 'Четверг',
+                                            'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
                     state=Form.my_group,
                     content_types=types.message.ContentType.ANY)
 async def process_my_group_weekday_invalid(message: types.Message):
@@ -405,8 +411,8 @@ async def get_course(message: types.Message):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                                    or (not message.text.isdigit() and message.text != 'Выход')
-                                    or not 1 <= int(message.text) <= 5,
+                    or (not message.text.isdigit() and message.text != 'Выход')
+                    or not 1 <= int(message.text) <= 5,
                     state=Form.course,
                     content_types=types.message.ContentType.ANY)
 async def process_course_invalid(message: types.Message):
@@ -473,8 +479,8 @@ async def process_group(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                                    or message.text not in ['Понедельник', 'Вторник', 'Среда', 'Четверг',
-                                                            'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
+                    or message.text not in ['Понедельник', 'Вторник', 'Среда', 'Четверг',
+                                            'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
                     state=Form.weekday,
                     content_types=types.message.ContentType.ANY)
 async def process_weekday_invalid(message: types.Message):
