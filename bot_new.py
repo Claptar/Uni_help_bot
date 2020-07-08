@@ -51,7 +51,7 @@ async def cmd_start(message: types.Message):
     # Set state
     await Form.course.set()
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(str(name)) for name in range(1, 6)])  # кнопки c номерами курсов
+    keyboard.add(*[types.KeyboardButton(str(name)) for name in range(1, 5)])  # кнопки c номерами курсов
     await bot.send_message(message.chat.id, 'Привет-привет 🙃 Давай знакомиться! Меня зовут A2.'
                                             ' Можешь рассказать мне немного о себе,'
                                             ' чтобы я знал, как могу тебе помочь?'
@@ -72,7 +72,7 @@ async def process_name(message: types.Message):
     """
     Запись номера курса
     """
-    Form.student['Course'] = message.chat.id
+    Form.student['Course'] = message.text
     await Form.group.set()
     keyboard = types.ReplyKeyboardRemove()
     await bot.send_message(message.chat.id, 'Отлично, а теперь не подскажешь номер своей группы?\n'
