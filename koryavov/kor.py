@@ -1,8 +1,5 @@
 import requests
 
-SEM = 0
-TASK = 0
-
 
 def kor_page(sem_num, zad_num):
     """

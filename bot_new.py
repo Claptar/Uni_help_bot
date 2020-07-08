@@ -37,6 +37,13 @@ class Profile(StatesGroup):
     course_num = State()
     group_num = State()
 
+
+class Koryavov(StatesGroup):
+    sem_num_state = State()
+    sem_num = 0
+    task_num_state = State()
+    task_num = 0
+
 @dp.message_handler(commands=['help'])
 async def help_def(message):
     """
@@ -180,6 +187,54 @@ def group_num_error(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
     await bot.send_message(message.chat.id, 'Что-то не так, введи номер своей группы ещё раз', reply_markup=keyboard)
+
+
+@dp.message_handler(commands='koryavov')
+def koryavov1(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])  # кнопки c номерами семестров
+    await bot.send_message(message.chat.id, 'Выбери номер семестра общей физики: \n'
+                                            '1) Механика \n'
+                                            '2) Термодинамика \n'
+                                            '3) Электричество \n'
+                                            '4) Оптика\n'
+                                            '5) Атомная и ядерная физика', reply_markup=keyboard)
+    await Koryavov.sem_num_state.set()
+
+
+@dp.message_handler(lambda message: message.text.isdigit(), state=Koryavov.sem_num_state)
+def sem_num(message: types.Message):
+    Koryavov.sem_num = int(message.text)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+    await bot.send_message(message.chat.id, 'Отлично, напиши теперь номер задачи', reply_markup=keyboard)
+    await Koryavov.task_num_state.set()
+
+
+# If some invalide input
+@dp.message_handler(state=Koryavov.sem_num_state)
+def kor_sem_inv_input(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])  # кнопки c номерами семестров
+    await bot.send_message(message.chat.id, 'Что-то не так, давай ещё раз. Выбери номер семестра:')
+
+
+@dp.message_handler(lambda message: math_part.is_digit(message.text), state=Koryavov.task_num_state)
+def task_page(message: types.Message, state: FSMContext):
+    Koryavov.task_num = message.text
+    reply = 'Информация взята с сайта mipt1.ru \n\n' + kor.kor_page(Koryavov.sem_num, Koryavov.task_num)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+    await bot.send_message(message.chat.id, reply, reply_markup=keyboard)
+    await state.finish()
+
+
+# If some invalide input
+@dp.message_handler(state=Koryavov.task_num_state)
+def kor_task_inv_input(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+    await bot.send_message(message.chat.id, 'Что-то не так, давай ещё раз. Введи номер задачи.', reply_markup=keyboard)
 
 
 @dp.message_handler(Text(equals='Выход'), state='*')
