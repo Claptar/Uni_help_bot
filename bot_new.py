@@ -1,7 +1,6 @@
 import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ParseMode
@@ -66,7 +65,7 @@ async def process_name(message: types.Message):
     Запись номера курса
     """
     psg.insert_data(message.chat.id, 'Б00-229', message.text)
-    await Form.next()
+    await Form.group.set()
     keyboard = types.ReplyKeyboardRemove()
     await bot.send_message(message.chat.id, 'Отлично, а теперь не подскажешь номер своей группы?\n'
                                             '(В формате Б00–228 или 777, как в расписании)', reply_markup=keyboard)
