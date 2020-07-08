@@ -1,3 +1,4 @@
+import os
 import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -30,6 +31,11 @@ class Form(StatesGroup):
     weekday = State()
     student = {'Group': 'None', 'Course': 'None'}
 
+
+class Profile(StatesGroup):
+    profile = State()
+    course_num = State()
+    group_num = State()
 
 @dp.message_handler(commands=['help'])
 async def help_def(message):
@@ -87,6 +93,93 @@ async def process_age(message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id, 'Отлично, вот мы и познакомились 🙃 Я очень люблю помогать людям, напиши '
                                             '/help чтобы узнать, что я умею. ', reply_markup=keyboard)
     await state.finish()
+
+
+@dp.message_handler(commands='profile')
+async def choose_edit(message: types.Message):
+    """
+    Функция ловит сообщение с командой '/profile' и спрашивает у пользователя
+    какие данные он хочет изменить в базе данных
+    :param message:
+    :return:
+    """
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in
+                   ['Номер курса', 'Номер группы', 'Выход']])  # кнопки c номерами семестров
+    try:
+        student = psg.get_student(message.chat.id)
+        await bot.send_message(message.chat.id, f'Сейчас у тебя указано, что ты учишься на {student[1]} курсе '
+                                                f'в {student[0]} группе.'
+                                                f' Что именно ты хочешь изменить?', reply_markup=keyboard)
+        await Profile.profile.set()
+    except Exception as e:
+        print('АШИПКА')
+        print(e)
+        await bot.send_message(os.environ['ADMIN_1'], f'Посмотри логи у чувака'
+                                                      f' user = {message.from_user} id={message.chat.id}'
+                                                      f' пошла по пизде 109 строчка...')
+        await bot.send_message(os.environ['ADMIN_2'], f'Посмотри логи у чувака'
+                                                      f' user = {message.from_user} id={message.chat.id}'
+                                                      f' пошла по пизде 109 строчка...')
+        await bot.send_message(message.chat.id,
+                               'Извини, что-то пошло не так, команда устранения ошибок уже взялась за дело,'
+                               ' попробуй эту функцию позже) Чтобы проблема решилась быстрее'
+                               ' ты можешь написать @Error404NF')
+
+
+@dp.message_handler(Text(equals=['Номер курса', 'Номер группы']), state=Profile.profile)
+def edit_values(message: types.Message):
+    if message.text == 'Номер курса':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 'Выход']])
+        await bot.send_message(message.chat.id, 'Введи номер своего курса', reply_markup=keyboard)
+        await Profile.course_num.set()
+    elif message.text == 'Номер группы':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+        await bot.send_message(message.chat.id, 'Введи номер своей группы', reply_markup=keyboard)
+        await Profile.group_num.set()
+
+
+# If input is smth else
+@dp.message_handler(state=Profile.profile)
+def stupid_text(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Номер курса', 'Номер группы', 'Выход']])
+    await bot.send_message(message.chat.id, 'Что-то не так, давай ещё раз', reply_markup=keyboard)
+
+
+@dp.message_handler(lambda message: message.text.isdigit(), state=Profile.course_num)
+def edit_course(message: types.Message, state: FSMContext):
+    psg.update_course(message.chat.id, int(message.text))
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+    await bot.send_message(message.chat.id, 'Всё готово, проверяй)', reply_markup=keyboard)
+    await state.finish()
+
+
+# if input is smth except int
+@dp.message_handler(state=Profile.course_num)
+def smt_wrong(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 'Выход']])
+    await bot.send_message(message.chat.id, 'Что-то не так, выбери номер курса ещё раз', reply_markup=keyboard)
+
+
+@dp.message_handler(lambda message: message.content_type == types.message.ContentType.TEXT, state=Profile.group_num)
+def edit_group(message: types.Message, state: FSMContext):
+    psg.update_group_num(message.chat.id, message.text)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+    await bot.send_message(message.chat.id, 'Всё готово, проверяй)', reply_markup=keyboard)
+    await state.finish()
+
+
+@dp.message_handler(state=Profile.group_num)
+def group_num_error(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+    await bot.send_message(message.chat.id, 'Что-то не так, введи номер своей группы ещё раз', reply_markup=keyboard)
 
 
 @dp.message_handler(Text(equals='Выход'), state='*')
@@ -171,7 +264,7 @@ async def initiate_timetable(message: types.Message):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                    or message.text not in ['Моя группа', 'Другая группа', 'Выход'],
+                                    or message.text not in ['Моя группа', 'Другая группа', 'Выход'],
                     state=Form.choose_group, content_types=types.message.ContentType.ANY)
 async def initiate_invalid(message: types.Message):
     """
@@ -214,8 +307,8 @@ async def process_my_group_weekday(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                    or message.text not in ['Понедельник', 'Вторник', 'Среда', 'Четверг',
-                                            'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
+                                    or message.text not in ['Понедельник', 'Вторник', 'Среда', 'Четверг',
+                                                            'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
                     state=Form.my_group,
                     content_types=types.message.ContentType.ANY)
 async def process_my_group_weekday_invalid(message: types.Message):
@@ -257,8 +350,8 @@ async def get_course(message: types.Message):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                    or (not message.text.isdigit() and message.text != 'Выход')
-                    or not 1 <= int(message.text) <= 5,
+                                    or (not message.text.isdigit() and message.text != 'Выход')
+                                    or not 1 <= int(message.text) <= 5,
                     state=Form.course,
                     content_types=types.message.ContentType.ANY)
 async def process_course_invalid(message: types.Message):
@@ -325,8 +418,8 @@ async def process_group(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                    or message.text not in ['Понедельник', 'Вторник', 'Среда', 'Четверг',
-                                            'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
+                                    or message.text not in ['Понедельник', 'Вторник', 'Среда', 'Четверг',
+                                                            'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
                     state=Form.weekday,
                     content_types=types.message.ContentType.ANY)
 async def process_weekday_invalid(message: types.Message):
