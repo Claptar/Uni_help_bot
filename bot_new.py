@@ -1,6 +1,7 @@
 import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ParseMode
@@ -8,6 +9,9 @@ from aiogram.utils import executor
 from data_constructor import psg
 from math_module import math_part
 from koryavov import kor
+from data_constructor import psg
+import timetable.timetable
+import datetime
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,8 +23,12 @@ dp = Dispatcher(bot, storage=storage)
 
 
 class Form(StatesGroup):
-    course = State()  # Will be represented in storage as 'Form:course'
-    group = State()  # Will be represented in storage as 'Form:group'
+    choose_group = State()
+    my_group = State()
+    course = State()
+    group = State()
+    weekday = State()
+    student = {'Group': 'None', 'Course': 'None'}
 
 
 @dp.message_handler(commands=['help'])
@@ -51,7 +59,7 @@ async def cmd_start(message: types.Message):
 
 
 # Check course number. Age gotta be digit from 1 to 4
-@dp.message_handler(lambda message: not message.text.isdigit() or not 1 < int(message.text) < 5, state=Form.course)
+@dp.message_handler(lambda message: not message.text.isdigit() or not 1 <= int(message.text) < 5, state=Form.course)
 async def process_age_invalid(message: types.Message):
     """
     Если номер курса введен некорректно
@@ -64,7 +72,7 @@ async def process_name(message: types.Message):
     """
     Запись номера курса
     """
-    psg.insert_data(message.chat.id, 'Б00-229', message.text)
+    Form.student['Course'] = message.chat.id
     await Form.group.set()
     keyboard = types.ReplyKeyboardRemove()
     await bot.send_message(message.chat.id, 'Отлично, а теперь не подскажешь номер своей группы?\n'
@@ -72,35 +80,13 @@ async def process_name(message: types.Message):
 
 
 @dp.message_handler(state=Form.group)
-async def process_age(message: types.Message):
-    psg.update_group_num(message.chat.id, message.text)
+async def process_age(message: types.Message, state: FSMContext):
+    psg.insert_data(message.chat.id, message.text, int(Form.student['Course']))
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # кнопки для получения расписания на сегодня или завтра
     keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
     await bot.send_message(message.chat.id, 'Отлично, вот мы и познакомились 🙃 Я очень люблю помогать людям, напиши '
                                             '/help чтобы узнать, что я умею. ', reply_markup=keyboard)
-from aiogram.utils import executor
-
-from data_constructor import psg
-import timetable.timetable
-import datetime
-
-API_TOKEN = '962708099:AAFgAT2x2mH5cp_o3RwLosbEo4tRFpKdz5E'
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-
-# Initialize bot and dispatcher
-bot = Bot(token=API_TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
-
-
-class Form(StatesGroup):
-    choose_group = State()
-    my_group = State()
-    course = State()
-    group = State()
-    weekday = State()
+    await state.finish()
 
 
 @dp.message_handler(Text(equals='Выход'), state='*')
