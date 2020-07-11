@@ -1,6 +1,7 @@
 import openpyxl
 import pandas as pd
 import pickle
+from data_constructor import psg
 
 
 def within_range(bounds: tuple, cell: openpyxl.cell) -> bool:
@@ -28,18 +29,18 @@ def get_value_merged(sheet: openpyxl.worksheet, cell: openpyxl.cell) -> any:
     """
     for merged in sheet.merged_cells:  # смотрим в списке слитых клеток (структура данных openpyxl.worksheet)
         if within_range(merged.bounds, cell):
-            return sheet.cell(merged.min_row, merged.min_col).value
+            return sheet.cell(merged.min_row, merged.min_col).value  # смотрим значение в левой верхней клетке
     return cell.value
 
 
-def get_timetable(table: openpyxl.worksheet) -> dict:
+def get_timetable(table: openpyxl.worksheet):
     """
-    Функция, которая из таблицы Excel с расписанием выделяет расписание для каждой группы.
+    Функция, которая из таблицы Excel с расписанием выделяет расписание для каждой группы
+    и записывает его в базу данных.
     :param table: таблица с расписанием
-    :return: Словарь, ключи в котором являются номерами групп, а
-    значение, соответствующее ключу - расписание для этой группы.
+    :return:
     """
-    groups = {}  # список расписаний для групп
+    # groups = {}  # список расписаний для групп
 
     for j in range(3, table.max_column + 1):  # смотрим на значения по столбцам
         name = table.cell(1, j).value  # номер группы
@@ -68,9 +69,8 @@ def get_timetable(table: openpyxl.worksheet) -> dict:
 
             group = pd.DataFrame(group)  # заменяем None на спящие смайлики
             group.replace(to_replace=[None], value='😴', inplace=True)
-            groups[name] = group  # заносим расписание для группы в словарь
-
-    return groups  # словарь с группами
+            # записываем номер группы и расписание в базу данных
+            psg.insert_group(name, pickle.dumps(group, protocol=pickle.HIGHEST_PROTOCOL))
 
 
 def timetable_by_group(course: int, group: str, day: str) -> pd.DataFrame:

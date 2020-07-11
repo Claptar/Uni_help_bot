@@ -1,122 +1,224 @@
 import psycopg2
-import pandas as pd
-import os
-import numpy as np
+from psycopg2 import OperationalError, errorcodes
+import sys
 
-USER = os.environ['USER']
-PASS = os.environ['PASS']
-HOST = os.environ['TABLE_HOST']
-DATABASE = os.environ['DATABASE']
+config = {'connection_string': 'dbname=d35o9bn6qjau2u '
+                               'user=yxnigwjuiafqql '
+                               'password=1c2787f4a7bb154a724accb47df8e6ad049d8825faa3f8a0f5c128ded8c56f4f '
+                               'host=ec2-54-195-247-108.eu-west-1.compute.amazonaws.com '
+                               'port=5432'}
 
 
-def insert_data(chat_id, group_num: str, course: int):
-    global USER, HOST, DATABASE, PASS
+def print_psycopg2_exception(err):
     """
-    В таблицу с названием CHEL6I добавляются данные пользователя
-    :param chat_id: id чата бота с пользователем
-    :param group_num: номер учебной группы пользователя
-    :param course: номер курса пользователя
+    Функция, печатающая информацию об ошибке.
+    """
+    # get details about the exception
+    err_type, err_obj, traceback = sys.exc_info()
+
+    # get the line number when exception occurred
+    line_num = traceback.tb_lineno
+
+    # print the connect() error
+    print("\npsycopg2 ERROR:", err, "on line number:", line_num)
+    print("psycopg2 traceback:", traceback, "-- type:", err_type)
+
+    # psycopg2 extensions.Diagnostics object attribute
+    print("\nextensions.Diagnostics:", err.diag) if err.diag else print()
+
+    # print the pgcode and pgerror exceptions
+    print("\npgerror:", err.pgerror) if err.pgerror else print()
+    print("pgcode:", err.pgcode, '-', errorcodes.lookup(err.pgcode), "\n") if err.pgcode else print()
+
+
+def get_connection():
+    """
+    Функция для проверки соединения.
+    :return: connection или False, если соединение не было установлено.
+    """
+    try:  # пробуем подключиться
+        conn = psycopg2.connect(config['connection_string'])
+        return conn
+    except OperationalError as err:  # ловим ошибку, если не удалось подключиться
+        print_psycopg2_exception(err)
+        return False
+
+
+def insert_group(group_num, timetable):
+    """
+    Функция, добавляющая в таблицу Group пару номер группы - расписание группы.
+    :param group_num: номер группы из расписания
+    :param timetable: расписание для группы
+    :return: True, если добавление прошло успешно, или False, если что-то пошло не так.
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """INSERT INTO "Group" (name, group_timetable) VALUES(%s, %s)""",
+            (group_num, timetable)
+        )
+    except Exception as err:  # если при записи произошла ошибка, то откатываем транзакцию
+        print_psycopg2_exception(err)  # и закрываем соединение
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return False
+    conn.commit()  # если все хорошо, подтверждаем транзакцию
+    cur.close()
+    conn.close()
+    return True
+
+
+def insert_user(chat_id, group_num, need_custom: bool):
+    """
+    Функция, добавляющая в таблицу User пользователя с номером чата chat_id и группой group_num.
+    :param chat_id: id чата с пользователем
+    :param group_num: номер группы пользователя
+    :param need_custom: если True, то в таблицу также заносится заготовка для кастомного расписания пользователя
+    (по умолчанию - расписание группы), иначе в таблицу заносится значение NULL (None)
     :return:
     """
-    con = psycopg2.connect(
-        database=DATABASE,
-        user=USER,
-        password=PASS,
-        host=HOST,
-        port="5432")
-    cur = con.cursor()
-    cur.execute(
-        f"INSERT INTO CHEL6I (CHAT_ID, GROUP_NUM, COURSE) VALUES ({chat_id}, '{group_num}', {course})"
-    )
-    con.commit()
-    con.close()
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        if need_custom:
+            cur.execute(
+                """INSERT INTO "User" (chat_id, group_id, user_timetable) """
+                """VALUES(%s, (SELECT group_id FROM "Group" WHERE "Group".name = %s), """
+                """(SELECT group_timetable FROM "Group" WHERE "Group".name = %s))""",
+                (chat_id, group_num, group_num)
+            )
+        else:
+            cur.execute(
+                """INSERT INTO "User" (chat_id, group_id) """
+                """VALUES(%s, (SELECT group_id FROM "Group" WHERE "Group".name = %s))""",
+                (chat_id, group_num)
+            )
+    except Exception as err:
+        print_psycopg2_exception(err)
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return False
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
 
 
-def read_data():
+def update_user(chat_id, group_num, update_custom: bool):
     """
-    Возвращает pandas dataframe с данными всех пользователей
+    Функция для обновления данных пользователя по его желанию.
+    :param chat_id: id чата с пользователем
+    :param group_num: номер группы пользователя
+    :param update_custom: если True, то user_timetable заменяется на таблицу, соответствующую новой группе.
     :return:
     """
-    global USER, HOST, DATABASE, PASS
-    con = psycopg2.connect(
-        database=DATABASE,
-        user=USER,
-        password=PASS,
-        host=HOST,
-        port="5432")
-    cursor = con.cursor()
-    data = pd.read_sql("SELECT * FROM CHEL6I", con, index_col='chat_id')
-    con.close()
-    return data
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        if update_custom:
+            cur.execute(
+                """UPDATE "User" SET (group_id, user_timetable) = """
+                """((SELECT group_id FROM "Group" WHERE "Group".name = %s), """
+                """(SELECT group_timetable FROM "Group" WHERE "Group".name = %s)) """
+                """WHERE chat_id = %s""",
+                (group_num, group_num, chat_id)
+            )
+        else:
+            cur.execute(
+                """UPDATE "User" SET group_id = """
+                """(SELECT group_id FROM "Group" WHERE "Group".name = %s) """
+                """WHERE chat_id = %s""",
+                (group_num, chat_id)
+            )
+    except Exception as err:
+        print_psycopg2_exception(err)
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return False
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
 
 
-def update_course(chat_id, course):
+def send_timetable(custom: bool, my_group: bool, chat_id=None, another_group=None):
     """
-    Обновляет курс пользователя, по его chat_id
-    :param chat_id: id чата бота с пользователем
-    :param course:  новый номер курса пользователя
-    :return:
+    Функция, возвращающая нужное пользователю расписание.
+    Могут быть варианты (custom=True, my_group=False, chat_id=SOMETHING_IN_"User"),
+                        (custom=False, my_group=True, chat_id=SOMETHING_IN_"User"),
+                        (custom=False, my_group=False, another_group=SOMETHING_IN_"Group")
+    :param custom: если True, то возвращается кастомное расписание пользователя
+    :param my_group: если True, то возвращается расписание группы пользователя
+    :param chat_id: id чата с пользователем (по умолчанию None - для просмотра расписания любой группы
+                                                                              без записи в базу данных)
+    :param another_group: если не None, то возвращается расписание другой группы по запросу пользователя
+    :return: timetable: pickle file or None
     """
-    global USER, HOST, DATABASE, PASS
-    con = psycopg2.connect(
-        database=DATABASE,
-        user=USER,
-        password=PASS,
-        host=HOST,
-        port="5432")
-    cur = con.cursor()
-    cur.execute(f"UPDATE CHEL6I set COURSE = {course} where CHAT_ID = {chat_id}")
-    con.commit()
-    con.close()
+    conn = get_connection()
+    cur = conn.cursor()
+    result = None  # расписание группы должно быть в виде (SMTH, ), если оно None {не (None, )}, то SELECT не нашел его
+    try:
+        if custom:
+            cur.execute(
+                """SELECT user_timetable FROM "User" WHERE "User".chat_id = %s""",
+                [chat_id]
+            )
+            result = cur.fetchone()
+        elif my_group:
+            cur.execute(
+                """SELECT group_timetable FROM "Group" """
+                """WHERE (SELECT group_id FROM "User" WHERE "User".chat_id = %s) = "Group".group_id""",
+                [chat_id]
+            )
+            result = cur.fetchone()
+        elif another_group is not None:
+            cur.execute(
+                """SELECT group_timetable FROM "Group" WHERE "Group".name = %s""",
+                [another_group]
+            )
+            result = cur.fetchone()
+    except Exception as err:
+        print_psycopg2_exception(err)
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return False
+    cur.close()
+    conn.close()
+    if result is not None:  # (SMTH, ), если (None, ), то этот пользователь не завел кастомное расписание
+        return result[0]
+    else:  # result is None, если такого пользователя, или такой группы не нашлось (another_group)
+        return False
 
 
-def update_group_num(chat_id, group_num):
+def get_user_group(chat_id):
     """
-    Обновляет курс пользователя, по его chat_id
-    :param chat_id: id чата бота с пользователем
-    :param group_num: новый номер группы пользователя
-    :return:
+    Функция по chat_id пользователя возвращает значение его номера группы.
+    :param chat_id:
+    :return: Номер группы, записанный в базе данных, или False, если такого пользователя нет в базе.
     """
-    global USER, HOST, DATABASE, PASS
-    con = psycopg2.connect(
-        database=DATABASE,
-        user=USER,
-        password=PASS,
-        host=HOST,
-        port="5432")
-    cur = con.cursor()
-    cur.execute(f"UPDATE CHEL6I set GROUP_NUM = '{group_num}' where CHAT_ID = {chat_id}")
-    con.commit()
-    con.close()
-
-
-def create_table(name):
-    """
-    Создает таблицу с название name
-    :param name: Название будующей таблицы
-    :return:
-    """
-    global USER, HOST, DATABASE, PASS
-    con = psycopg2.connect(
-        database=DATABASE,
-        user=USER,
-        password=PASS,
-        host=HOST,
-        port="5432")
-    cur = con.cursor()
-    cur.execute(f'''CREATE TABLE {name}  
-         (CHAT_ID INT PRIMARY KEY NOT NULL,
-         GROUP_NUM TEXT NOT NULL,
-         COURSE INT);''')
-    con.commit()
-    con.close()
-
-
-def get_student(chat_id):
-    """
-    Функция по chat_id пользователя возвращеет значения его номера группы и номера курса
-    :param chat_id: int
-    :return: [group_num, course_num]
-    """
-    data = read_data()
-    return np.array(data.loc[chat_id])
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """SELECT name FROM "Group" """
+            """WHERE (SELECT group_id FROM "User" WHERE "User".chat_id = %s) = "Group".group_id""",
+            [chat_id]
+        )
+        result = cur.fetchone()  # (group_num, )
+    except Exception as err:
+        print_psycopg2_exception(err)
+        conn.rollback()
+        cur.close()
+        conn.close()
+        return False
+    cur.close()
+    conn.close()
+    if result is not None:
+        return result[0]
+    else:  # если result is None, значит пользователя нет в базе (?)
+        return False

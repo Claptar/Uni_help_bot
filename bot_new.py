@@ -11,7 +11,7 @@ from aiogram.utils import executor
 from math_module import math_part
 from koryavov import kor
 from data_constructor import psg
-import timetable.timetable
+from timetable import timetable
 import datetime
 
 logging.basicConfig(level=logging.INFO)
@@ -271,12 +271,12 @@ async def get_start_schedule(message):
     """
     student = psg.get_student(message.chat.id)
     # проверка существования сочетания курс-группа, которое записано в базе данных для этого пользователя
-    if timetable.timetable.check_group(student[0], student[1]):
+    if timetable.check_group(student[0], student[1]):
         # список дней для удобной конвертации номеров дней недели (0, 1, ..., 6) в их названия
         week = tuple(['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'])
         today = datetime.datetime.today().weekday()  # today - какой сегодня день недели (от 0 до 6)
         if message.text == 'На сегодня':  # расписание на сегодня
-            schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[today])
+            schedule = timetable.timetable_by_group(student[1], student[0], week[today])
             STRING = ''  # "строка" с расписанием, которую отправляем сообщением
             for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
                 # время пары - жирный + наклонный шрифт, название пары на следующей строке
@@ -292,7 +292,7 @@ async def get_start_schedule(message):
             tomorrow = 0  # номер дня для завтра, если это воскресенье (6), то уже стоит (0)
             if today in range(6):  # если не воскресенье, то значение равно today + 1
                 tomorrow = today + 1
-            schedule = timetable.timetable.timetable_by_group(student[1], student[0], week[tomorrow])
+            schedule = timetable.timetable_by_group(student[1], student[0], week[tomorrow])
             STRING = ''  # "строка" с расписанием, которую отправляем сообщением
             for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
                 # время пары - жирный + наклонный шрифт, название пары на следующей строке
@@ -346,7 +346,7 @@ async def process_my_group_weekday(message: types.Message, state: FSMContext):
 
     student = psg.get_student(message.chat.id)
     # проверка существования сочетания курс-группа, которое записано в базе данных для этого пользователя
-    if timetable.timetable.check_group(student[0], student[1]):
+    if timetable.check_group(student[0], student[1]):
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Понедельник', 'Вторник']])
@@ -386,7 +386,7 @@ async def process_my_group_weekday_invalid(message: types.Message):
 async def return_my_group_schedule(message: types.Message, state: FSMContext):
     student = psg.get_student(message.chat.id)
     # проверка на достоверность пары курс-группа для этого пользователя уже была сделана
-    schedule = timetable.timetable.timetable_by_group(student[1], student[0], message.text)
+    schedule = timetable.timetable_by_group(student[1], student[0], message.text)
     STRING = ''  # "строка" с расписанием, которую отправляем сообщением
     for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
         # время пары - жирный + наклонный шрифт, название пары на следующей строке
@@ -457,7 +457,7 @@ async def process_group(message: types.Message, state: FSMContext):
     """
     async with state.proxy() as data:
         # проверяем существование такой пары курс-группа в расписании
-        if timetable.timetable.check_group(message.text, data['course']):
+        if timetable.check_group(message.text, data['course']):
             data['group'] = message.text  # если такая пара существует, то сохраняем номер группы
             await Form.weekday.set()  # и изменяем состояние на weekday
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -499,7 +499,7 @@ async def return_schedule(message: types.Message, state: FSMContext):
     """
     async with state.proxy() as data:
         data['weekday'] = message.text  # все проверки уже были сделаны выше
-        schedule = timetable.timetable.timetable_by_group(data['course'], data['group'], data['weekday'])
+        schedule = timetable.timetable_by_group(data['course'], data['group'], data['weekday'])
         STRING = ''  # "строка" с расписанием, которую отправляем сообщением
         for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
             # время пары - жирный + наклонный шрифт, название пары на следующей строке
@@ -535,7 +535,7 @@ async def initiate_exam_timetable(message):
 #     """
 #     if message.text in texting.texting_symbols.groups:
 #         path = os.path.abspath('')
-#         timetable.timetable_old.get_exam_timetable(message.text)
+#         timetable_old.get_exam_timetable(message.text)
 #         f = open(f'{path}/timetable/exam.txt')
 #         for line in f:
 #             bot.send_message(message.chat.id, line)
