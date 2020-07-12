@@ -24,11 +24,11 @@ def print_psycopg2_exception(err):
     print("psycopg2 traceback:", traceback, "-- type:", err_type)
 
     # psycopg2 extensions.Diagnostics object attribute
-    print("\nextensions.Diagnostics:", err.diag) if err.diag else print()
+    print("\nextensions.Diagnostics:", err.diag) if hasattr(err, 'diag') else print()
 
     # print the pgcode and pgerror exceptions
-    print("\npgerror:", err.pgerror) if err.pgerror else print()
-    print("pgcode:", err.pgcode, '-', errorcodes.lookup(err.pgcode), "\n") if err.pgcode else print()
+    print("\npgerror:", err.pgerror) if hasattr(err, 'pgerror') else print()
+    print("pgcode:", err.pgcode, '-', errorcodes.lookup(err.pgcode), "\n") if hasattr(err, 'pgcode') else print()
 
 
 def get_connection():
@@ -41,7 +41,7 @@ def get_connection():
         return conn
     except OperationalError as err:  # ловим ошибку, если не удалось подключиться
         print_psycopg2_exception(err)
-        return False
+        return None  # если соединение не установлено
 
 
 def insert_group(group_num, timetable):
@@ -51,18 +51,15 @@ def insert_group(group_num, timetable):
     :param timetable: расписание для группы
     :return: True, если добавление прошло успешно, или False, если что-то пошло не так.
     """
-    conn = get_connection()
-    cur = conn.cursor()
     try:
+        conn = get_connection()
+        cur = conn.cursor()
         cur.execute(
             """INSERT INTO "Group" (name, group_timetable) VALUES(%s, %s)""",
             (group_num, timetable)
         )
-    except Exception as err:  # если при записи произошла ошибка, то откатываем транзакцию
-        print_psycopg2_exception(err)  # и закрываем соединение
-        conn.rollback()
-        cur.close()
-        conn.close()
+    except Exception as err:  # если при записи произошла ошибка, то возвращаем False
+        print_psycopg2_exception(err)
         return False
     conn.commit()  # если все хорошо, подтверждаем транзакцию
     cur.close()
@@ -79,9 +76,9 @@ def insert_user(chat_id, group_num, need_custom: bool):
     (по умолчанию - расписание группы), иначе в таблицу заносится значение NULL (None)
     :return:
     """
-    conn = get_connection()
-    cur = conn.cursor()
     try:
+        conn = get_connection()
+        cur = conn.cursor()
         if need_custom:
             cur.execute(
                 """INSERT INTO "User" (chat_id, group_id, user_timetable) """
@@ -97,9 +94,6 @@ def insert_user(chat_id, group_num, need_custom: bool):
             )
     except Exception as err:
         print_psycopg2_exception(err)
-        conn.rollback()
-        cur.close()
-        conn.close()
         return False
     conn.commit()
     cur.close()
@@ -115,9 +109,9 @@ def update_user(chat_id, group_num, update_custom: bool):
     :param update_custom: если True, то user_timetable заменяется на таблицу, соответствующую новой группе.
     :return:
     """
-    conn = get_connection()
-    cur = conn.cursor()
     try:
+        conn = get_connection()
+        cur = conn.cursor()
         if update_custom:
             cur.execute(
                 """UPDATE "User" SET (group_id, user_timetable) = """
@@ -135,9 +129,6 @@ def update_user(chat_id, group_num, update_custom: bool):
             )
     except Exception as err:
         print_psycopg2_exception(err)
-        conn.rollback()
-        cur.close()
-        conn.close()
         return False
     conn.commit()
     cur.close()
@@ -148,20 +139,22 @@ def update_user(chat_id, group_num, update_custom: bool):
 def send_timetable(custom: bool, my_group: bool, chat_id=None, another_group=None):
     """
     Функция, возвращающая нужное пользователю расписание.
-    Могут быть варианты (custom=True, my_group=False, chat_id=SOMETHING_IN_"User"),
-                        (custom=False, my_group=True, chat_id=SOMETHING_IN_"User"),
-                        (custom=False, my_group=False, another_group=SOMETHING_IN_"Group")
+    Могут быть варианты (custom=True, my_group=False, chat_id=SMTH_IN_"User"),
+                        (custom=False, my_group=True, chat_id=SMTH_IN_"User"),
+                        (custom=False, my_group=False, another_group=SMTH_IN_"Group")
     :param custom: если True, то возвращается кастомное расписание пользователя
     :param my_group: если True, то возвращается расписание группы пользователя
     :param chat_id: id чата с пользователем (по умолчанию None - для просмотра расписания любой группы
                                                                               без записи в базу данных)
     :param another_group: если не None, то возвращается расписание другой группы по запросу пользователя
-    :return: timetable: pickle file or None
+    :return: timetable: (pickle file или None, ) или None
     """
-    conn = get_connection()
-    cur = conn.cursor()
-    result = None  # расписание группы должно быть в виде (SMTH, ), если оно None {не (None, )}, то SELECT не нашел его
+    # расписание группы должно быть в виде (SMTH, ) ( в том числе может быть (None, ) )
+    # если оно None ( не (None, ) ), то SELECT не нашел его
+    result = None
     try:
+        conn = get_connection()
+        cur = conn.cursor()
         if custom:
             cur.execute(
                 """SELECT user_timetable FROM "User" WHERE "User".chat_id = %s""",
@@ -183,16 +176,13 @@ def send_timetable(custom: bool, my_group: bool, chat_id=None, another_group=Non
             result = cur.fetchone()
     except Exception as err:
         print_psycopg2_exception(err)
-        conn.rollback()
-        cur.close()
-        conn.close()
         return False
     cur.close()
     conn.close()
-    if result is not None:  # (SMTH, ), если (None, ), то этот пользователь не завел кастомное расписание
-        return result[0]
-    else:  # result is None, если такого пользователя, или такой группы не нашлось (another_group)
-        return False
+    # 1) result == (SMTH - может быть None, ),
+    # если result == (None, ), то этот пользователь не завел кастомное расписание
+    # 2) result is None, если такого пользователя, или такой группы не нашлось (another_group)
+    return result
 
 
 def get_user_group(chat_id):
@@ -201,9 +191,10 @@ def get_user_group(chat_id):
     :param chat_id:
     :return: Номер группы, записанный в базе данных, или False, если такого пользователя нет в базе.
     """
-    conn = get_connection()
-    cur = conn.cursor()
+    result = None
     try:
+        conn = get_connection()
+        cur = conn.cursor()
         cur.execute(
             """SELECT name FROM "Group" """
             """WHERE (SELECT group_id FROM "User" WHERE "User".chat_id = %s) = "Group".group_id""",
@@ -212,13 +203,9 @@ def get_user_group(chat_id):
         result = cur.fetchone()  # (group_num, )
     except Exception as err:
         print_psycopg2_exception(err)
-        conn.rollback()
-        cur.close()
-        conn.close()
         return False
     cur.close()
     conn.close()
-    if result is not None:
-        return result[0]
-    else:  # если result is None, значит пользователя нет в базе (?)
-        return False
+    # 1) result == (SMTH - не может быть None, )
+    # 2) result is None, если такого пользователя нет в базе
+    return result
