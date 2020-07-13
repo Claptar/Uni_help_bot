@@ -69,7 +69,7 @@ def get_timetable(table: openpyxl.worksheet):
             group.replace(to_replace=[None], value='😴', inplace=True)
             # записываем номер группы и расписание в базу данных
             psg.insert_group(name, pickle.dumps(group, protocol=pickle.HIGHEST_PROTOCOL))
-    # else:  # TODO!!! дописать запись "группы" выпускников в базу данных
+    # else:  TODO!!! дописать запись "группы" выпускников в базу данных
     #     psg.insert_group('ALUMNI', )
 
 
