@@ -67,31 +67,22 @@ def insert_group(group_num, timetable):
     return True
 
 
-def insert_user(chat_id, group_num, need_custom: bool):
+def insert_user(chat_id, group_num):
     """
     Функция, добавляющая в таблицу User пользователя с номером чата chat_id и группой group_num.
     :param chat_id: id чата с пользователем
     :param group_num: номер группы пользователя
-    :param need_custom: если True, то в таблицу также заносится заготовка для кастомного расписания пользователя
     (по умолчанию - расписание группы), иначе в таблицу заносится значение NULL (None)
     :return:
     """
     try:
         conn = get_connection()
         cur = conn.cursor()
-        if need_custom:
-            cur.execute(
-                """INSERT INTO "User" (chat_id, group_id, user_timetable) """
-                """VALUES(%s, (SELECT group_id FROM "Group" WHERE "Group".name = %s), """
-                """(SELECT group_timetable FROM "Group" WHERE "Group".name = %s))""",
-                (chat_id, group_num, group_num)
-            )
-        else:
-            cur.execute(
-                """INSERT INTO "User" (chat_id, group_id) """
-                """VALUES(%s, (SELECT group_id FROM "Group" WHERE "Group".name = %s))""",
-                (chat_id, group_num)
-            )
+        cur.execute(
+            """INSERT INTO "User" (chat_id, group_id) """
+            """VALUES(%s, (SELECT group_id FROM "Group" WHERE "Group".name = %s))""",
+            (chat_id, group_num)
+        )
     except Exception as err:
         print_psycopg2_exception(err)
         return False
@@ -181,23 +172,47 @@ def send_timetable(custom: bool, my_group: bool, chat_id=None, another_group=Non
     conn.close()
     # 1) result == (SMTH - может быть None, ),
     # если result == (None, ), то этот пользователь не завел кастомное расписание
-    # 2) result is None, если такого пользователя, или такой группы не нашлось (another_group)
+    # 2) result is None, если такого пользователя нет в базе, или такой группы не нашлось (another_group)
     return result
 
 
-def get_user_group(chat_id):
+def check_user_group(chat_id):
     """
     Функция по chat_id пользователя возвращает значение его номера группы.
     :param chat_id:
-    :return: Номер группы, записанный в базе данных, или False, если такого пользователя нет в базе.
+    :return: Номер группы, записанный в базе данных, или None, если такого пользователя нет в базе.
     """
-    result = None
     try:
         conn = get_connection()
         cur = conn.cursor()
         cur.execute(
             """SELECT name FROM "Group" """
             """WHERE (SELECT group_id FROM "User" WHERE "User".chat_id = %s) = "Group".group_id""",
+            [chat_id]
+        )
+        result = cur.fetchone()  # (group_num, )
+    except Exception as err:
+        print_psycopg2_exception(err)
+        return False
+    cur.close()
+    conn.close()
+    # 1) result == (SMTH - не может быть None, )
+    # 2) result is None, если такого пользователя нет в базе
+    return result
+
+
+def get_user_info(chat_id):
+    """
+    Функция по chat_id пользователя проверяет, есть ли он в базе данных или нет.
+    Выдает информацию о нем в положительном случае.
+    :param chat_id:
+    :return:
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """SELECT (group_id, user_timetable) FROM "User" WHERE "User".chat_id = %s""",
             [chat_id]
         )
         result = cur.fetchone()  # (group_num, )

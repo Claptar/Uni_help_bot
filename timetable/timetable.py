@@ -40,8 +40,6 @@ def get_timetable(table: openpyxl.worksheet):
     :param table: таблица с расписанием
     :return:
     """
-    # groups = {}  # список расписаний для групп
-
     for j in range(3, table.max_column + 1):  # смотрим на значения по столбцам
         name = table.cell(1, j).value  # номер группы
         if name in ['Дни', 'Часы']:  # если это не номер группы, то пропускаем столбец
@@ -71,37 +69,37 @@ def get_timetable(table: openpyxl.worksheet):
             group.replace(to_replace=[None], value='😴', inplace=True)
             # записываем номер группы и расписание в базу данных
             psg.insert_group(name, pickle.dumps(group, protocol=pickle.HIGHEST_PROTOCOL))
+    # else:  # TODO!!! дописать запись "группы" выпускников в базу данных
+    #     psg.insert_group('ALUMNI', )
 
 
-def timetable_by_group(course: int, group: str, day: str) -> pd.DataFrame:
-    """
-    Функция, выдающая расписание для нужной группы на требуемый день.
-    :param course: номер курса
-    :param group: номер группы
-    :param day: день недели, расписание на который нужно вызвать
-    :return: расписание в формате pd.DataFrame()
-    """
-    # датафреймы с расписаниями для каждого курса хранятся в файлах формата .pickle
-    with open('timetable/{}_kurs.pickle'.format(course), 'rb') as handle:
-        curr_groups = pickle.load(handle)
-    # если номер группы есть в списке, то выдаем нужное расписание
-    if group in curr_groups.keys() and day in ['Понедельник', 'Вторник', 'Среда',
-                                               'Четверг', 'Пятница', 'Суббота', 'Воскресенье']:
-        return curr_groups[group][day].to_frame()
-    else:  # иначе выдаем пустой датафрейм
-        return pd.DataFrame()
-
-
-def check_group(group_num: str, course_num: int) -> bool:
-    """
-    Функция, которая проверяет наличие группы в списке групп по номеру курса.
-    :param group_num: номер группы
-    :param course_num: номер курса
-    :return: True or False
-    """
-    flag = False
-    with open('timetable/{}_kurs.pickle'.format(course_num), 'rb') as handle:
-        curr_groups = pickle.load(handle)
-    if group_num in curr_groups.keys():
-        flag = True
-    return flag
+# def timetable_by_group(group: str, day: str) -> pd.DataFrame:
+#     """
+#     Функция, выдающая расписание для нужной группы на требуемый день.
+#     :param group: номер группы
+#     :param day: день недели, расписание на который нужно вызвать
+#     :return: расписание в формате pd.DataFrame()
+#     """
+#     # датафреймы с расписаниями для каждого курса хранятся в файлах формата .pickle
+#
+#     # если номер группы есть в списке, то выдаем нужное расписание
+#     if group in curr_groups.keys() and day in ['Понедельник', 'Вторник', 'Среда',
+#                                                'Четверг', 'Пятница', 'Суббота', 'Воскресенье']:
+#         return curr_groups[group][day].to_frame()
+#     else:  # иначе выдаем пустой датафрейм
+#         return pd.DataFrame()
+#
+#
+# def check_group(group_num: str, course_num: int) -> bool:
+#     """
+#     Функция, которая проверяет наличие группы в списке групп по номеру курса.
+#     :param group_num: номер группы
+#     :param course_num: номер курса
+#     :return: True or False
+#     """
+#     flag = False
+#     with open('timetable/{}_kurs.pickle'.format(course_num), 'rb') as handle:
+#         curr_groups = pickle.load(handle)
+#     if group_num in curr_groups.keys():
+#         flag = True
+#     return flag
