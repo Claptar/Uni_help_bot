@@ -477,7 +477,7 @@ async def sem_num(message: types.Message):
 
 
 # If some invalide input
-@dp.message_handler(state=Koryavov.sem_num_state)
+@dp.message_handler(state=Koryavov.sem_num_state, content_types=types.message.ContentType.ANY)
 async def kor_sem_inv_input(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])  # кнопки c номерами семестров
@@ -495,7 +495,7 @@ async def task_page(message: types.Message, state: FSMContext):
 
 
 # If some invalide input
-@dp.message_handler(state=Koryavov.task_num_state)
+@dp.message_handler(state=Koryavov.task_num_state, content_types=types.message.ContentType.ANY)
 async def kor_task_inv_input(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
@@ -752,7 +752,7 @@ async def title(message: types.Message):
 
 
 # In case some bad input
-@dp.message_handler(state=Plots.title_state)
+@dp.message_handler(state=Plots.title_state, content_types=types.message.ContentType.ANY)
 async def title_bad_input(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Без названия']])
@@ -783,7 +783,7 @@ async def mnk(message: types.Message):
 
 
 # In case of bad input
-@dp.message_handler(state=Plots.mnk_state)
+@dp.message_handler(state=Plots.mnk_state, content_types=types.message.ContentType.ANY)
 async def mnk_bad_input(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
@@ -816,7 +816,7 @@ async def error_bars(message: types.Message):
 
 
 # In case of bad input
-@dp.message_handler(state=Plots.error_bars_state)
+@dp.message_handler(state=Plots.error_bars_state, content_types=types.message.ContentType.ANY)
 async def eror_bars_bad_input(message: types.Message):
     Plots.mnk = True
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)

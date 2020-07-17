@@ -92,7 +92,9 @@ def help_def(message):
                                       'о плохом...\n'
                                       '/koryavov — Подскажу номер страницы с этой задачей по физике в Корявове.'
                                       'Информация берётся с замечательного сайта mipt1.ru \n'
-                                      '/profile — Опечатка в номере курса или группы? Нажимай, сейчас исправим)')
+                                      '/profile — Опечатка в номере курса или группы? Нажимай, сейчас исправим)\n'
+                                      '/custom — Не ходишь на лекции или есть факультативы ?'
+                                      'Измени расписание под себя !')
 
 
 @bot.message_handler(commands=['profile'])
@@ -558,7 +560,7 @@ def mnk(message):
         elif message.text == '❌':
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
-            with open('Example.xlsx', 'rb') as example:
+            with open('files/Example.xlsx', 'rb') as example:
                 bot.send_document(message.chat.id, example)
             msg = bot.send_message(message.chat.id,
                                    'Пришли .xlsx файл с данными как в example.xlsx, и всё будет готово',
@@ -591,7 +593,7 @@ def error_bars(message):
             math_part.ERRORS = list(map(float, message.text.split('/')))
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
-            with open('Example.xlsx', 'rb') as expl:
+            with open('files/Example.xlsx', 'rb') as expl:
                 bot.send_document(message.chat.id, expl)
             msg = bot.send_message(message.chat.id,
                                    'Пришли .xlsx файл с данными как в example.xlsx и всё будет готово',
