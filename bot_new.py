@@ -17,7 +17,7 @@ import datetime
 
 logging.basicConfig(level=logging.INFO)
 
-API_TOKEN = '962708099:AAFgAT2x2mH5cp_o3RwLosbEo4tRFpKdz5E'
+API_TOKEN = '893576564:AAHxlCPFCfcewfz2_0rlygYfJzCbhz4HYJs'
 
 bot = Bot(token=API_TOKEN)
 storage = MemoryStorage()
@@ -827,7 +827,7 @@ async def eror_bars_bad_input(message: types.Message):
                                             ' нажми на кнопку ниже', reply_markup=keyboard)
 
 
-@dp.message_handler(lambda message: message.content_type == types.message.ContentType.DOCUMENT, state=Plots.plot_state)
+@dp.message_handler(content_types=types.message.ContentTypes.DOCUMENT, state=Plots.plot_state)
 async def plot(message: types.Message, state: FSMContext):
     try:
         file_id = message.document.file_id
@@ -857,7 +857,7 @@ async def plot(message: types.Message, state: FSMContext):
         await state.finish()
     except Exception as e:
         os.remove('file.xlsx')
-        print(e)
+        print(e.with_traceback())
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
         await bot.send_message(message.chat.id,
@@ -865,7 +865,7 @@ async def plot(message: types.Message, state: FSMContext):
 
 
 # In case of bad input
-@dp.message_handler(state=Plots.plot_state)
+@dp.message_handler(content_types=types.message.ContentType.ANY, state=Plots.plot_state)
 async def plot_bad_input(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
