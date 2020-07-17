@@ -48,6 +48,16 @@ class Koryavov(StatesGroup):
     task_num = 0
 
 
+class Plots(StatesGroup):
+    title_state = State()
+    title = ''
+    mnk_state = State()
+    mnk = False
+    error_bars_state = State()
+    errors = []
+    plot_state = State()
+
+
 def today_tomorrow_keyboard():
     """
     Кнопки для получения расписания на сегодня или завтра.
@@ -153,7 +163,7 @@ async def help_def(message: types.Message):
     """
     Функция ловит сообщение с командой '/help' и присылает описание комманд бота.
     """
-    with open('txt_files/help.txt', encoding='utf-8', mode='r') as f:
+    with open('files/help.txt', encoding='utf-8', mode='r') as f:
         text = f.read()
     await bot.send_message(message.chat.id, text)
 
@@ -287,7 +297,7 @@ async def start_proceed_custom(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                    or message.text not in ['Хочу', 'Не хочу'],
+                                    or message.text not in ['Хочу', 'Не хочу'],
                     content_types=types.message.ContentType.ANY, state=Start.custom)
 async def start_proceed_custom_invalid(message: types.Message):
     """
@@ -355,7 +365,7 @@ async def edit_proceed_choose(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                    or message.text not in ['Да', 'Нет', 'Выход'],
+                                    or message.text not in ['Да', 'Нет', 'Выход'],
                     content_types=types.message.ContentType.ANY, state=Profile.choose)
 async def edit_proceed_choose_invalid(message: types.Message):
     """
@@ -435,7 +445,7 @@ async def edit_proceed_custom(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                    or message.text not in ['Хочу', 'Не хочу'],
+                                    or message.text not in ['Хочу', 'Не хочу'],
                     content_types=types.message.ContentType.ANY, state=Profile.custom)
 async def edit_proceed_custom_invalid(message: types.Message):
     """
@@ -515,7 +525,7 @@ async def timetable_initiate(message: types.Message):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                    or message.text not in ['Кастомное', 'Моя группа', 'Другая группа', 'Выход'],
+                                    or message.text not in ['Кастомное', 'Моя группа', 'Другая группа', 'Выход'],
                     state=Timetable.choose, content_types=types.message.ContentType.ANY)
 async def timetable_proceed_choose_invalid(message: types.Message):
     """
@@ -626,8 +636,8 @@ async def timetable_proceed_my_group_custom(message: types.Message, state: FSMCo
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                    or message.text not in ['На неделю', 'Понедельник', 'Вторник', 'Среда',
-                                            'Четверг', 'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
+                                    or message.text not in ['На неделю', 'Понедельник', 'Вторник', 'Среда',
+                                                            'Четверг', 'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
                     state=Timetable.weekday,
                     content_types=types.message.ContentType.ANY)
 async def timetable_proceed_weekday_invalid(message: types.Message):
@@ -710,6 +720,158 @@ async def initiate_custom(message: types.Message):
         message.chat.id,
         'Эта команда пока находится на стадии разработки 🤘🏻'
     )
+
+
+@dp.message_handler(commands='plot')
+async def plot(message: types.Message):
+    """
+    Функция ловит сообщение с текстом '|start'
+    """
+    await bot.send_message(message.chat.id, 'Снова лабки делаешь?) Ох уж эти графики!...'
+                                            ' Сейчас быстренько всё построю, только тебе придётся'
+                                            ' ответить на пару вопросов'
+                                            '😉. И не засиживайся, ложись спать)')
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Без названия', 'Выход']])
+    await bot.send_message(message.chat.id, 'Как мы назовём график?'
+                                            ' Если не хочешь давать ему название,'
+                                            ' то нажми кнопку ниже 😉', reply_markup=keyboard)
+    await Plots.title_state.set()
+
+
+@dp.message_handler(lambda message: message.content_type == types.message.ContentType.TEXT, state=Plots.title_state)
+async def title(message: types.Message):
+    if message.text == 'Без названия':
+        Plots.title = ''
+    else:
+        Plots.title = message.text
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
+    await bot.send_message(message.chat.id, 'Прямую по МНК строим?', reply_markup=keyboard)
+    await Plots.mnk_state.set()
+
+
+# In case some bad input
+@dp.message_handler(state=Plots.title_state)
+async def title_bad_input(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Без названия']])
+    await bot.send_message(message.chat.id, 'Я тебя не понял... Напиши ещё раз название графика.'
+                                            ' Если не хочешь давать ему название,'
+                                            ' то нажми кнопку ниже 😉', reply_markup=keyboard)
+
+
+@dp.message_handler(Text(equals=['✅', '❌']), state=Plots.mnk_state)
+async def mnk(message: types.Message):
+    if message.text == '✅':
+        Plots.mnk = True
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
+        await bot.send_message(message.chat.id, 'Пришли данные для крестов погрешностей по осям х и y в'
+                                                ' формате "123.213/123.231", если кресты не нужны, то'
+                                                ' нажми на кнопку ниже', reply_markup=keyboard)
+        await Plots.error_bars_state.set()
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+        with open('files/Example.xlsx', 'rb') as example:
+            await bot.send_document(message.chat.id, example)
+        await bot.send_message(message.chat.id,
+                               'Пришли .xlsx файл с данными как в example.xlsx, и всё будет готово',
+                               reply_markup=keyboard)
+        await Plots.plot_state.set()
+
+
+# In case of bad input
+@dp.message_handler(state=Plots.mnk_state)
+async def mnk_bad_input(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
+    await bot.send_message(message.chat.id, 'Извини, повтори ещё раз... Прямую по МНК строим?',
+                           reply_markup=keyboard)
+
+
+@dp.message_handler(lambda message: message.content_type == types.message.ContentType.TEXT,
+                    state=Plots.error_bars_state)
+async def error_bars(message: types.Message):
+    try:
+        Plots.errors = list(map(float, message.text.split('/')))
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+        with open('files/Example.xlsx', 'rb') as expl:
+            await bot.send_document(message.chat.id, expl)
+        await bot.send_message(message.chat.id,
+                               'Пришли .xlsx файл с данными как в example.xlsx и всё будет готово',
+                               reply_markup=keyboard)
+        await Plots.plot_state.set()
+    except Exception as e:
+        print(e)
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
+        await bot.send_message(message.chat.id,
+                               'Не могу распознать формат данных( Давай ещё раз. '
+                               'Пришли данные для крестов погрешностей по осям х и y в '
+                               'формате "123.213/123.231", если кресты не нужны, то'
+                               ' нажми на кнопку ниже', reply_markup=keyboard)
+
+
+# In case of bad input
+@dp.message_handler(state=Plots.error_bars_state)
+async def eror_bars_bad_input(message: types.Message):
+    Plots.mnk = True
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
+    await bot.send_message(message.chat.id, 'Ты прислал что-то не то( Давай ещё раз. '
+                                            'Пришли данные для крестов погрешностей по осям х и y в '
+                                            'формате "123.213/123.231", если кресты не нужны, то'
+                                            ' нажми на кнопку ниже', reply_markup=keyboard)
+
+
+@dp.message_handler(lambda message: message.content_type == types.message.ContentType.DOCUMENT, state=Plots.plot_state)
+async def plot(message: types.Message, state: FSMContext):
+    try:
+        file_id = message.document.file_id
+        file = await bot.get_file(file_id)
+        await bot.download_file(file.file_path, 'file.xlsx')
+        a, b, d_a, d_b = math_part.mnk_calc('file.xlsx')
+        math_part.plots_drawer('file.xlsx', Plots.title, Plots.errors[0], Plots.errors[1], Plots.mnk)
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+        await bot.send_message(message.chat.id, 'Принимай работу!)', reply_markup=keyboard)
+        with open('plot.png', 'rb') as photo:
+            await bot.send_document(message.chat.id, photo)
+        if Plots.mnk:
+            for i in range(0, len(a)):
+                await bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
+                                                        f" a = {a[i]} +- {d_a[i]}\n"
+                                                        f" b = {b[i]} +- {d_b[i]}")
+        with open('plot.pdf', 'rb') as photo:
+            await bot.send_document(message.chat.id, photo)
+        os.remove('plot.pdf')
+        os.remove('plot.png')
+        math_part.BOT_PLOT = False
+        os.remove('file.xlsx')
+        Plots.title = ''
+        Plots.errors = [0, 0]
+        Plots.mnk = False
+        await state.finish()
+    except Exception as e:
+        os.remove('file.xlsx')
+        print(e)
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+        await bot.send_message(message.chat.id,
+                               'Ты точно прислал .xlsx файл как в примере? Давай ещё раз!', reply_markup=keyboard)
+
+
+# In case of bad input
+@dp.message_handler(state=Plots.plot_state)
+async def plot_bad_input(message: types.Message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+    await bot.send_message(message.chat.id,
+                           'Ты точно прислал .xlsx файл? Давай ещё раз! '
+                           'Пришли .xlsx файл с данными, и всё будет готово', reply_markup=keyboard)
 
 
 # def get_exam_timetable(message):

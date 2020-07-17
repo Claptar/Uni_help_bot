@@ -7,18 +7,10 @@ import numpy as np
 import pandas as pd
 import sympy as sp
 
-# Глобальная переменная для записи названия графика
-TITLE = ''
-# Переменная, в которую мы записываем запускает ли функцию файл bot.py
-BOT_PLOT = False
 # Переменная, которая хранит путь к директории
 PATH = os.path.abspath('')
-# Переменная, в которую мы записываем будут ли строиться кресты погрешностей в функции plots_drawer
-ERROR_BAR = False
 # Глобальные переменные для записи названия Осей
 LABEL = []
-# Пер
-ERRORS = [0, 0]
 
 
 def is_digit(string):
@@ -160,11 +152,8 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     ax.grid(which='major', linestyle='-', linewidth='0.5', color='black')
     # Добавляем промежуточную сетку
     ax.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
-    if BOT_PLOT:
-        plt.savefig('plot.pdf')
-        plt.savefig('plot.png')
-    else:
-        plt.show()
+    plt.savefig('plot.pdf')
+    plt.savefig('plot.png')
     plt.clf()
 
 
