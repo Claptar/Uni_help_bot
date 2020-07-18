@@ -92,7 +92,7 @@ def insert_user(chat_id, group_num):
     return True
 
 
-def update_user(chat_id, group_num, update_custom: bool):
+def update_user(chat_id, group_num: str, update_custom: bool):
     """
     Функция для обновления данных пользователя по его желанию.
     :param chat_id: id чата с пользователем
@@ -127,6 +127,29 @@ def update_user(chat_id, group_num, update_custom: bool):
     return True
 
 
+def update_custom_timetable(chat_id, timetable):
+    """
+    Функция для обновления кастомного расписания пользователя.
+    :param timetable: новое кастомное расписание
+    :param chat_id: id чата с пользователем
+    :return:
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            """UPDATE "User" SET user_timetable = %s WHERE chat_id = %s""",
+            (timetable, chat_id)
+        )
+    except Exception as err:
+        print_psycopg2_exception(err)
+        return False
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+
+
 def send_timetable(custom: bool, my_group: bool, chat_id=None, another_group=None):
     """
     Функция, возвращающая нужное пользователю расписание.
@@ -137,7 +160,8 @@ def send_timetable(custom: bool, my_group: bool, chat_id=None, another_group=Non
     :param my_group: если True, то возвращается расписание группы пользователя
     :param chat_id: id чата с пользователем (по умолчанию None - для просмотра расписания любой группы
                                                                               без записи в базу данных)
-    :param another_group: если не None, то возвращается расписание другой группы по запросу пользователя
+    :param another_group: str или None
+    если не None, то возвращается расписание другой группы по запросу пользователя
     :return: timetable: (pickle file или None, ) или None
     """
     # расписание группы должно быть в виде (SMTH, ) ( в том числе может быть (None, ) )
@@ -179,7 +203,7 @@ def send_timetable(custom: bool, my_group: bool, chat_id=None, another_group=Non
 def check_user_group(chat_id):
     """
     Функция по chat_id пользователя возвращает значение его номера группы.
-    :param chat_id:
+    :param chat_id: id чата с пользователем
     :return: Номер группы, записанный в базе данных, или None, если такого пользователя нет в базе.
     """
     try:
@@ -205,8 +229,8 @@ def get_user_info(chat_id):
     """
     Функция по chat_id пользователя проверяет, есть ли он в базе данных или нет.
     Выдает информацию о нем в положительном случае.
-    :param chat_id:
-    :return:
+    :param chat_id: id чата с пользователем
+    :return: строка из базы данных с информацией о пользователе
     """
     try:
         conn = get_connection()
