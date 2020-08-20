@@ -9,8 +9,6 @@ import sympy as sp
 
 # Переменная, которая хранит путь к директории
 PATH = os.path.abspath('')
-# Глобальные переменные для записи названия Осей
-LABEL = []
 
 
 def is_digit(string):
@@ -36,12 +34,14 @@ def data_conv(data_file):
     :return: [x,y]
     """
     global LABEL
-    dataset = pd.read_excel(data_file)
-    LABEL = dataset.columns
-    d = np.array(dataset)
-    x = d[:, 0]
-    y = d[:, 1]
-    return [x, y]
+    data = pd.read_excel(data_file, header=None)
+    # Получение столбца с информацией о графиках без NaN объектов
+    info = data[0].dropna().values
+    label_list = info[0:2]
+    legend = info[2:]
+    x = data.iloc[:, 1::2].values
+    y = data.iloc[:, 2::2].values
+    return x, y, label_list, legend
 
 
 def plt_const(x, y):
