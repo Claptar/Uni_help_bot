@@ -17,7 +17,7 @@ import datetime
 
 logging.basicConfig(level=logging.INFO)
 
-API_TOKEN = '962708099:AAFgAT2x2mH5cp_o3RwLosbEo4tRFpKdz5E'
+API_TOKEN = '893576564:AAHxlCPFCfcewfz2_0rlygYfJzCbhz4HYJs'
 
 bot = Bot(token=API_TOKEN)
 storage = MemoryStorage()

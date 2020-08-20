@@ -33,7 +33,6 @@ def data_conv(data_file):
     :param data_file: название файла
     :return: [x,y]
     """
-    global LABEL
     data = pd.read_excel(data_file, header=None)
     # Получение столбца с информацией о графиках без NaN объектов
     info = data[0].dropna().values
@@ -86,41 +85,24 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     """
     fig = plt.figure(dpi=120)
     ax = fig.add_subplot()
-    dataset = pd.read_excel(data_file)
-    d = np.array(dataset)[0:, :]
-    a = []
-    b = []
-    x = []
-    y = []
+    x, y, label_list, legend = data_conv(data_file)
     x_ = []
-    for i in range(0, len(d[0, :] - 1) // 2 * 2, 2):
-        r = plt_const(d[:, i], d[:, i + 1])
-        x.append(d[:, i])
-        y.append(d[:, i + 1])
-        a.append(r[0])
-        b.append(r[1])
-    if mnk:
-        for i in range(0, len(x)):
-            if xerr != 0 or yerr != 0:
-                ax.errorbar(x[i], y[i], xerr=xerr, yerr=yerr, fmt='k+')
-    for i in range(0, len(x)):
-        delta = (max(x[i]) - min(x[i])) / len(x[i])
-        x_.append([min(x[i]) - delta, max(x[i]) + delta])
-        if len(x[0]) > 15:
-            ax.plot(x[i], y[i], '.')
+    for i in range(0, x.shape[1]):
+        if xerr != 0 or yerr != 0:
+            ax.errorbar(x[:, i], y[:, i], xerr=xerr, yerr=yerr, fmt='k+', capsize=3)
+        if x.shape[0] > 15:
+            ax.plot(x[:, i], y[:, i], '.')
         else:
-            ax.plot(x[i], y[i], 'o')
+            ax.plot(x[:, i], y[:, i], 'o')
+        delta = (max(x[:, i]) - min(x[:, i])) / len(x[:, i])
+        x_.append([min(x[:, i]) - delta, max(x[:, i]) + delta])
     if mnk:
-        for i in range(0, len(x)):
-            ax.plot(np.array(x_[i]), a[i] * (np.array(x_[i])) + b[i], 'r--')
-    ax.set_xlabel(dataset.columns[0])
-    ax.set_ylabel(dataset.columns[1])
-    lab = np.array(dataset)[0, :]
-    lab1 = []
-    for i in range(0, len(lab)):
-        if type(lab[i]) == str:
-            lab1.append(lab[i])
-    ax.legend(lab1)
+        for i in range(0, x.shape[1]):
+            a, b, _, __ = plt_const(x[:, i], y[:, i])
+            ax.plot(np.array(x_[i]), a * (np.array(x_[i])) + b, 'r--')
+    ax.set_xlabel(label_list[0])
+    ax.set_ylabel(label_list[0])
+    ax.legend(legend)
     ax.set_title(tit)
     ax.grid(True)
     # Находим координаты углов графика
@@ -154,6 +136,7 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     ax.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
     plt.savefig('plot.pdf')
     plt.savefig('plot.png')
+    plt.show()
     plt.clf()
 
 
