@@ -48,8 +48,7 @@ def sync_get_connection():
             dbname=DBNAME,
             user=USER,
             password=PASS,
-            host=HOST,
-            port=PORT
+            host=HOST
         )
     except (OSError, TimeoutError, ConnectionError) as err:  # ловим ошибку, если не удалось подключиться
         last_err = err  # если соединение не установлено
@@ -171,8 +170,7 @@ async def get_connection():
             dbname=DBNAME,
             user=USER,
             password=PASS,
-            host=HOST,
-            port=PORT
+            host=HOST
         )
     except (OSError, TimeoutError, ConnectionError) as err:  # ловим ошибку, если не удалось подключиться
         last_err = err  # если соединение не установлено
