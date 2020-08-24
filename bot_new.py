@@ -193,7 +193,6 @@ async def start_initiate(message: types.Message):
     Функция ловит сообщение с командой '/start' и приветствует пользователя.
     """
     group = await psg.check_user_group(message.chat.id)
-    print(group)
     if group[0]:  # если пользователь уже есть в базе данных
         await bot.send_message(
             message.chat.id,
