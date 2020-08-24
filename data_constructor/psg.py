@@ -4,7 +4,7 @@ import sys
 
 import aiopg
 import psycopg2
-from psycopg2 import errorcodes
+# from psycopg2 import errorcodes
 
 DBNAME = os.environ['DATABASE']
 USER = os.environ['USER']
@@ -34,7 +34,7 @@ def print_psycopg2_exception(err):
     print("\nextensions.Diagnostics:", err.diag) if hasattr(err, 'diag') else print()
 
     # print the pgcode and pgerror exceptions
-    print("\npgerror:", err.pgerror) if hasattr(err, 'pgerror') else print()
+    # print("\npgerror:", err.pgerror) if hasattr(err, 'pgerror') else print()
     # print("pgcode:", err.pgcode, '-', errorcodes.lookup(err.pgcode), "\n") if hasattr(err, 'pgcode') else print()
 
 
@@ -51,7 +51,7 @@ def sync_get_connection():
             host=HOST,
             port=PORT
         )
-    except (OSError, asyncio.TimeoutError, ConnectionError) as err:  # ловим ошибку, если не удалось подключиться
+    except (OSError, TimeoutError, ConnectionError) as err:  # ловим ошибку, если не удалось подключиться
         last_err = err  # если соединение не установлено
         print_psycopg2_exception(err)
     else:
@@ -81,7 +81,7 @@ def sync_insert_update_value_in_table(sql_command: str, *args) -> tuple:
                 args
             )
     # если при записи произошла ошибка, то возвращаем False + разделяем ошибки соединения и другие ошибки
-    except (OSError, asyncio.TimeoutError, ConnectionError) as err:
+    except (OSError, TimeoutError, ConnectionError) as err:
         print_psycopg2_exception(err)
         return False, 'connection_error'
     except Exception as err:
@@ -118,7 +118,7 @@ def sync_select_value_from_table(sql_command: str, *args) -> tuple:
             )
             result = conn.fetchone()  # (SMTH_0, SMTH_1, ..., SMTH_(k-1), )
     # если при записи произошла ошибка, то возвращаем False + разделяем ошибки соединения и другие ошибки
-    except (OSError, asyncio.TimeoutError, ConnectionError) as err:
+    except (OSError, TimeoutError, ConnectionError) as err:
         print_psycopg2_exception(err)
         return False, 'connection_error'
     except Exception as err:
@@ -174,7 +174,7 @@ async def get_connection():
             host=HOST,
             port=PORT
         )
-    except (OSError, asyncio.TimeoutError, ConnectionError) as err:  # ловим ошибку, если не удалось подключиться
+    except (OSError, TimeoutError, ConnectionError) as err:  # ловим ошибку, если не удалось подключиться
         last_err = err  # если соединение не установлено
         print_psycopg2_exception(err)
     else:
@@ -204,7 +204,7 @@ async def insert_update_value_in_table(sql_command: str, *args) -> tuple:
                 args
             )
     # если при записи произошла ошибка, то возвращаем False + разделяем ошибки соединения и другие ошибки
-    except (OSError, asyncio.TimeoutError, ConnectionError) as err:
+    except (OSError, TimeoutError, ConnectionError) as err:
         print_psycopg2_exception(err)
         return False, 'connection_error'
     except Exception as err:
@@ -240,7 +240,7 @@ async def select_value_from_table(sql_command: str, *args) -> tuple:
             )
             result = await cur.fetchone()  # (SMTH_0, SMTH_1, ..., SMTH_(k-1), )
     # если при записи произошла ошибка, то возвращаем False + разделяем ошибки соединения и другие ошибки
-    except (OSError, asyncio.TimeoutError, ConnectionError) as err:
+    except (OSError, TimeoutError, ConnectionError) as err:
         print_psycopg2_exception(err)
         return False, 'connection_error'
     except Exception as err:
