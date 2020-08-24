@@ -35,7 +35,7 @@ def print_psycopg2_exception(err):
 
     # print the pgcode and pgerror exceptions
     print("\npgerror:", err.pgerror) if hasattr(err, 'pgerror') else print()
-    print("pgcode:", err.pgcode, '-', errorcodes.lookup(err.pgcode), "\n") if hasattr(err, 'pgcode') else print()
+    # print("pgcode:", err.pgcode, '-', errorcodes.lookup(err.pgcode), "\n") if hasattr(err, 'pgcode') else print()
 
 
 def sync_get_connection():
