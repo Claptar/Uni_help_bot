@@ -1,3 +1,4 @@
+aiopg
 aiogram
 openpyxl
 pyTelegramBotAPI==3.6.7
