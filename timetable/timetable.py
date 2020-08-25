@@ -1,10 +1,15 @@
-import openpyxl
-import pandas as pd
+import os.path
 import pickle
+import time
+
+import pandas as pd
+from openpyxl.cell.cell import Cell
+from openpyxl.worksheet.worksheet import Worksheet
+
 from data_constructor import psg
 
 
-def within_range(bounds: tuple, cell: openpyxl.cell) -> bool:
+def within_range(bounds: tuple, cell: Cell) -> bool:
     """
     Функция, определяющая, входит ли клетка в состав большой слитой или нет.
     :param bounds: границы merged клеток
@@ -13,14 +18,14 @@ def within_range(bounds: tuple, cell: openpyxl.cell) -> bool:
     """
     column_start, row_start, column_end, row_end = bounds  # границы merged клетки
     row = cell.row  # проверка, находится ли клетка в этом слиянии
-    if row_start <= row <= row_end:  #              ___________________
-        column = cell.column  #                     |value|empty|empty|
+    if row_start <= row <= row_end:  # ___________________
+        column = cell.column  # |value|empty|empty|
         if column_start <= column <= column_end:  # |empty|empty|empty|  Пример merged клетки
-            return True  #                          |empty|empty|empty|
+            return True  # |empty|empty|empty|
     return False  #
 
 
-def get_value_merged(sheet: openpyxl.worksheet, cell: openpyxl.cell) -> any:
+def get_value_merged(sheet: Worksheet, cell: Cell) -> any:
     """
     Функция, возвращающая значение, лежащее в клетке, вне зависимости от того, является ли клетка merged, или нет.
     :param sheet: таблица с расписанием
@@ -33,41 +38,84 @@ def get_value_merged(sheet: openpyxl.worksheet, cell: openpyxl.cell) -> any:
     return cell.value
 
 
-def get_timetable(table: openpyxl.worksheet):
+def insert_update_group_timetable(group_name, timetable):
+    """
+    Функция, вставляющая или обновляющая значение в таблице.
+    :param group_name: номер группы
+    :param timetable: расписание группы
+    :return:
+    """
+    insert = psg.sync_insert_group(
+        group_name,
+        pickle.dumps(timetable, protocol=pickle.HIGHEST_PROTOCOL)
+    )
+    timeout = time.time() + 30  # если подключение к серверу длится дольше 30 секунд, то вызываем ошибку
+    while not insert[0] and insert[1] == 'connection_error':
+        insert = psg.sync_insert_group(
+            group_name,
+            pickle.dumps(timetable, protocol=pickle.HIGHEST_PROTOCOL)
+        )
+        if time.time() > timeout:
+            raise RuntimeError
+    # если возникает какая-то ошибка при вставке, то пробуем обновить значение, а не вставить
+    if not insert[0] and insert[1] == 'other_error':
+        update = psg.sync_update_group(
+            group_name,
+            pickle.dumps(timetable, protocol=pickle.HIGHEST_PROTOCOL)
+        )
+        timeout = time.time() + 30  # если подключение к серверу длится дольше 30 секунд, то вызываем ошибку
+        while not update[0] and update[1] == 'connection_error':
+            update = psg.sync_update_group(
+                group_name,
+                pickle.dumps(timetable, protocol=pickle.HIGHEST_PROTOCOL)
+            )
+            if time.time() > timeout:
+                raise RuntimeError
+
+
+def get_timetable(table: Worksheet):
     """
     Функция, которая из таблицы Excel с расписанием выделяет расписание для каждой группы
     и записывает его в базу данных.
     :param table: таблица с расписанием
     :return:
     """
+    alumni_timetable = None
     for j in range(3, table.max_column + 1):  # смотрим на значения по столбцам
-        name = table.cell(1, j).value  # номер группы
-        if name in ['Дни', 'Часы']:  # если это не номер группы, то пропускаем столбец
+        group_name = table.cell(1, j).value  # номер группы
+        if group_name in ['Дни', 'Часы']:  # если это не номер группы, то пропускаем столбец
             continue
         # иначе если столбец - это номер группы, то составляем для него расписание
-        elif name is not None:
-            if type(name) == int:  # если номер группы - просто число, преобразуем его в строку
-                name = str(name)
+        elif group_name is not None:
+            if type(group_name) == int:  # если номер группы - просто число, преобразуем его в строку
+                group_name = str(group_name)
             # group - словарь с расписанием для группы
-            group = dict(Понедельник={}, Вторник={}, Среда={}, Четверг={}, Пятница={}, Суббота={}, Воскресенье={})
+            timetable = dict(Понедельник={}, Вторник={}, Среда={}, Четверг={}, Пятница={}, Суббота={}, Воскресенье={})
             for k in range(2, table.max_row + 1):  # проходимся по столбцу
                 # если клетки относятся ко дню недели (не разделители)
-                if get_value_merged(table, table.cell(k, 1)) in group.keys():
+                if get_value_merged(table, table.cell(k, 1)) in timetable.keys():
                     day = get_value_merged(table, table.cell(k, 1))  # значение дня недели
-                    time = get_value_merged(table, table.cell(k, 2))  # клетка, в которой лежит значение времени
+                    hours = get_value_merged(table, table.cell(k, 2))  # клетка, в которой лежит значение времени
                     pair = get_value_merged(table, table.cell(k, j))  # клетка, в которой лежит значение пары
 
                     # рассматриваем только те клетки, для которых определено значение как пары, так и времени
-                    if (time, pair) != (None, None):
-                        time = time.split()  # преобразуем время пары к формату hh:mm – hh:mm
-                        if len(time[0][:-2]) == 1:
-                            time[0] = '0' + time[0]
-                        time = time[0][:-2] + ':' + time[0][-2:] + ' – ' + time[2][:-2] + ':' + time[2][-2:]
-                        group[day][time] = pair  # записываем значение в расписание
+                    if (hours, pair) != (None, None):
+                        hours = hours.split()  # преобразуем время пары к формату hh:mm – hh:mm
+                        if len(hours[0][:-2]) == 1:
+                            hours[0] = '0' + hours[0]
+                        hours = hours[0][:-2] + ':' + hours[0][-2:] + ' – ' + hours[2][:-2] + ':' + hours[2][-2:]
+                        timetable[day][hours] = pair  # записываем значение в расписание
 
-            group = pd.DataFrame(group)  # заменяем None на спящие смайлики
-            group.replace(to_replace=[None], value='😴', inplace=True)
-            # записываем номер группы и расписание в базу данных
-            psg.insert_group(name, pickle.dumps(group, protocol=pickle.HIGHEST_PROTOCOL))
-    # else:  TODO!!! дописать запись "группы" выпускников в базу данных
-    #     psg.insert_group('ALUMNI', )
+            timetable = pd.DataFrame(timetable)  # заменяем None на спящие смайлики
+            timetable.replace(to_replace=[None], value='😴', inplace=True)
+            # на первой итерации записываем пустую табличку для выпускников (если нужно)
+            if not os.path.exists('blank_timetable.pickle') and alumni_timetable is None:
+                alumni_timetable = timetable
+
+            # записываем или обновляем номер группы и расписание в базу данных
+            insert_update_group_timetable(group_name, timetable)
+    # записываем или обновляем расписание для выпускников
+    if alumni_timetable is not None:
+        alumni_timetable.iloc[:] = '😴'
+        with open('blank_timetable.pickle', 'wb') as handle:
+            pickle.dump(alumni_timetable, handle, protocol=pickle.HIGHEST_PROTOCOL)

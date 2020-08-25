@@ -17,7 +17,7 @@ import datetime
 
 logging.basicConfig(level=logging.INFO)
 
-API_TOKEN = '893576564:AAHxlCPFCfcewfz2_0rlygYfJzCbhz4HYJs'
+API_TOKEN = os.environ['TOKEN']
 
 bot = Bot(token=API_TOKEN)
 storage = MemoryStorage()
@@ -79,13 +79,13 @@ def today_tomorrow_keyboard():
 def schedule_string(schedule: pd.DataFrame):
     """
     Строка с расписанием, которую отправляет бот.
+    ВАЖНО! parse_mode='HTML' - чтобы читалcz измененный шрифт.
     """
     STRING = ''  # "строка" с расписанием, которую отправляем сообщением
     for row in schedule.iterrows():  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
         # время пары - жирный + наклонный шрифт, название пары на следующей строке
         string: str = '<b>' + '<i>' + row[0] + '</i>' + '</b>' + '\n' + row[1][0]
         STRING += string + '\n\n'  # между парами пропуск (1 enter)
-    # parse_mode - чтобы читал измененный шрифт
     return STRING
 
 
@@ -119,50 +119,62 @@ async def send_today_tomorrow_schedule(message):
     Возвращает расписание на этот день, вызывает функцию timetable.timetable_by_group().
     По умолчанию, если у этого пользователя есть кастомное расписание, выдает его,
     иначе - расписание группы пользователя.
+    Схема:
+                             CUSTOM
+                            /     \
+                        True    False (ERR or EMPTY_RES)
+                       /   \         \
+                  (SMTH,) (None,) — MY_GROUP — True — SEND()
+                    /                   /
+                  SEND()             False — EMPTY_RES — Знакомы ли мы?
+                                       |
+                              CONN_ERR or OTHER_ERR — Попробуй позже, пожалуйста
     """
     # список дней для удобной конвертации номеров дней недели (0, 1, ..., 6) в их названия
     week = tuple(['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'])
     today = datetime.datetime.today().weekday()  # today - какой сегодня день недели (от 0 до 6)
     tomorrow = today + 1 if today in range(6) else 0  # номер дня для завтра, если это воскресенье (6), то 0
     day = today if message.text == 'На сегодня' else tomorrow  # выбор дня в зависимости от запроса
-    table = psg.send_timetable(
-        custom=True,
-        my_group=False,
-        chat_id=message.chat.id
-    )
-    if table:  # если пользователь есть в базе
-        if table[0]:  # проверка, есть ли у этого пользователя кастомное расписание в базе данных
-            schedule = pickle.loads(table[0])[week[day]].to_frame()
+    custom_timetable = await psg.send_timetable(custom=True, chat_id=message.chat.id)
+    # проверка, есть ли у этого пользователя кастомное расписание в базе данных (+ не произошло ли ошибок)
+    if custom_timetable[0] and custom_timetable[1][0] is not None:
+        schedule = pickle.loads(custom_timetable[1][0])[week[day]].to_frame()
+        await bot.send_message(  # отправляем расписание
+            message.chat.id,
+            schedule_string(schedule),
+            parse_mode='HTML'
+        )
+    # если у этого пользователя нет кастомного расписания в базе данных или произошла ошибка при запросе
+    # кастомного расписания, то пробуем отправить расписание группы
+    else:
+        group_timetable = await psg.send_timetable(my_group=True, chat_id=message.chat.id)
+        if group_timetable[0]:  # если пользователь есть в базе
+            schedule = pickle.loads(group_timetable[1][0])[week[day]].to_frame()
             await bot.send_message(  # отправляем расписание
                 message.chat.id,
                 schedule_string(schedule),
                 parse_mode='HTML'
             )
-        else:  # если у этого пользователя нет кастомного расписания в базе данных, отправляем расписание группы
-            table = psg.send_timetable(
-                custom=False,
-                my_group=True,
-                chat_id=message.chat.id
+            await bot.send_message(
+                message.chat.id,
+                'Чем ещё я могу помочь?',
+                reply_markup=today_tomorrow_keyboard()
             )
-            if table:  # если пользователь есть в базе
-                schedule = pickle.loads(table[0])[week[day]].to_frame()
-                await bot.send_message(  # отправляем расписание
-                    message.chat.id,
-                    schedule_string(schedule),
-                    parse_mode='HTML'
-                )
-        await bot.send_message(
-            message.chat.id,
-            'Чем ещё я могу помочь?',
-            reply_markup=today_tomorrow_keyboard()
-        )
-    else:  # если в базе данных нет этого пользователя (или произошла ошибка)
-        await bot.send_message(
-            message.chat.id,
-            'Что-то пошло не так, попробуй еще раз позже, пожалуйста)\n'
-            'Если мы с тобой еще не знакомы, то скорей пиши /start!',
-            reply_markup=today_tomorrow_keyboard()
-        )
+        # если в базе данных нет этого пользователя
+        elif not group_timetable[0] and group_timetable[1] == 'empty_result':
+            await bot.send_message(
+                message.chat.id,
+                'Кажется, мы с тобой еще не знакомы... 😢\n'
+                'Скорей пиши мне /start!',
+                reply_markup=today_tomorrow_keyboard()
+            )
+        # если произошла ошибка
+        else:
+            await bot.send_message(
+                message.chat.id,
+                'Что-то пошло не так, попробуй еще раз позже, пожалуйста)',
+                reply_markup=today_tomorrow_keyboard()
+            )
 
 
 @dp.message_handler(commands=['help'])
@@ -180,14 +192,15 @@ async def start_initiate(message: types.Message):
     """
     Функция ловит сообщение с командой '/start' и приветствует пользователя.
     """
-    if psg.check_user_group(message.chat.id):  # если пользователь уже есть в базе данных
+    group = await psg.check_user_group(message.chat.id)
+    if group[0]:  # если пользователь уже есть в базе данных
         await bot.send_message(
             message.chat.id,
             'Привет-привет! 🙃\nМы уже с тобой знакомы 😉 '
             'Напиши /help, чтобы я напомнил тебе, что я умею)',
             reply_markup=today_tomorrow_keyboard()
         )
-    else:  # пользователя нет в базе данных
+    elif not group[0] and group[1] == 'empty_result':  # пользователя нет в базе данных
         await Start.group.set()  # изменяем состояние на Start.group
         await bot.send_message(
             message.chat.id,
@@ -202,6 +215,12 @@ async def start_initiate(message: types.Message):
             ' Не подскажешь номер своей группы?\n'
             '(В формате Б00–228 или 777, как в расписании)',
             reply_markup=keyboard
+        )
+    # произошла какая-то ошибка (с соединением или другая)
+    else:
+        await bot.send_message(
+            message.chat.id,
+            'Что-то пошло не так, попробуй еще раз позже, пожалуйста)'
         )
 
 
@@ -220,9 +239,10 @@ async def start_proceed_group(message: types.Message, state: FSMContext):
         message.text,
         'Отлично, вот мы и познакомились 🙃'
     )
-    if psg.insert_user(message.chat.id, group):  # группа есть в базе, добавление пользователя прошло успешно
-        async with state.proxy() as data:
-            data['group'] = group
+    insert = await psg.insert_user(message.chat.id, group)
+    if insert[0]:  # группа есть в базе, добавление пользователя прошло успешно
+        # async with state.proxy() as data:
+        #     data['group'] = group
         await Start.custom.set()  # меняем состояние на Start.custom
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Хочу', 'Не хочу']])
@@ -232,7 +252,8 @@ async def start_proceed_group(message: types.Message, state: FSMContext):
                    'кастомное расписание, нажми на нужную кнопку внизу.',
             reply_markup=keyboard
         )
-    else:  # группы нет в базе (или произошла какая-то ошибка), просим повторить ввод
+    # группы нет в базе / что-то другое, не связанное с подключением, просим повторить ввод
+    elif not insert[0] and insert[1] == 'other_error':
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Уже не учусь', 'Выход']])
         await bot.send_message(
@@ -240,6 +261,13 @@ async def start_proceed_group(message: types.Message, state: FSMContext):
             'Что-то пошло не так, введи номер своей группы ещё раз, пожалуйста)',
             reply_markup=keyboard
         )
+    # произошла какая-то ошибка с соединением
+    else:
+        await bot.send_message(
+            message.chat.id,
+            'Что-то не так с соединением, попробуй ещё раз позже, пожалуйста)'
+        )
+        await state.finish()
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT,
@@ -271,11 +299,12 @@ async def start_proceed_custom(message: types.Message, state: FSMContext):
             reply_markup=today_tomorrow_keyboard()
         )
     elif message.text == 'Хочу':  # ответ пользователя положительный
-        async with state.proxy() as data:
-            group = data['group']
+        # async with state.proxy() as data:
+        #     group = data['group']
         # если номер группы верный (по идее должно быть выполнено)
         # и добавление заготовки расписания прошло успешно
-        if psg.update_user(message.chat.id, group, update_custom=True):
+        update = await psg.create_custom_timetable(message.chat.id)
+        if update[0]:
             await bot.send_message(
                 message.chat.id,
                 'Отлично, все получилось 🙃\n'
@@ -319,12 +348,12 @@ async def edit_initiate(message: types.Message):
     Функция ловит сообщение с командой '/profile' и спрашивает у пользователя,
     хочет ли он изменить группу, закрепленную за ним.
     """
-    cur_group = psg.check_user_group(message.chat.id)
-    if cur_group:
+    cur_group = await psg.check_user_group(message.chat.id)
+    if cur_group[0]:
         await Profile.choose.set()  # изменяем состояние на Profile.choose
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Да', 'Нет', 'Выход']])
-        if cur_group[0] == 'ALUMNI':
+        if cur_group[1][0] == 'ALUMNI':
             await bot.send_message(
                 message.chat.id,
                 f'Сейчас у тебя указано, что ты – выпускник. '
@@ -334,15 +363,23 @@ async def edit_initiate(message: types.Message):
         else:
             await bot.send_message(
                 message.chat.id,
-                f'Сейчас у тебя указано, что ты учишься в группе {cur_group[0]}. '
+                f'Сейчас у тебя указано, что ты учишься в группе {cur_group[1][0]}. '
                 'Ты хочешь изменить это значение?',
                 reply_markup=keyboard
             )
+    # если в базе данных нет этого пользователя
+    elif not cur_group[0] and cur_group[1] == 'empty_result':
+        await bot.send_message(
+            message.chat.id,
+            'Кажется, мы с тобой еще не знакомы... 😢\n'
+            'Скорей пиши мне /start!',
+            reply_markup=today_tomorrow_keyboard()
+        )
+    # если произошла ошибка
     else:
         await bot.send_message(
             message.chat.id,
-            'Что-то пошло не так, попробуй еще раз позже, пожалуйста)\n'
-            'Если мы с тобой еще не знакомы, то скорей пиши /start!',
+            'Что-то пошло не так, попробуй еще раз позже, пожалуйста)',
             reply_markup=today_tomorrow_keyboard()
         )
 
@@ -392,9 +429,10 @@ async def edit_proceed_group(message: types.Message, state: FSMContext):
     """
     # получилось обновить номер группы, запрос о изменении кастомного расписания
     group = 'ALUMNI' if message.text == 'Уже не учусь' else message.text
-    if psg.update_user(message.chat.id, group, update_custom=False):
-        async with state.proxy() as data:
-            data['group'] = group
+    update = await psg.update_user(message.chat.id, group)
+    if update[0]:
+        # async with state.proxy() as data:
+        #     data['group'] = group
         await Profile.custom.set()  # изменяем состояние на Profile.custom
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Хочу', 'Не хочу']])
@@ -404,7 +442,8 @@ async def edit_proceed_group(message: types.Message, state: FSMContext):
             'расписание на расписание новой группы?',
             reply_markup=keyboard
         )
-    else:  # номера группы нет в базе (или произошла какая-то ошибка)
+    # номера группы нет в базе (или произошла какая-то другая ошибка, не связанная с соединением)
+    elif not update[0] and update[1] == 'other_error':
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Уже не учусь', 'Выход']])
         await bot.send_message(  # просим пользователя ввести номер группы еще раз
@@ -412,6 +451,13 @@ async def edit_proceed_group(message: types.Message, state: FSMContext):
             'Что-то пошло не так, введи номер своей группы ещё раз, пожалуйста)',
             reply_markup=keyboard
         )
+    else:
+        await bot.send_message(  # просим пользователя ввести номер группы еще раз
+            message.chat.id,
+            'Что-то не так с соединением, попробуй ещё раз позже, пожалуйста)',
+            reply_markup=today_tomorrow_keyboard()
+        )
+        await state.finish()
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT,
@@ -432,9 +478,10 @@ async def edit_proceed_custom(message: types.Message, state: FSMContext):
             reply_markup=today_tomorrow_keyboard()
         )
     elif message.text == 'Хочу':  # если пришел положительный ответ, то изменяем кастомное расписание
-        async with state.proxy() as data:
-            group = data['group']
-        if psg.update_user(message.chat.id, group, update_custom=True):
+        # async with state.proxy() as data:
+        #     group = data['group']
+        update = await psg.create_custom_timetable(message.chat.id)
+        if update[0]:
             await bot.send_message(
                 message.chat.id,
                 'Отлично, все получилось 🙃\n'
@@ -565,11 +612,11 @@ async def timetable_proceed_another_group(message: types.Message, state: FSMCont
     пользователю запрос о дне недели. Если произошла какая-то ошибка, то функция просит пользователя
     ввести номер группы еще раз.
     """
-    table = psg.send_timetable(custom=False, my_group=False, another_group=message.text)
-    if table:
+    timetable = await psg.send_timetable(another_group=message.text)
+    if timetable[0]:
         await Timetable.weekday.set()  # изменяем состояние на Timetable.weekday
         async with state.proxy() as data:
-            data['schedule'] = pickle.loads(table[0])  # записываем расписание
+            data['schedule'] = pickle.loads(timetable[1][0])  # записываем расписание
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
         keyboard.add(*[types.KeyboardButton(name) for name in ['На неделю']])
@@ -582,12 +629,22 @@ async def timetable_proceed_another_group(message: types.Message, state: FSMCont
             'Расписание на какой день недели ты хочешь узнать?',
             reply_markup=keyboard
         )
-    else:  # номера группы нет в базе (или произошла какая-то ошибка)
+    # номера группы нет в базе / произошла какая-то ошибка, не связанная с соединением
+    elif not timetable[0] and timetable[1] == 'connection_error':
+        await bot.send_message(
+            message.chat.id,
+            'Что-то не так с соединением, попробуй еще раз позже, пожалуйста)',
+            reply_markup=today_tomorrow_keyboard()
+        )
+        await state.finish()
+    # произошла какая-то ошибка с соединением
+    else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
         await bot.send_message(  # просим пользователя ввести номер группы еще раз
             message.chat.id,
-            'Что-то пошло не так, введи номер своей группы ещё раз, пожалуйста)',
+            'К сожалению я не знаю такой группы(\n'
+            'Введи номер ещё раз, пожалуйста)',
             reply_markup=keyboard
         )
 
@@ -609,17 +666,13 @@ async def timetable_proceed_my_group_custom(message: types.Message, state: FSMCo
     Отправляет пользователю вопрос о нужном дне недели. В случае ошибки отправляет пользователю
     сообщение о необходимости редактирования номера группы или кастомного расписания.
     """
-    table = (psg.send_timetable(  # нужное пользователю расписание
-        custom=True, my_group=False, chat_id=message.chat.id
-    ) if message.text == 'Кастомное' else psg.send_timetable(
-        custom=False, my_group=True, chat_id=message.chat.id
-    )
-             )
-    if table:  # если расписание было найдено
-        if table[0]:
+    timetable = (await psg.send_timetable(custom=True, chat_id=message.chat.id) if message.text == 'Кастомное' else
+                 await psg.send_timetable(my_group=True, chat_id=message.chat.id))
+    if timetable[0]:  # если расписание было найдено
+        if timetable[1][0] is not None:
             await Timetable.weekday.set()  # изменяем состояние на Timetable.weekday
             async with state.proxy() as data:
-                data['schedule'] = pickle.loads(table[0])  # записываем расписание
+                data['schedule'] = pickle.loads(timetable[1][0])  # записываем расписание
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
             keyboard.add(*[types.KeyboardButton(name) for name in ['На неделю']])
@@ -640,14 +693,23 @@ async def timetable_proceed_my_group_custom(message: types.Message, state: FSMCo
                 reply_markup=today_tomorrow_keyboard()
             )
             await state.finish()
-    else:  # если в базе данных нет этого пользователя (или произошла ошибка)
+    # если в базе данных нет этого пользователя
+    elif not timetable[0] and timetable[1] == 'empty_result':
         await bot.send_message(
             message.chat.id,
-            'Что-то пошло не так, попробуй еще раз позже, пожалуйста)\n'
-            'Если мы с тобой еще не знакомы, то скорей пиши /start!',
+            'Кажется, мы с тобой еще не знакомы... 😢\n'
+            'Cкорей пиши мне /start!',
             reply_markup=today_tomorrow_keyboard()
         )
         await state.finish()  # в случае ошибки выключаем машину состояний
+    # произошла ошибка
+    else:
+        await bot.send_message(
+            message.chat.id,
+            'Что-то пошло не так, попробуй еще раз позже, пожалуйста)',
+            reply_markup=today_tomorrow_keyboard()
+        )
+        await state.finish()
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
@@ -684,7 +746,9 @@ async def timetable_return_schedule(message: types.Message, state: FSMContext):
         for day in ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']:
             await bot.send_message(  # отправляем расписание
                 message.chat.id,
-                schedule_string(schedule[day].to_frame()),
+                '<b>' + day.upper() + '</b>'
+                + '\n\n'
+                + schedule_string(schedule[day].to_frame()),
                 parse_mode='HTML'
             )
 
@@ -727,33 +791,39 @@ async def custom_initiate(message: types.Message):
         'или что-то отредактировать в нем? '
         'В этом я всегда рад тебе помочь 😉'
     )
-    table = psg.send_timetable(custom=True, my_group=False, chat_id=message.chat.id)
-    if table:  # если пользователь есть в базе
-        if table[0]:  # если у него уже есть кастомное расписание
-            await Custom.existing.set()  # изменяем состояние на Custom.existing
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ['Посмотреть', 'Изменить', 'Выход']])
-            await bot.send_message(  # вопрос, что пользователь хочет сделать с расписанием
-                message.chat.id,
-                'Выбери, пожалуйста, что ты хочешь '
-                'сделать с кастомным расписанием)',
-                reply_markup=keyboard
-            )
-        else:  # если у пользователя еще нет кастомного расписания
-            await Custom.new.set()  # изменяем состояние на Custom.new
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ['Давай', 'Как-нибудь потом', 'Выход']])
-            await bot.send_message(
-                message.chat.id,
-                'У тебя пока еще нет кастомного расписания 😢\n'
-                'Давай заведем его тебе?',
-                reply_markup=keyboard
-            )
-    else:  # если в базе данных нет этого пользователя (или произошла ошибка)
+    timetable = await psg.send_timetable(custom=True, chat_id=message.chat.id)
+    if timetable[0] and timetable[1][0] is not None:  # если пользователь есть в базе
+        await Custom.existing.set()  # изменяем состояние на Custom.existing
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Посмотреть', 'Изменить', 'Выход']])
+        await bot.send_message(  # вопрос, что пользователь хочет сделать с расписанием
+            message.chat.id,
+            'Выбери, пожалуйста, что ты хочешь '
+            'сделать с кастомным расписанием)',
+            reply_markup=keyboard
+        )
+    elif timetable[0] and timetable[1][0] is None:  # если у пользователя еще нет кастомного расписания
+        await Custom.new.set()  # изменяем состояние на Custom.new
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Давай', 'Как-нибудь потом', 'Выход']])
         await bot.send_message(
             message.chat.id,
-            'Что-то пошло не так, попробуй еще раз позже, пожалуйста)\n'
-            'Если мы с тобой еще не знакомы, то скорей пиши /start!',
+            'У тебя пока еще нет кастомного расписания 😢\n'
+            'Давай заведем его тебе?',
+            reply_markup=keyboard
+        )
+    elif not timetable[0] and timetable[1] == 'empty_result':
+        await bot.send_message(
+            message.chat.id,
+            'Кажется, мы с тобой еще не знакомы... 😢\n'
+            'Cкорей пиши мне /start!',
+            reply_markup=today_tomorrow_keyboard()
+        )
+    # произошла ошибка
+    else:
+        await bot.send_message(
+            message.chat.id,
+            'Что-то пошло не так, попробуй еще раз позже, пожалуйста)',
             reply_markup=today_tomorrow_keyboard()
         )
 
@@ -777,8 +847,8 @@ async def custom_add_new(message: types.Message, state: FSMContext):
     в случае положительного ответа заводит ему такое расписание.
     """
     if message.text == 'Давай':  # положительный ответ
-        group = psg.check_user_group(message.chat.id)  # группа пользователя из базы данных
-        if group and psg.update_user(message.chat.id, group[0], update_custom=True):
+        update = await psg.create_custom_timetable(message.chat.id)
+        if update[0]:
             await bot.send_message(  # все нормально обновилось
                 message.chat.id,
                 'Отлично, все получилось 🙃\n'
@@ -861,9 +931,9 @@ async def custom_proceed_weekday(message: types.Message, state: FSMContext):
     Функция ловит сообщение с днем недели и, в зависимости от того, что нужно пользователю,
     либо выдает ему расписание, либо посылает запрос о времени пары, расписание на которую нужно поменять.
     """
-    table = psg.send_timetable(custom=True, my_group=False, chat_id=message.chat.id)
-    if table:  # не произошло никакой ошибки (кастомное расписание точно есть, проверено ранее)
-        schedule = pickle.loads(table[0])  # расписание на неделю
+    timetable = await psg.send_timetable(custom=True, chat_id=message.chat.id)
+    if timetable[0]:  # не произошло никакой ошибки (кастомное расписание точно есть, проверено ранее)
+        schedule = pickle.loads(timetable[1][0])  # расписание на неделю
         await bot.send_message(  # присылаем текущее состояние расписания
             message.chat.id,
             schedule_string(schedule[message.text].to_frame()),
@@ -962,7 +1032,11 @@ async def custom_proceed_edit(message: types.Message, state: FSMContext):
         schedule[day].loc[data['time']] = message.text  # заменяем нужную пару
         data.clear()
     # сохраняем новое расписание
-    if psg.update_custom_timetable(message.chat.id, pickle.dumps(schedule, protocol=pickle.HIGHEST_PROTOCOL)):
+    update = await psg.update_custom_timetable(
+        message.chat.id,
+        pickle.dumps(schedule, protocol=pickle.HIGHEST_PROTOCOL)
+    )
+    if update[0]:
         await Custom.again.set()  # изменяем состояние на Custom.again
         async with state.proxy() as data:
             data['schedule'] = schedule  # перезаписываем расписание и день (особенности state.proxy())
