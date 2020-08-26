@@ -1214,18 +1214,21 @@ async def plot(message: types.Message, state: FSMContext):
         file_id = message.document.file_id
         file = await bot.get_file(file_id)
         await bot.download_file(file.file_path, 'file.xlsx')
-        a, b, d_a, d_b = math_part.mnk_calc('file.xlsx')
-        math_part.plots_drawer('file.xlsx', Plots.title, Plots.errors[0], Plots.errors[1], Plots.mnk)
+        if Plots.errors:
+            coef = math_part.plots_drawer('file.xlsx', Plots.title, Plots.errors[0], Plots.errors[1], Plots.mnk)
+        else:
+            coef = math_part.plots_drawer('file.xlsx', Plots.title)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
         await bot.send_message(message.chat.id, 'Принимай работу!)', reply_markup=keyboard)
         with open('plot.png', 'rb') as photo:
             await bot.send_document(message.chat.id, photo)
         if Plots.mnk:
-            for i in range(0, len(a)):
+            for i in range(len(coef)):
+                a, b, d_a, d_b = coef[i]
                 await bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
-                                                        f" a = {a[i]} +- {d_a[i]}\n"
-                                                        f" b = {b[i]} +- {d_b[i]}")
+                                                        f" a = {a} +- {d_a}\n"
+                                                        f" b = {b} +- {d_b}")
         with open('plot.pdf', 'rb') as photo:
             await bot.send_document(message.chat.id, photo)
         os.remove('plot.pdf')
@@ -1238,7 +1241,7 @@ async def plot(message: types.Message, state: FSMContext):
         await state.finish()
     except Exception as e:
         os.remove('file.xlsx')
-        print(e.with_traceback())
+        print(e)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
         await bot.send_message(message.chat.id,

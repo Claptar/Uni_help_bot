@@ -73,7 +73,7 @@ def const_dev(x, y):
     return [plt_const(x, y)[2], plt_const(x, y)[3]]
 
 
-def plots_drawer(data_file, tit, xerr, yerr, mnk):
+def plots_drawer(data_file, tit, xerr=0, yerr=0, mnk=False):
     """
     Функция считывает данные из таблицы и строит графики с МНК по этим данным
     :param data_file: Название файла с данными
@@ -81,12 +81,13 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     :param xerr: погрешность по х
     :param yerr: погрешность по y
     :param mnk: type Bool, При True строится прямая мнк
-    :return:
+    :return: коэфициенты прямых посчитанные по МНК
     """
     fig = plt.figure(dpi=120)
     ax = fig.add_subplot()
     x, y, label_list, legend = data_conv(data_file)
     x_ = []
+    coef = []
     for i in range(0, x.shape[1]):
         if xerr != 0 or yerr != 0:
             ax.errorbar(x[:, i], y[:, i], xerr=xerr, yerr=yerr, fmt='k+', capsize=3)
@@ -98,8 +99,27 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
         x_.append([min(x[:, i]) - delta, max(x[:, i]) + delta])
     if mnk:
         for i in range(0, x.shape[1]):
-            a, b, _, __ = plt_const(x[:, i], y[:, i])
+            a, b, da, db = plt_const(x[:, i], y[:, i])
+            coef.append([a, b, da, db])
             ax.plot(np.array(x_[i]), a * (np.array(x_[i])) + b, 'r--')
+    plot_decor(ax, fig, tit, legend, label_list)
+    plt.savefig('plot.pdf')
+    plt.savefig('plot.png')
+    plt.show()
+    plt.clf()
+    return coef
+
+
+def plot_decor(ax, fig, tit, legend, label_list):
+    """
+    Функция используется для отрисовки оформления графика (сетки, осей и т.д.)
+    :param ax:
+    :param fig:
+    :param tit: название графика
+    :param legend: подписи кривых
+    :param label_list: подписи осей
+    :return:
+    """
     ax.set_xlabel(label_list[0])
     ax.set_ylabel(label_list[0])
     ax.legend(legend)
@@ -134,36 +154,6 @@ def plots_drawer(data_file, tit, xerr, yerr, mnk):
     ax.grid(which='major', linestyle='-', linewidth='0.5', color='black')
     # Добавляем промежуточную сетку
     ax.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
-    plt.savefig('plot.pdf')
-    plt.savefig('plot.png')
-    plt.show()
-    plt.clf()
-
-
-def mnk_calc(data_file):
-    """
-    Функция считывает данные из таблицы и возвращает коэффициенты и погрешности
-    :param data_file: Название файла с данными
-    :return: [a - коэф. прямой, b - коэф. прямой, погрешность а, погрешность b]
-    """
-    dataset = pd.read_excel(data_file)
-    d = np.array(dataset)
-    a = []
-    b = []
-    x = []
-    y = []
-    d_a = []
-    d_b = []
-    for i in range(0, len(d[1, :] - 1), 2):
-        r = plt_const(d[:, i], d[:, i + 1])
-        x.append(d[:, i])
-        y.append(d[:, i + 1])
-        a.append(r[0])
-        b.append(r[1])
-        d_a.append(r[2])
-        d_b.append(r[3])
-
-    return [a, b, d_a, d_b]
 
 
 def error_calc(equation, var_list, point_list, error_list):
