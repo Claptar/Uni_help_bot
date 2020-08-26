@@ -125,30 +125,30 @@ def plot_decor(ax, fig, tit, legend, label_list):
     ax.legend(legend)
     ax.set_title(tit)
     ax.grid(True)
-    # Находим координаты углов графика
-    xmin, xmax = ax.get_xlim()
-    ymin, ymax = ax.get_ylim()
-    # matching arrowhead length and width
-    dps = fig.dpi_scale_trans.inverted()
-    bbox = ax.get_window_extent().transformed(dps)
-    width, height = bbox.width, bbox.height
-    # manual arrowhead width and length
-    hw = 1. / 20. * (ymax - ymin)
-    hl = 1. / 20. * (xmax - xmin)
-    lw = .1  # axis line width
-    ohg = 0.25  # arrow overhang
-    # compute matching arrowhead length and width
-    yhw = hw / (ymax - ymin) * (xmax - xmin) * height / width
-    yhl = hl / (xmax - xmin) * (ymax - ymin) * width / height
-
-    # draw x and y axis
-    ax.arrow(xmin, ymin, xmax - xmin, 0., fc='k', ec='k', lw=lw,
-             head_width=hw / 1.5, head_length=hl / 1.5, overhang=ohg,
-             length_includes_head=True, clip_on=False, width=1e-5)
-
-    ax.arrow(xmin, ymin, 0., ymax - ymin, fc='k', ec='k', lw=lw,
-             head_width=yhw / 1.5, head_length=yhl / 1.5, overhang=ohg,
-             length_includes_head=True, clip_on=False, width=1e-5)
+    # # Находим координаты углов графика
+    # xmin, xmax = ax.get_xlim()
+    # ymin, ymax = ax.get_ylim()
+    # # matching arrowhead length and width
+    # dps = fig.dpi_scale_trans.inverted()
+    # bbox = ax.get_window_extent().transformed(dps)
+    # width, height = bbox.width, bbox.height
+    # # manual arrowhead width and length
+    # hw = 1. / 20. * (ymax - ymin)
+    # hl = 1. / 20. * (xmax - xmin)
+    # lw = .1  # axis line width
+    # ohg = 0.25  # arrow overhang
+    # # compute matching arrowhead length and width
+    # yhw = hw / (ymax - ymin) * (xmax - xmin) * height / width
+    # yhl = hl / (xmax - xmin) * (ymax - ymin) * width / height
+    #
+    # # draw x and y axis
+    # ax.arrow(xmin, ymin, xmax - xmin, 0., fc='k', ec='k', lw=lw,
+    #          head_width=hw / 1.5, head_length=hl / 1.5, overhang=ohg,
+    #          length_includes_head=True, clip_on=False, width=1e-5)
+    #
+    # ax.arrow(xmin, ymin, 0., ymax - ymin, fc='k', ec='k', lw=lw,
+    #          head_width=yhw / 1.5, head_length=yhl / 1.5, overhang=ohg,
+    #          length_includes_head=True, clip_on=False, width=1e-5)
     ax.minorticks_on()
     # Настраиваем основную стеку графика
     ax.grid(which='major', linestyle='-', linewidth='0.5', color='black')
