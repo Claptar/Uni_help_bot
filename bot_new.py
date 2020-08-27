@@ -43,9 +43,8 @@ class Timetable(StatesGroup):
 
 class Koryavov(StatesGroup):
     sem_num_state = State()
-    sem_num = 0
     task_num_state = State()
-    task_num = 0
+    finish_state = State()
 
 
 class Custom(StatesGroup):
@@ -510,6 +509,10 @@ async def edit_proceed_custom_invalid(message: types.Message):
 
 @dp.message_handler(commands='koryavov')
 async def koryavov(message: types.Message):
+    """
+    Функция ловит сообщение с текстом /koryavov.
+    Отправляет пользователю сообщение с просьбой выбрать интересующий его номер семестра курса общей физики
+    """
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])  # кнопки c номерами семестров
     await bot.send_message(message.chat.id, 'Выбери номер семестра общей физики: \n'
@@ -522,8 +525,13 @@ async def koryavov(message: types.Message):
 
 
 @dp.message_handler(lambda message: message.text.isdigit(), state=Koryavov.sem_num_state)
-async def sem_num(message: types.Message):
-    Koryavov.sem_num = int(message.text)
+async def sem_num(message: types.Message, state: FSMContext):
+    """
+    Функция принимает сообщение от пользователя с номером семестра и записывает его в data storage.
+    Так же отправляется сообщение с просьбой указать номер задачи, интересующей пользователя.
+    """
+    async with state.proxy() as data:
+        data['sem_num'] = message.text
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
     await bot.send_message(message.chat.id, 'Отлично, напиши теперь номер задачи', reply_markup=keyboard)
@@ -533,27 +541,76 @@ async def sem_num(message: types.Message):
 # If some invalid input
 @dp.message_handler(state=Koryavov.sem_num_state)
 async def kor_sem_inv_input(message: types.Message):
+    """
+    В случае некоректного ответа на запрос номера семестра отправляется сообщение с просьбой
+    указать правильный номер семестра
+    """
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])  # кнопки c номерами семестров
     await bot.send_message(message.chat.id, 'Что-то не так, давай ещё раз. Выбери номер семестра:')
 
 
-@dp.message_handler(lambda message: math_part.is_digit(message.text), state=Koryavov.task_num_state)
+@dp.message_handler(lambda message: math_part.is_digit(message.text) or message.text == "Ещё одну",
+                    state=Koryavov.task_num_state)
 async def task_page(message: types.Message, state: FSMContext):
-    Koryavov.task_num = message.text
-    reply = 'Информация взята с сайта mipt1.ru \n\n' + kor.kor_page(Koryavov.sem_num, Koryavov.task_num)
+    """
+    Функция ловит сообщение с номером задачи и делает запрос на сайт mipt1.ru чтобы
+    узнать номер страницы в корявове с этой задаче. После чего отправляет пользователю
+    эту информацию. Так же присылается вопрос "нужна ли ещё одна задача ?".
+    """
+    task_num = message.text
+    async with state.proxy() as data:
+        sem_num = int(data['sem_num'])
+    reply = 'Информация взята с сайта mipt1.ru \n\n' + kor.kor_page(sem_num, task_num)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё одну', 'Всё, хватит']])
     await bot.send_message(message.chat.id, reply, reply_markup=keyboard)
-    await state.finish()
+    await Koryavov.finish_state.set()
 
 
 # If some invalid input
 @dp.message_handler(state=Koryavov.task_num_state)
 async def kor_task_inv_input(message: types.Message):
+    """
+    В случае некорректоного
+    """
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
-    await bot.send_message(message.chat.id, 'Что-то не так, давай ещё раз. Введи номер задачи.', reply_markup=keyboard)
+    await bot.send_message(message.chat.id, 'Что-то не так, введи номер задачи ещё раз)', reply_markup=keyboard)
+
+
+@dp.message_handler(Text(equals=['Ещё одну', 'Всё, хватит']), state=Koryavov.finish_state, )
+async def kor_finish(message: types.Message, state: FSMContext):
+    if message.text == 'Ещё одну':
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
+        await bot.send_message(
+            message.chat.id,
+            'Окей, напиши номер нужной задачи',
+            reply_markup=keyboard)
+        await Koryavov.task_num_state.set()
+    else:
+        async with state.proxy() as data:
+            data.clear()
+        await bot.send_message(
+            message.chat.id,
+            'Рад был помочь😉 Удачи !',
+            reply_markup=today_tomorrow_keyboard())
+        await state.finish()
+
+
+# If some invalid input
+@dp.message_handler(state=Koryavov.finish_state)
+async def kor_task_inv_input(message: types.Message):
+    """
+    В случае некорректоного
+    """
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё одну', 'Всё, хватит', 'Выход' ]])
+    await bot.send_message(
+        message.chat.id,
+        'Что-то пошло не так. Ты хочешь узнать номер страницы для ещё одной задачи ?',
+        reply_markup=keyboard)
 
 
 @dp.message_handler(commands='timetable')
