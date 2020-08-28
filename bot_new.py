@@ -93,7 +93,7 @@ async def user_exit(message: types.Message, state: FSMContext):
     current_state = await state.get_state()  # проверка, что запущено хотя бы какое-то из состояний
     if current_state is None:
         return
-
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(
         message.chat.id,
         'Без проблем! Но ты это, заходи, если что 😉',
@@ -135,6 +135,7 @@ async def send_today_tomorrow_schedule(message):
     # проверка, есть ли у этого пользователя кастомное расписание в базе данных (+ не произошло ли ошибок)
     if custom_timetable[0] and custom_timetable[1][0] is not None:
         schedule = pickle.loads(custom_timetable[1][0])[week[day]].to_frame()
+        await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
         await bot.send_message(  # отправляем расписание
             message.chat.id,
             schedule_string(schedule),
@@ -146,11 +147,13 @@ async def send_today_tomorrow_schedule(message):
         group_timetable = await psg.send_timetable(my_group=True, chat_id=message.chat.id)
         if group_timetable[0]:  # если пользователь есть в базе
             schedule = pickle.loads(group_timetable[1][0])[week[day]].to_frame()
+            await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
             await bot.send_message(  # отправляем расписание
                 message.chat.id,
                 schedule_string(schedule),
                 parse_mode='HTML'
             )
+            await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
             await bot.send_message(
                 message.chat.id,
                 'Чем ещё я могу помочь?',
@@ -158,6 +161,7 @@ async def send_today_tomorrow_schedule(message):
             )
         # если в базе данных нет этого пользователя
         elif not group_timetable[0] and group_timetable[1] == 'empty_result':
+            await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
             await bot.send_message(
                 message.chat.id,
                 'Кажется, мы с тобой еще не знакомы... 😢\n'
@@ -166,6 +170,7 @@ async def send_today_tomorrow_schedule(message):
             )
         # если произошла ошибка
         else:
+            await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
             await bot.send_message(
                 message.chat.id,
                 'Что-то пошло не так, попробуй еще раз позже, пожалуйста)',
@@ -178,6 +183,7 @@ async def help_def(message: types.Message):
     """
     Функция ловит сообщение с командой '/help' и присылает описание комманд бота.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     with open('files/help.txt', encoding='utf-8', mode='r') as f:
         text = f.read()
     await bot.send_message(message.chat.id, text)
@@ -189,6 +195,7 @@ async def start_initiate(message: types.Message):
     Функция ловит сообщение с командой '/start' и приветствует пользователя.
     """
     group = await psg.check_user_group(message.chat.id)
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if group[0]:  # если пользователь уже есть в базе данных
         await bot.send_message(
             message.chat.id,
@@ -206,6 +213,7 @@ async def start_initiate(message: types.Message):
         )
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Уже не учусь', 'Выход']])
+        await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
         await bot.send_message(  # 'Уже не учусь' - вариант для выпускников
             message.chat.id,
             ' Не подскажешь номер своей группы?\n'
@@ -228,6 +236,7 @@ async def start_proceed_group(message: types.Message, state: FSMContext):
     Если группа есть в базе данных, информация о пользователе заносится в таблицу User, а пользователю
     отправляется запрос, нужно ли ему кастомное расписание.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     (group, text) = (
         'ALUMNI',
         'Привет достопочтенному выпускнику! 👋'
@@ -272,6 +281,7 @@ async def start_proceed_group_invalid_type(message: types.Message):
     """
     Функция просит ввести номер группы заново, если формат ввода номера группы неправильный.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Пришли номер группы в верном формате, пожалуйста)")
 
 
@@ -281,6 +291,7 @@ async def start_proceed_custom(message: types.Message, state: FSMContext):
     Функция принимает ответ пользователя, нужно ли ему кастомное расписание, заносит заготовку
     в базу данных, если ответ положительный.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if message.text == 'Не хочу':  # ответ пользователя отрицательный
         await bot.send_message(
             message.chat.id,
@@ -335,6 +346,7 @@ async def start_proceed_custom_invalid(message: types.Message):
     """
     Функция просит выбрать из вариант из предложенных, если формат ввода неправильный.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
@@ -345,6 +357,7 @@ async def edit_initiate(message: types.Message):
     хочет ли он изменить группу, закрепленную за ним.
     """
     cur_group = await psg.check_user_group(message.chat.id)
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if cur_group[0]:
         await Profile.choose.set()  # изменяем состояние на Profile.choose
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -386,6 +399,7 @@ async def edit_proceed_choose(message: types.Message, state: FSMContext):
     Функция принимает ответ пользователя, хочет ли он поменять значение группы
     и просит пользователя ввести желаемый номер группы.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if message.text == 'Да':  # положительный ответ, запрос о вводе номера группы
         await Profile.group.set()  # изменяем состояние на Profile.group
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -411,6 +425,7 @@ async def edit_proceed_choose_invalid(message: types.Message):
     """
     Функция просит выбрать из вариант из предложенных, если формат ввода неправильный.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
@@ -426,6 +441,7 @@ async def edit_proceed_group(message: types.Message, state: FSMContext):
     # получилось обновить номер группы, запрос о изменении кастомного расписания
     group = 'ALUMNI' if message.text == 'Уже не учусь' else message.text
     update = await psg.update_user(message.chat.id, group)
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if update[0]:
         # async with state.proxy() as data:
         #     data['group'] = group
@@ -462,11 +478,13 @@ async def edit_proceed_group_invalid_type(message: types.Message):
     """
     Функция просит ввести номер группы заново, если формат ввода номера группы неправильный.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Пришли номер группы в верном формате, пожалуйста)")
 
 
 @dp.message_handler(Text(equals=['Хочу', 'Не хочу']), state=Profile.custom)
 async def edit_proceed_custom(message: types.Message, state: FSMContext):
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if message.text == 'Не хочу':  # если пришел отрицательный ответ
         await bot.send_message(
             message.chat.id,
@@ -501,6 +519,7 @@ async def edit_proceed_custom_invalid(message: types.Message):
     """
     Функция просит выбрать из вариант из предложенных, если формат ввода неправильный.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
@@ -573,7 +592,7 @@ async def task_page(message: types.Message, state: FSMContext):
 @dp.message_handler(state=Koryavov.task_num_state)
 async def kor_task_inv_input(message: types.Message):
     """
-    В случае некорректоного
+    В случае некорректоного ввода номера задачи, функция отправляет сообщение с просьбой повторить ввод
     """
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -583,7 +602,11 @@ async def kor_task_inv_input(message: types.Message):
 
 @dp.message_handler(Text(equals=['Ещё одну', 'Всё, хватит']), state=Koryavov.finish_state, )
 async def kor_finish(message: types.Message, state: FSMContext):
-    await bot.send_chat_action(message.chat.id, 'typing') # Отображение "typing"
+    """
+    Функция принимает сообщение содержащее ['Ещё одну', 'Всё, хватит'] и Koryavov.finish_state(). И в зависимости
+    от сообщения завершает функцию /koryavov или отправляет на предыдущий шаг.
+    """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if message.text == 'Ещё одну':
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
@@ -606,7 +629,7 @@ async def kor_finish(message: types.Message, state: FSMContext):
 @dp.message_handler(state=Koryavov.finish_state)
 async def kor_task_inv_input(message: types.Message):
     """
-    В случае некорректоного
+    В случае некорректоного сообщения, функция отправляет сообщение с просьбой попробовать ещё раз.
     """
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -624,11 +647,13 @@ async def timetable_initiate(message: types.Message):
     Отправляет пользователю вопрос, расписание своей или другой группы ему нужно.
     """
     await Timetable.choose.set()  # ставим состояние Timetable.choose
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(
         message.chat.id,
         'Снова не можешь вспомнить, какая пара следующая?\n'
         'Ничего, я уже тут! 😉'
     )
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Кастомное', 'Моя группа']])
     keyboard.add(*[types.KeyboardButton(name) for name in ['Другая группа', 'Выход']])
@@ -647,6 +672,7 @@ async def timetable_proceed_choose_invalid(message: types.Message):
     Функция просит пользователя выбрать вариант из списка ['Кастомное', 'Моя группа', 'Другая группа', 'Выход'],
     если сообщение не содержит никакую из этих строк (+ проверка типа сообщения).
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
@@ -655,6 +681,7 @@ async def timetable_proceed_choose(message: types.Message):
     """
     Функция ловит сообщение с текстом 'Другая группа' и отправляет пользователю вопрос о номере группы.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await Timetable.another_group.set()  # изменяем состояние на Timetable.another_group
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])  # кнопка для выхода из функции
@@ -674,6 +701,7 @@ async def timetable_proceed_another_group(message: types.Message, state: FSMCont
     ввести номер группы еще раз.
     """
     timetable = await psg.send_timetable(another_group=message.text)
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if timetable[0]:
         await Timetable.weekday.set()  # изменяем состояние на Timetable.weekday
         async with state.proxy() as data:
@@ -717,6 +745,7 @@ async def timetable_proceed_another_group_invalid_type(message: types.Message):
     """
     Функция просит ввести номер группы заново, если формат ввода неправильный.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Пришли номер группы в верном формате, пожалуйста)")
 
 
@@ -727,6 +756,7 @@ async def timetable_proceed_my_group_custom(message: types.Message, state: FSMCo
     Отправляет пользователю вопрос о нужном дне недели. В случае ошибки отправляет пользователю
     сообщение о необходимости редактирования номера группы или кастомного расписания.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     timetable = (await psg.send_timetable(custom=True, chat_id=message.chat.id) if message.text == 'Кастомное' else
                  await psg.send_timetable(my_group=True, chat_id=message.chat.id))
     if timetable[0]:  # если расписание было найдено
@@ -784,6 +814,7 @@ async def timetable_proceed_weekday_invalid(message: types.Message):
                                                            'Четверг', 'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
     если сообщение не содержит никакую из этих строк.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
@@ -794,6 +825,7 @@ async def timetable_return_schedule(message: types.Message, state: FSMContext):
     """
     Функция отправляет расписание на выбранный день недели.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     async with state.proxy() as data:
         schedule = data['schedule']  # берем расписание из памяти
         data.clear()
@@ -812,7 +844,7 @@ async def timetable_return_schedule(message: types.Message, state: FSMContext):
                 + schedule_string(schedule[day].to_frame()),
                 parse_mode='HTML'
             )
-
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(
         message.chat.id,
         'Чем ещё я могу помочь?',
@@ -827,10 +859,12 @@ async def exam_initiate(message: types.Message):
     Функция ловит сообщение с текстом '/exam'.
     Отправляет запрос о выборе группы и вызывает функцию get_exam_timetable().
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(
         message.chat.id,
         'Ещё не время... Но ты не забывай...'
     )
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_sticker(
         message.chat.id,
         'CAACAgIAAxkBAAMEXj8IxnJkYATlpAOTkJyLiXH2u0UAAvYfAAKiipYBsZcZ_su45LkYBA'
@@ -846,12 +880,14 @@ async def custom_initiate(message: types.Message):
     завести такое расписание. Если кастомное расписание для этого пользователя есть в базе,
     фукция посылает запрос о выборе дня недели, расписание на который нужно выдать или как-то поменять.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(
         message.chat.id,
         'Хочешь посмотреть кастомное расписание '
         'или что-то отредактировать в нем? '
         'В этом я всегда рад тебе помочь 😉'
     )
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     timetable = await psg.send_timetable(custom=True, chat_id=message.chat.id)
     if timetable[0] and timetable[1][0] is not None:  # если пользователь есть в базе
         await Custom.existing.set()  # изменяем состояние на Custom.existing
@@ -898,6 +934,7 @@ async def custom_add_new_invalid(message: types.Message):
     Функция просит пользователя выбрать вариант из списка ['Давай', 'Как-нибудь потом', 'Выход'],
     если сообщение не содержит никакую из этих строк.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
@@ -907,6 +944,7 @@ async def custom_add_new(message: types.Message, state: FSMContext):
     Функция принимает ответ пользователя, нужно ли ему кастомное расписание,
     в случае положительного ответа заводит ему такое расписание.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if message.text == 'Давай':  # положительный ответ
         update = await psg.create_custom_timetable(message.chat.id)
         if update[0]:
@@ -942,6 +980,7 @@ async def custom_choose_existing_invalid(message: types.Message):
     Функция просит пользователя выбрать вариант из списка ['Посмотреть', 'Изменить', 'Выход'],
     если сообщение не содержит никакую из этих строк.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
@@ -951,6 +990,7 @@ async def custom_choose_existing(message: types.Message, state: FSMContext):
     Функция ловит запрос пользователя о просмотре или изменении кастомного расписания,
     отправляет запрос о нужном дне недели.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await Custom.weekday.set()  # изменяем состояние на Custom.weekday
     async with state.proxy() as data:
         data['choice'] = message.text  # сохраняем ответ, понадобится дальше
@@ -982,6 +1022,7 @@ async def custom_proceed_weekday_invalid(message: types.Message):
                                                            'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
     если сообщение не содержит никакую из этих строк.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
@@ -992,6 +1033,7 @@ async def custom_proceed_weekday(message: types.Message, state: FSMContext):
     Функция ловит сообщение с днем недели и, в зависимости от того, что нужно пользователю,
     либо выдает ему расписание, либо посылает запрос о времени пары, расписание на которую нужно поменять.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     timetable = await psg.send_timetable(custom=True, chat_id=message.chat.id)
     if timetable[0]:  # не произошло никакой ошибки (кастомное расписание точно есть, проверено ранее)
         schedule = pickle.loads(timetable[1][0])  # расписание на неделю
@@ -1047,6 +1089,7 @@ async def custom_proceed_time_invalid(message: types.Message):
                                                            '18:35 – 20:00', 'Выход'],
     если сообщение не содержит никакую из этих строк.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
@@ -1057,6 +1100,7 @@ async def custom_proceed_time(message: types.Message, state: FSMContext):
     Функция ловит сообщение со временем пары, расписание на которую нужно изменить,
     спрашивает у пользователя, на что нужно заменить текущее значение.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await Custom.edit.set()  # изменяем состояние на Custom.edit
     async with state.proxy() as data:
         data['time'] = message.text  # сохраняем время пары
@@ -1077,6 +1121,7 @@ async def custom_proceed_edit_invalid_type(message: types.Message):
     """
     Функция просит ввести номер группы заново, если формат ввода неправильный.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Пришли значение в верном формате, пожалуйста)")
 
 
@@ -1087,6 +1132,7 @@ async def custom_proceed_edit(message: types.Message, state: FSMContext):
     и сохраняет новое расписание в базе данных.
     Спрашивает пользователя, хочет ли он изменить что-то еще в расписании на этот день.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     async with state.proxy() as data:
         schedule = data['schedule']  # достаем расписание и день
         day = data['day']
@@ -1132,6 +1178,7 @@ async def custom_proceed_again_invalid(message: types.Message):
     """
     Функция просит выбрать из вариант из предложенных, если формат ввода неправильный.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
@@ -1141,6 +1188,7 @@ async def custom_proceed_again(message: types.Message, state: FSMContext):
     Функция ловит ответ от пользователя, хочет ли он продолжить редактирование.
     Если хочет, то функция задает вопрос про время пары.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if message.text == 'Не хочу':  #  отрицательный ответ
         await bot.send_message(
             message.chat.id,
@@ -1262,6 +1310,10 @@ async def mnk_bad_input(message: types.Message):
 @dp.message_handler(lambda message: message.content_type == types.message.ContentType.TEXT,
                     state=Plots.error_bars_state)
 async def error_bars(message: types.Message, state: FSMContext):
+    """
+    Функция ловит сообщение с размерами крестов погрешностей и просит прислать excel файл, по которому будет
+    строиться график.
+    """
     try:
         await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
         async with state.proxy() as data:
@@ -1303,6 +1355,10 @@ async def eror_bars_bad_input(message: types.Message):
 
 @dp.message_handler(content_types=types.message.ContentTypes.DOCUMENT, state=Plots.plot_state)
 async def plot(message: types.Message, state: FSMContext):
+    """
+    Функция ловит сообщение с Excel-файлом, строит график по данным внутри него и присылает сообщение пользователю с
+    коэффициентами прямых (если надо) и pdf и png файлы с изображением графика.
+    """
     try:
         await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
         file_id = message.document.file_id
@@ -1347,6 +1403,9 @@ async def plot(message: types.Message, state: FSMContext):
 # In case of bad input
 @dp.message_handler(content_types=types.message.ContentType.ANY, state=Plots.plot_state)
 async def plot_bad_input(message: types.Message):
+    """
+    В случае некорректного сообщения функция просит пользователя прислать excel-файл ещё раз.
+    """
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
