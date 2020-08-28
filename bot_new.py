@@ -58,11 +58,8 @@ class Custom(StatesGroup):
 
 class Plots(StatesGroup):
     title_state = State()
-    title = ''
     mnk_state = State()
-    mnk = False
     error_bars_state = State()
-    errors = []
     plot_state = State()
 
 
@@ -1163,12 +1160,13 @@ async def custom_proceed_again(message: types.Message, state: FSMContext):
 @dp.message_handler(commands='plot')
 async def plot(message: types.Message):
     """
-    Функция ловит сообщение с текстом '/plot'.
+    Функция ловит сообщение с текстом '/plot' и отправляет сообщение пользователю с просьбой
+    указать название графика.
     """
     await bot.send_message(message.chat.id, 'Снова лабки делаешь?) Ох уж эти графики!...'
                                             ' Сейчас быстренько всё построю, только тебе придётся'
                                             ' ответить на пару вопросов'
-                                            '😉. И не засиживайся, ложись спать)')
+                                            '😉 И не засиживайся, ложись спать)')
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Без названия', 'Выход']])
     await bot.send_message(message.chat.id, 'Как мы назовём график?'
@@ -1178,11 +1176,16 @@ async def plot(message: types.Message):
 
 
 @dp.message_handler(lambda message: message.content_type == types.message.ContentType.TEXT, state=Plots.title_state)
-async def title(message: types.Message):
-    if message.text == 'Без названия':
-        Plots.title = ''
-    else:
-        Plots.title = message.text
+async def title(message: types.Message, state: FSMContext):
+    """
+    Функция записывает название графика присланное пользователем в data storage и отправляет
+    сообщение пользователю с просьбой указать нужно ли строить прямую по мнк.
+    """
+    async with state.proxy() as data:
+        if message.text == 'Без названия':
+            data['title'] = ''
+        else:
+            data['title'] = message.text
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
     await bot.send_message(message.chat.id, 'Прямую по МНК строим?', reply_markup=keyboard)
@@ -1192,6 +1195,9 @@ async def title(message: types.Message):
 # In case some bad input
 @dp.message_handler(state=Plots.title_state, content_types=types.message.ContentType.ANY)
 async def title_bad_input(message: types.Message):
+    """
+    В случае неккоректного названия графика, функция просит пользователя повторить ввод.
+    """
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Без названия']])
     await bot.send_message(message.chat.id, 'Я тебя не понял... Напиши ещё раз название графика.'
@@ -1200,16 +1206,24 @@ async def title_bad_input(message: types.Message):
 
 
 @dp.message_handler(Text(equals=['✅', '❌']), state=Plots.mnk_state)
-async def mnk(message: types.Message):
+async def mnk(message: types.Message, state: FSMContext):
+    """
+    Функция ловит сообщение с одним из символов ['✅', '❌'] и в зависимости от ответа
+    выставляет error_bars_state или plot_state.
+    """
     if message.text == '✅':
-        Plots.mnk = True
+        async with state.proxy() as data:
+            data['mnk'] = True
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
         await bot.send_message(message.chat.id, 'Пришли данные для крестов погрешностей по осям х и y в'
-                                                ' формате "123.213/123.231", если кресты не нужны, то'
+                                                ' формате "2.51/2.51", если кресты не нужны, то'
                                                 ' нажми на кнопку ниже', reply_markup=keyboard)
         await Plots.error_bars_state.set()
     else:
+        async with state.proxy() as data:
+            data['mnk'] = False
+            data['errors'] = [0.0, 0.0]
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
         with open('files/Example.xlsx', 'rb') as example:
@@ -1223,6 +1237,9 @@ async def mnk(message: types.Message):
 # In case of bad input
 @dp.message_handler(state=Plots.mnk_state, content_types=types.message.ContentType.ANY)
 async def mnk_bad_input(message: types.Message):
+    """
+    В случае если сообщение не содержит ['✅', '❌'], функция просит пользователя повторить ввод.
+    """
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
     await bot.send_message(message.chat.id, 'Извини, повтори ещё раз... Прямую по МНК строим?',
@@ -1231,9 +1248,10 @@ async def mnk_bad_input(message: types.Message):
 
 @dp.message_handler(lambda message: message.content_type == types.message.ContentType.TEXT,
                     state=Plots.error_bars_state)
-async def error_bars(message: types.Message):
+async def error_bars(message: types.Message, state: FSMContext):
     try:
-        Plots.errors = list(map(float, message.text.split('/')))
+        async with state.proxy() as data:
+            data['errors'] = list(map(float, message.text.split('/')))
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
         with open('files/Example.xlsx', 'rb') as expl:
@@ -1249,19 +1267,23 @@ async def error_bars(message: types.Message):
         await bot.send_message(message.chat.id,
                                'Не могу распознать формат данных( Давай ещё раз. '
                                'Пришли данные для крестов погрешностей по осям х и y в '
-                               'формате "123.213/123.231", если кресты не нужны, то'
+                               'формате "2.51/2.51", если кресты не нужны, то'
                                ' нажми на кнопку ниже', reply_markup=keyboard)
 
 
 # In case of bad input
 @dp.message_handler(state=Plots.error_bars_state, content_types=types.message.ContentType.ANY)
 async def eror_bars_bad_input(message: types.Message):
+    """
+    В случае если сообщение не содержит погрешности в формате "2.51/2.51",
+    функция просит пользователя повторить ввод.
+    """
     Plots.mnk = True
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
     await bot.send_message(message.chat.id, 'Ты прислал что-то не то( Давай ещё раз. '
                                             'Пришли данные для крестов погрешностей по осям х и y в '
-                                            'формате "123.213/123.231", если кресты не нужны, то'
+                                            'формате "2.51/2.51", если кресты не нужны, то'
                                             ' нажми на кнопку ниже', reply_markup=keyboard)
 
 
@@ -1271,16 +1293,18 @@ async def plot(message: types.Message, state: FSMContext):
         file_id = message.document.file_id
         file = await bot.get_file(file_id)
         await bot.download_file(file.file_path, 'file.xlsx')
-        if Plots.errors:
-            coef = math_part.plots_drawer('file.xlsx', Plots.title, Plots.errors[0], Plots.errors[1], Plots.mnk)
-        else:
-            coef = math_part.plots_drawer('file.xlsx', Plots.title)
+        async with state.proxy() as data:
+            title = data['title']
+            errors = data['errors']
+            mnk = data['mnk']
+            data.clear()
+        coef = math_part.plots_drawer('file.xlsx', title, errors[0], errors[1], mnk)
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
         await bot.send_message(message.chat.id, 'Принимай работу!)', reply_markup=keyboard)
         with open('plot.png', 'rb') as photo:
             await bot.send_document(message.chat.id, photo)
-        if Plots.mnk:
+        if mnk:
             for i in range(len(coef)):
                 a, b, d_a, d_b = coef[i]
                 await bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
@@ -1292,9 +1316,6 @@ async def plot(message: types.Message, state: FSMContext):
         os.remove('plot.png')
         math_part.BOT_PLOT = False
         os.remove('file.xlsx')
-        Plots.title = ''
-        Plots.errors = [0, 0]
-        Plots.mnk = False
         await state.finish()
     except Exception as e:
         os.remove('file.xlsx')
