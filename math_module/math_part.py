@@ -33,7 +33,7 @@ def data_conv(data_file):
     :param data_file: название файла
     :return: [x,y]
     """
-    data = pd.read_excel(data_file, header=None)
+    data = pd.read_excel(data_file, header=None, skiprows=1)
     # Получение столбца с информацией о графиках без NaN объектов
     info = data[0].dropna().values
     label_list = info[0:2]
