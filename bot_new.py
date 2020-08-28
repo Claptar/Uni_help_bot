@@ -510,6 +510,7 @@ async def koryavov(message: types.Message):
     Функция ловит сообщение с текстом /koryavov.
     Отправляет пользователю сообщение с просьбой выбрать интересующий его номер семестра курса общей физики
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])  # кнопки c номерами семестров
     await bot.send_message(message.chat.id, 'Выбери номер семестра общей физики: \n'
@@ -527,6 +528,7 @@ async def sem_num(message: types.Message, state: FSMContext):
     Функция принимает сообщение от пользователя с номером семестра и записывает его в data storage.
     Так же отправляется сообщение с просьбой указать номер задачи, интересующей пользователя.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     async with state.proxy() as data:
         data['sem_num'] = message.text
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -542,6 +544,7 @@ async def kor_sem_inv_input(message: types.Message):
     В случае некоректного ответа на запрос номера семестра отправляется сообщение с просьбой
     указать правильный номер семестра
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])  # кнопки c номерами семестров
     await bot.send_message(message.chat.id, 'Что-то не так, давай ещё раз. Выбери номер семестра:')
@@ -556,6 +559,7 @@ async def task_page(message: types.Message, state: FSMContext):
     эту информацию. Так же присылается вопрос "нужна ли ещё одна задача ?".
     """
     task_num = message.text
+    await bot.send_chat_action(message.chat.id, 'typing')
     async with state.proxy() as data:
         sem_num = int(data['sem_num'])
     reply = 'Информация взята с сайта mipt1.ru \n\n' + kor.kor_page(sem_num, task_num)
@@ -571,6 +575,7 @@ async def kor_task_inv_input(message: types.Message):
     """
     В случае некорректоного
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
     await bot.send_message(message.chat.id, 'Что-то не так, введи номер задачи ещё раз)', reply_markup=keyboard)
@@ -578,6 +583,7 @@ async def kor_task_inv_input(message: types.Message):
 
 @dp.message_handler(Text(equals=['Ещё одну', 'Всё, хватит']), state=Koryavov.finish_state, )
 async def kor_finish(message: types.Message, state: FSMContext):
+    await bot.send_chat_action(message.chat.id, 'typing') # Отображение "typing"
     if message.text == 'Ещё одну':
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
@@ -602,6 +608,7 @@ async def kor_task_inv_input(message: types.Message):
     """
     В случае некорректоного
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Ещё одну', 'Всё, хватит', 'Выход' ]])
     await bot.send_message(
@@ -1163,10 +1170,12 @@ async def plot(message: types.Message):
     Функция ловит сообщение с текстом '/plot' и отправляет сообщение пользователю с просьбой
     указать название графика.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(message.chat.id, 'Снова лабки делаешь?) Ох уж эти графики!...'
                                             ' Сейчас быстренько всё построю, только тебе придётся'
                                             ' ответить на пару вопросов'
                                             '😉 И не засиживайся, ложись спать)')
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Без названия', 'Выход']])
     await bot.send_message(message.chat.id, 'Как мы назовём график?'
@@ -1181,6 +1190,7 @@ async def title(message: types.Message, state: FSMContext):
     Функция записывает название графика присланное пользователем в data storage и отправляет
     сообщение пользователю с просьбой указать нужно ли строить прямую по мнк.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     async with state.proxy() as data:
         if message.text == 'Без названия':
             data['title'] = ''
@@ -1198,6 +1208,7 @@ async def title_bad_input(message: types.Message):
     """
     В случае неккоректного названия графика, функция просит пользователя повторить ввод.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Без названия']])
     await bot.send_message(message.chat.id, 'Я тебя не понял... Напиши ещё раз название графика.'
@@ -1211,6 +1222,7 @@ async def mnk(message: types.Message, state: FSMContext):
     Функция ловит сообщение с одним из символов ['✅', '❌'] и в зависимости от ответа
     выставляет error_bars_state или plot_state.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if message.text == '✅':
         async with state.proxy() as data:
             data['mnk'] = True
@@ -1240,6 +1252,7 @@ async def mnk_bad_input(message: types.Message):
     """
     В случае если сообщение не содержит ['✅', '❌'], функция просит пользователя повторить ввод.
     """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['✅', '❌', 'Выход']])
     await bot.send_message(message.chat.id, 'Извини, повтори ещё раз... Прямую по МНК строим?',
@@ -1250,6 +1263,7 @@ async def mnk_bad_input(message: types.Message):
                     state=Plots.error_bars_state)
 async def error_bars(message: types.Message, state: FSMContext):
     try:
+        await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
         async with state.proxy() as data:
             data['errors'] = list(map(float, message.text.split('/')))
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -1278,7 +1292,7 @@ async def eror_bars_bad_input(message: types.Message):
     В случае если сообщение не содержит погрешности в формате "2.51/2.51",
     функция просит пользователя повторить ввод.
     """
-    Plots.mnk = True
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
     await bot.send_message(message.chat.id, 'Ты прислал что-то не то( Давай ещё раз. '
@@ -1290,6 +1304,7 @@ async def eror_bars_bad_input(message: types.Message):
 @dp.message_handler(content_types=types.message.ContentTypes.DOCUMENT, state=Plots.plot_state)
 async def plot(message: types.Message, state: FSMContext):
     try:
+        await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
         file_id = message.document.file_id
         file = await bot.get_file(file_id)
         await bot.download_file(file.file_path, 'file.xlsx')
@@ -1303,14 +1318,17 @@ async def plot(message: types.Message, state: FSMContext):
         keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
         await bot.send_message(message.chat.id, 'Принимай работу!)', reply_markup=keyboard)
         with open('plot.png', 'rb') as photo:
+            await bot.send_chat_action(message.chat.id, 'upload_document')  # Отображение "upload document"
             await bot.send_document(message.chat.id, photo)
         if mnk:
             for i in range(len(coef)):
                 a, b, d_a, d_b = coef[i]
+                await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
                 await bot.send_message(message.chat.id, f"Коэффициенты {i + 1}-ой прямой:\n"
                                                         f" a = {a} +- {d_a}\n"
                                                         f" b = {b} +- {d_b}")
         with open('plot.pdf', 'rb') as photo:
+            await bot.send_chat_action(message.chat.id, 'upload_document')  # Отображение "upload document"
             await bot.send_document(message.chat.id, photo)
         os.remove('plot.pdf')
         os.remove('plot.png')
@@ -1329,11 +1347,11 @@ async def plot(message: types.Message, state: FSMContext):
 # In case of bad input
 @dp.message_handler(content_types=types.message.ContentType.ANY, state=Plots.plot_state)
 async def plot_bad_input(message: types.Message):
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Выход']])
     await bot.send_message(message.chat.id,
                            'Ты точно прислал .xlsx файл? Давай ещё раз! '
                            'Пришли .xlsx файл с данными, и всё будет готово', reply_markup=keyboard)
-
 
 executor.start_polling(dp, skip_updates=True)
