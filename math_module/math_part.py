@@ -121,7 +121,7 @@ def plot_decor(ax, fig, tit, legend, label_list):
     :return:
     """
     ax.set_xlabel(label_list[0])
-    ax.set_ylabel(label_list[0])
+    ax.set_ylabel(label_list[1])
     ax.legend(legend)
     ax.set_title(tit)
     ax.grid(True)
