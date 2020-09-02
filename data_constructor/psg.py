@@ -10,7 +10,7 @@ DBNAME = os.environ['DATABASE']
 USER = os.environ['USER']
 PASS = os.environ['PASS']
 HOST = os.environ['HOST']
-PORT = os.environ['PORT']
+# PORT = os.environ['PORT']
 
 if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -27,7 +27,7 @@ def print_psycopg2_exception(err):
     line_num = traceback.tb_lineno
 
     # print the poolect() error
-    print("\npsycopg2 ERROR:", err, "on line number:", line_num)
+    print("\n\n\npsycopg2 ERROR:", err, "on line number:", line_num)
     print("psycopg2 traceback:", traceback, "-- type:", err_type)
 
     # psycopg2 extensions.Diagnostics object attribute
@@ -384,8 +384,10 @@ async def create_custom_timetable(chat_id):
     return await insert_update_value_in_table(
         """UPDATE "User" SET user_timetable = """
         """(SELECT group_timetable FROM "Group" JOIN "User" """
-        """ON "Group".group_id = "User".group_id WHERE chat_id = %s)""",
-        chat_id
+        """ON "Group".group_id = "User".group_id WHERE chat_id = %s) """
+        """WHERE chat_id = %s""",
+        chat_id,
+        chat_id  # вот ЗДЕСЬ проебался
     )
 
 
