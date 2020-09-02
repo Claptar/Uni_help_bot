@@ -133,49 +133,49 @@ async def send_today_tomorrow_schedule(message):
     day = today if message.text == 'На сегодня' else tomorrow  # выбор дня в зависимости от запроса
     custom_timetable = await psg.send_timetable(custom=True, chat_id=message.chat.id)
     # проверка, есть ли у этого пользователя кастомное расписание в базе данных (+ не произошло ли ошибок)
-    if custom_timetable[0] and custom_timetable[1][0] is not None:
-        schedule = pickle.loads(custom_timetable[1][0])[week[day]].to_frame()
+    # if custom_timetable[0] and custom_timetable[1][0] is not None:
+    #     schedule = pickle.loads(custom_timetable[1][0])[week[day]].to_frame()
+    #     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+    #     await bot.send_message(  # отправляем расписание
+    #         message.chat.id,
+    #         schedule_string(schedule),
+    #         parse_mode='HTML'
+    #     )
+    # # если у этого пользователя нет кастомного расписания в базе данных или произошла ошибка при запросе
+    # # кастомного расписания, то пробуем отправить расписание группы
+    # else:
+    group_timetable = await psg.send_timetable(my_group=True, chat_id=message.chat.id)
+    if group_timetable[0]:  # если пользователь есть в базе
+        schedule = pickle.loads(group_timetable[1][0])[week[day]].to_frame()
         await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
         await bot.send_message(  # отправляем расписание
             message.chat.id,
             schedule_string(schedule),
             parse_mode='HTML'
         )
-    # если у этого пользователя нет кастомного расписания в базе данных или произошла ошибка при запросе
-    # кастомного расписания, то пробуем отправить расписание группы
-    else:
-        group_timetable = await psg.send_timetable(my_group=True, chat_id=message.chat.id)
-        if group_timetable[0]:  # если пользователь есть в базе
-            schedule = pickle.loads(group_timetable[1][0])[week[day]].to_frame()
-            await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
-            await bot.send_message(  # отправляем расписание
-                message.chat.id,
-                schedule_string(schedule),
-                parse_mode='HTML'
-            )
-            await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
-            await bot.send_message(
-                message.chat.id,
-                'Чем ещё я могу помочь?',
-                reply_markup=today_tomorrow_keyboard()
-            )
+        await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+        await bot.send_message(
+            message.chat.id,
+            'Чем ещё я могу помочь?',
+            reply_markup=today_tomorrow_keyboard()
+        )
         # если в базе данных нет этого пользователя
-        elif not group_timetable[0] and group_timetable[1] == 'empty_result':
-            await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
-            await bot.send_message(
-                message.chat.id,
-                'Кажется, мы с тобой еще не знакомы... 😢\n'
-                'Скорей пиши мне /start!',
-                reply_markup=today_tomorrow_keyboard()
-            )
-        # если произошла ошибка
-        else:
-            await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
-            await bot.send_message(
-                message.chat.id,
-                'Что-то пошло не так, попробуй еще раз позже, пожалуйста)',
-                reply_markup=today_tomorrow_keyboard()
-            )
+    elif not group_timetable[0] and group_timetable[1] == 'empty_result':
+        await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+        await bot.send_message(
+            message.chat.id,
+            'Кажется, мы с тобой еще не знакомы... 😢\n'
+            'Скорей пиши мне /start!',
+            reply_markup=today_tomorrow_keyboard()
+        )
+    # если произошла ошибка
+    else:
+        await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+        await bot.send_message(
+            message.chat.id,
+            'Что-то пошло не так, попробуй еще раз позже, пожалуйста)',
+            reply_markup=today_tomorrow_keyboard()
+        )
 
 
 @dp.message_handler(commands=['help'])
