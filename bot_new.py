@@ -254,7 +254,7 @@ async def start_proceed_group(message: types.Message, state: FSMContext):
         await bot.send_message(  # запрос о кастомном расписании
             message.chat.id,
             text + '\nЕсли хочешь получить возможность использовать '
-                   'кастомное расписание, нажми на нужную кнопку внизу.',
+                   'личное расписание, нажми на нужную кнопку внизу.',
             reply_markup=keyboard
         )
     # группы нет в базе / что-то другое, не связанное с подключением, просим повторить ввод
@@ -297,7 +297,7 @@ async def start_proceed_custom(message: types.Message, state: FSMContext):
             message.chat.id,
             'Хорошо, но не забывай, что ты всегда можешь вернуться, '
             'если захочешь опробовать его в деле 😉\n'
-            'Чтобы вызвать кастомное расписание, напиши /custom.'
+            'Чтобы вызвать личное расписание, напиши /custom.'
         )
         await bot.send_message(  # в любом случае пишем про /help
             message.chat.id,
@@ -315,7 +315,7 @@ async def start_proceed_custom(message: types.Message, state: FSMContext):
             await bot.send_message(
                 message.chat.id,
                 'Отлично, все получилось 🙃\n'
-                'Теперь ты можешь использовать кастомное расписание! '
+                'Теперь ты можешь использовать личное расписание! '
                 'Чтобы вызвать его, напиши /custom.'
             )
             await bot.send_message(
@@ -328,7 +328,7 @@ async def start_proceed_custom(message: types.Message, state: FSMContext):
             await bot.send_message(
                 message.chat.id,
                 'Что-то пошло не так, попробуй еще раз позже, пожалуйста)\n'
-                'Чтобы настроить кастомное расписание, напиши /custom.'
+                'Чтобы настроить личное расписание, напиши /custom.'
             )
             await bot.send_message(
                 message.chat.id,
@@ -450,7 +450,7 @@ async def edit_proceed_group(message: types.Message, state: FSMContext):
         keyboard.add(*[types.KeyboardButton(name) for name in ['Хочу', 'Не хочу']])
         await bot.send_message(
             message.chat.id,
-            'Все готово) Ты хочешь поменять кастомное '
+            'Все готово) Ты хочешь поменять личное '
             'расписание на расписание новой группы?',
             reply_markup=keyboard
         )
@@ -499,14 +499,14 @@ async def edit_proceed_custom(message: types.Message, state: FSMContext):
             await bot.send_message(
                 message.chat.id,
                 'Отлично, все получилось 🙃\n'
-                'Чтобы вызвать кастомное расписание, напиши /custom.',
+                'Чтобы вызвать личное расписание, напиши /custom.',
                 reply_markup=today_tomorrow_keyboard()
             )
         else:  # если произошла ошибка при обновлении расписания
             await bot.send_message(
                 message.chat.id,
                 'Что-то пошло не так, попробуй еще раз позже, пожалуйста)\n'
-                'Чтобы настроить кастомное расписание, напиши /custom.',
+                'Чтобы настроить личное расписание, напиши /custom.',
                 reply_markup=today_tomorrow_keyboard()
             )
     await state.finish()
@@ -655,7 +655,7 @@ async def timetable_initiate(message: types.Message):
     )
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['Кастомное', 'Моя группа']])
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Личное', 'Моя группа']])
     keyboard.add(*[types.KeyboardButton(name) for name in ['Другая группа', 'Выход']])
     await bot.send_message(
         message.chat.id,
@@ -665,11 +665,11 @@ async def timetable_initiate(message: types.Message):
 
 
 @dp.message_handler(lambda message: message.content_type != types.message.ContentType.TEXT
-                    or message.text not in ['Кастомное', 'Моя группа', 'Другая группа', 'Выход'],
+                    or message.text not in ['Личное', 'Моя группа', 'Другая группа', 'Выход'],
                     state=Timetable.choose, content_types=types.message.ContentType.ANY)
 async def timetable_proceed_choose_invalid(message: types.Message):
     """
-    Функция просит пользователя выбрать вариант из списка ['Кастомное', 'Моя группа', 'Другая группа', 'Выход'],
+    Функция просит пользователя выбрать вариант из списка ['Личное', 'Моя группа', 'Другая группа', 'Выход'],
     если сообщение не содержит никакую из этих строк (+ проверка типа сообщения).
     """
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
@@ -749,7 +749,7 @@ async def timetable_proceed_another_group_invalid_type(message: types.Message):
     await message.reply("Пришли номер группы в верном формате, пожалуйста)")
 
 
-@dp.message_handler(Text(equals=['Кастомное', 'Моя группа']), state=Timetable.choose)
+@dp.message_handler(Text(equals=['Личное', 'Моя группа']), state=Timetable.choose)
 async def timetable_proceed_my_group_custom(message: types.Message, state: FSMContext):
     """
     Функция принимает сообщение от пользователя с запросом нужного ему варианта расписания.
@@ -757,7 +757,7 @@ async def timetable_proceed_my_group_custom(message: types.Message, state: FSMCo
     сообщение о необходимости редактирования номера группы или кастомного расписания.
     """
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
-    timetable = (await psg.send_timetable(custom=True, chat_id=message.chat.id) if message.text == 'Кастомное' else
+    timetable = (await psg.send_timetable(custom=True, chat_id=message.chat.id) if message.text == 'Личное' else
                  await psg.send_timetable(my_group=True, chat_id=message.chat.id))
     if timetable[0]:  # если расписание было найдено
         if timetable[1][0] is not None:
@@ -779,7 +779,7 @@ async def timetable_proceed_my_group_custom(message: types.Message, state: FSMCo
         else:
             await bot.send_message(
                 message.chat.id,
-                'Не могу найти твое кастомное расписание 😞\n'
+                'Не могу найти твое личное расписание 😞\n'
                 'Нажми /custom чтобы проверить корректность данных.',
                 reply_markup=today_tomorrow_keyboard()
             )
@@ -883,7 +883,7 @@ async def custom_initiate(message: types.Message):
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(
         message.chat.id,
-        'Хочешь посмотреть кастомное расписание '
+        'Хочешь посмотреть личное расписание '
         'или что-то отредактировать в нем? '
         'В этом я всегда рад тебе помочь 😉'
     )
@@ -951,7 +951,7 @@ async def custom_add_new(message: types.Message, state: FSMContext):
             await bot.send_message(  # все нормально обновилось
                 message.chat.id,
                 'Отлично, все получилось 🙃\n'
-                'Теперь ты можешь использовать кастомное расписание! '
+                'Теперь ты можешь использовать личное расписание! '
                 'Чтобы вызвать его, напиши /custom.',
                 reply_markup=today_tomorrow_keyboard()
             )
