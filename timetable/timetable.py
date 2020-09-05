@@ -82,7 +82,7 @@ def get_timetable(table: Worksheet):
     """
     alumni_timetable = None
     for j in range(3, table.max_column + 1):  # смотрим на значения по столбцам
-        group_name = table.cell(1, j).value  # номер группы
+        group_name = table.cell(5, j).value  # номер группы
         if group_name in ['Дни', 'Часы']:  # если это не номер группы, то пропускаем столбец
             continue
         # иначе если столбец - это номер группы, то составляем для него расписание
@@ -91,9 +91,9 @@ def get_timetable(table: Worksheet):
                 group_name = str(group_name)
             # group - словарь с расписанием для группы
             timetable = dict(Понедельник={}, Вторник={}, Среда={}, Четверг={}, Пятница={}, Суббота={}, Воскресенье={})
-            for k in range(2, table.max_row + 1):  # проходимся по столбцу
+            for k in range(6, table.max_row + 1):  # проходимся по столбцу
                 # если клетки относятся ко дню недели (не разделители)
-                if get_value_merged(table, table.cell(k, 1)) in timetable.keys():
+                if get_value_merged(table, table.cell(k, 1)) in timetable:
                     day = get_value_merged(table, table.cell(k, 1))  # значение дня недели
                     hours = get_value_merged(table, table.cell(k, 2))  # клетка, в которой лежит значение времени
                     pair = get_value_merged(table, table.cell(k, j))  # клетка, в которой лежит значение пары
@@ -106,7 +106,7 @@ def get_timetable(table: Worksheet):
                         hours = hours[0][:-2] + ':' + hours[0][-2:] + ' – ' + hours[2][:-2] + ':' + hours[2][-2:]
                         timetable[day][hours] = pair  # записываем значение в расписание
 
-            timetable = pd.DataFrame(timetable)  # заменяем None на спящие смайлики
+            timetable = pd.DataFrame(timetable, dtype=object)  # заменяем None на спящие смайлики
             timetable.replace(to_replace=[None], value='😴', inplace=True)
             # на первой итерации записываем пустую табличку для выпускников (если нужно)
             if not os.path.exists('blank_timetable.pickle') and alumni_timetable is None:
