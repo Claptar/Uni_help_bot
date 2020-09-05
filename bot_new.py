@@ -90,6 +90,7 @@ async def user_exit(message: types.Message, state: FSMContext):
     """
     Функция, выполняющая выход по желанию пользователя (на любой стадии).
     """
+    await psg.insert_action('exit', message.chat.id)
     current_state = await state.get_state()  # проверка, что запущено хотя бы какое-то из состояний
     if current_state is None:
         return
@@ -126,6 +127,7 @@ async def send_today_tomorrow_schedule(message):
                                        |
                               CONN_ERR or OTHER_ERR — Попробуй позже, пожалуйста
     """
+    await psg.insert_action('to/yes', message.chat.id)
     # список дней для удобной конвертации номеров дней недели (0, 1, ..., 6) в их названия
     week = tuple(['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'])
     today = datetime.datetime.today().weekday()  # today - какой сегодня день недели (от 0 до 6)
@@ -183,6 +185,7 @@ async def help_def(message: types.Message):
     """
     Функция ловит сообщение с командой '/help' и присылает описание комманд бота.
     """
+    await psg.insert_action('help', message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     with open('files/help.txt', encoding='utf-8', mode='r') as f:
         text = f.read()
@@ -356,6 +359,7 @@ async def edit_initiate(message: types.Message):
     Функция ловит сообщение с командой '/profile' и спрашивает у пользователя,
     хочет ли он изменить группу, закрепленную за ним.
     """
+    await psg.insert_action('profile', message.chat.id)
     cur_group = await psg.check_user_group(message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if cur_group[0]:
@@ -529,6 +533,7 @@ async def koryavov(message: types.Message):
     Функция ловит сообщение с текстом /koryavov.
     Отправляет пользователю сообщение с просьбой выбрать интересующий его номер семестра курса общей физики
     """
+    await psg.insert_action('koryavov', message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])  # кнопки c номерами семестров
@@ -646,6 +651,7 @@ async def timetable_initiate(message: types.Message):
     Функция ловит сообщение с текстом "/timetable".
     Отправляет пользователю вопрос, расписание своей или другой группы ему нужно.
     """
+    await psg.insert_action('timetable', message.chat.id)
     await Timetable.choose.set()  # ставим состояние Timetable.choose
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(
@@ -859,6 +865,7 @@ async def exam_initiate(message: types.Message):
     Функция ловит сообщение с текстом '/exam'.
     Отправляет запрос о выборе группы и вызывает функцию get_exam_timetable().
     """
+    await psg.insert_action('exam', message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(
         message.chat.id,
@@ -880,6 +887,7 @@ async def custom_initiate(message: types.Message):
     завести такое расписание. Если кастомное расписание для этого пользователя есть в базе,
     фукция посылает запрос о выборе дня недели, расписание на который нужно выдать или как-то поменять.
     """
+    await psg.insert_action('custom', message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(
         message.chat.id,
@@ -1218,6 +1226,7 @@ async def plot(message: types.Message):
     Функция ловит сообщение с текстом '/plot' и отправляет сообщение пользователю с просьбой
     указать название графика.
     """
+    await psg.insert_action('plot', message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(message.chat.id, 'Снова лабки делаешь?) Ох уж эти графики!...'
                                             ' Сейчас быстренько всё построю, только тебе придётся'

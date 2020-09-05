@@ -1,6 +1,8 @@
 import asyncio
 import os
+import datetime
 import sys
+import time
 
 import aiopg
 import psycopg2
@@ -419,3 +421,20 @@ async def get_user_info(chat_id):
     )
     # 1) result == (SMTH - не может быть None, )
     # 2) result is None, если такого пользователя нет в базе
+
+
+async def insert_action(comand_name, user_id):
+    """
+    Функция, записывающая событие вызванное пользователям в базу данных
+    :param comand_name: Название события
+    :param group_num: id пользователя вызвавшего событие
+    :return:
+    """
+    now = datetime.datetime.now()
+    return await insert_update_value_in_table(
+        """INSERT INTO "actions" (date_time, command_name, user_id) """
+        """VALUES (%s, %s, %s)""",
+        now,
+        comand_name,
+        user_id
+    )
