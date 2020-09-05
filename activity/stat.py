@@ -10,16 +10,16 @@ PASS = os.environ['PASS']
 HOST = os.environ['HOST']
 
 
-def uniq_users_per_day(day):
+def uniqe_users_per_day(day):
     """
     Функция возвращает количество уникальных пользователей за день (сегодняшний или вчерашний)
     :return:
     """
     connection = pg.connect(f"host={HOST} dbname={DBNAME} user={USER} password={PASS}")
     dataframe = psql.read_sql('SELECT * FROM actions', connection)
-    if day == 'today':
+    if day == 'За сегодня':
         today = dataframe[dataframe['date_time'].dt.date == datetime.now().date()]
         return today['user_id'].unique().size
-    elif day == 'yesterday':
+    elif day == 'За вчера':
         yesterday = dataframe[dataframe['date_time'].dt.date == (datetime.now() - pd.Timedelta(days=1)).date()]
         return yesterday['user_id'].unique().size

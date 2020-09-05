@@ -10,6 +10,7 @@ from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils import executor
 
+from activity import stat
 from math_module import math_part
 from koryavov import kor
 from data_constructor import psg
@@ -61,6 +62,10 @@ class Plots(StatesGroup):
     mnk_state = State()
     error_bars_state = State()
     plot_state = State()
+
+
+class Stat(StatesGroup):
+    day = State()
 
 
 def today_tomorrow_keyboard():
@@ -1462,5 +1467,38 @@ async def plot_bad_input(message: types.Message):
         'Пришли .xlsx файл с данными, и всё будет готово',
         reply_markup=keyboard
     )
+
+
+@dp.message_handler(commands=['stat'])
+async def stat_start(message: types.Message):
+    """
+    Функция присылает сообщение с вопросом о том за какой день показать колличество уникальных пользователей
+    """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['За сегодня', 'За вчера']])
+    await bot.send_message(
+        message.chat.id,
+        'За какой день показать колличество уникальных пользователей',
+        reply_markup=keyboard
+    )
+    await Stat.day.set()
+
+
+@dp.message_handler(state=Stat.day)
+async def stat_start(message: types.Message, state: FSMContext):
+    """
+    Функция присылает сообщением с числом уникальных пользователей за нужный день
+    """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+    number = stat.uniqe_users_per_day(message.text)
+    keyboard = today_tomorrow_keyboard()
+    await bot.send_message(
+        message.chat.id,
+        f'В этот день было {number} уникальных пользователей',
+        reply_markup=keyboard
+    )
+    await state.finish()
+
 
 executor.start_polling(dp, skip_updates=True)
