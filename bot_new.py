@@ -65,7 +65,9 @@ class Plots(StatesGroup):
 
 
 class Stat(StatesGroup):
-    day = State()
+    choice = State()
+    unique = State()
+    frequency = State()
 
 
 def today_tomorrow_keyboard():
@@ -1472,6 +1474,22 @@ async def plot_bad_input(message: types.Message):
 @dp.message_handler(commands=['stat'])
 async def stat_start(message: types.Message):
     """
+    Функция присылает сообщение с просьбой выбрать нужную функцию
+    """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Frequency', 'Unique']])
+    await bot.send_message(
+        message.chat.id,
+        'Выбери нужную функцию',
+        reply_markup=keyboard
+    )
+    await Stat.choice.set()
+
+
+@dp.message_handler(Text(equals='Unique'), state=Stat.choice)
+async def stat_start(message: types.Message):
+    """
     Функция присылает сообщение с вопросом о том за какой день показать колличество уникальных пользователей
     """
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
@@ -1482,10 +1500,10 @@ async def stat_start(message: types.Message):
         'За какой день показать колличество уникальных пользователей',
         reply_markup=keyboard
     )
-    await Stat.day.set()
+    await Stat.unique.set()
 
 
-@dp.message_handler(state=Stat.day)
+@dp.message_handler(state=Stat.unique)
 async def stat_start(message: types.Message, state: FSMContext):
     """
     Функция присылает сообщением с числом уникальных пользователей за нужный день
@@ -1496,6 +1514,28 @@ async def stat_start(message: types.Message, state: FSMContext):
     await bot.send_message(
         message.chat.id,
         f'В этот день было {number} уникальных пользователей',
+        reply_markup=keyboard
+    )
+    await state.finish()
+
+
+@dp.message_handler(Text(equals='Frequency'), state=Stat.choice)
+async def stat_start(message: types.Message, state: FSMContext):
+    """
+    Функция присылает сообщением с частотами использования функций за последнюю неделю
+    """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+    await bot.send_message(
+        message.chat.id,
+        'Частота использования функций за последнюю неделю:'
+    )
+    freq = stat.frequency_of_use()
+    text = '\n'.join(freq)
+    keyboard = today_tomorrow_keyboard()
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+    await bot.send_message(
+        message.chat.id,
+        text,
         reply_markup=keyboard
     )
     await state.finish()
