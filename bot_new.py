@@ -1490,11 +1490,11 @@ async def stat_start(message: types.Message):
 @dp.message_handler(Text(equals='Unique'), state=Stat.choice)
 async def stat_start(message: types.Message):
     """
-    Функция присылает сообщение с вопросом о том за какой день показать колличество уникальных пользователей
+    Функция присылает сообщение с вопросом о том за какой период вермени нужна статистика
     """
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['За сегодня', 'За вчера']])
+    keyboard.add(*[types.KeyboardButton(name) for name in ['За сегодня', 'За вчера', 'За неделю']])
     await bot.send_message(
         message.chat.id,
         'За какой день показать колличество уникальных пользователей',
@@ -1506,10 +1506,10 @@ async def stat_start(message: types.Message):
 @dp.message_handler(state=Stat.unique)
 async def stat_start(message: types.Message, state: FSMContext):
     """
-    Функция присылает сообщением с числом уникальных пользователей за нужный день
+    Функция присылает сообщением с числом уникальных пользователей за нужный период времени
     """
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
-    number = stat.uniqe_users_per_day(message.text)
+    number = stat.uniqe_users(message.text)
     keyboard = today_tomorrow_keyboard()
     await bot.send_message(
         message.chat.id,

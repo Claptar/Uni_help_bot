@@ -19,19 +19,22 @@ def activity_data():
     return psql.read_sql('SELECT * FROM actions', connection)
 
 
-def uniqe_users_per_day(day):
+def uniqe_users(time):
     """
     Функция возвращает количество уникальных пользователей за день (сегодняшний или вчерашний)
     :return:
     """
     connection = pg.connect(f"host={HOST} dbname={DBNAME} user={USER} password={PASS}")
     dataframe = activity_data()
-    if day == 'За сегодня':
+    if time == 'За сегодня':
         today = dataframe[dataframe['date_time'].dt.date == datetime.now().date()]
         return today['user_id'].unique().size
-    elif day == 'За вчера':
+    elif time == 'За вчера':
         yesterday = dataframe[dataframe['date_time'].dt.date == (datetime.now() - pd.Timedelta(days=1)).date()]
         return yesterday['user_id'].unique().size
+    elif time == 'За неделю':
+        week = dataframe[dataframe['date_time'].dt.date > (datetime.now() - pd.Timedelta(days=7)).date()]
+        return week['user_id'].unique().size
 
 
 def frequency_of_use():
