@@ -24,16 +24,18 @@ def uniqe_users(time):
     Функция возвращает количество уникальных пользователей за день (сегодняшний или вчерашний)
     :return:
     """
-    connection = pg.connect(f"host={HOST} dbname={DBNAME} user={USER} password={PASS}")
     dataframe = activity_data()
     if time == 'За сегодня':
-        today = dataframe[dataframe['date_time'].dt.date == datetime.now().date()]
+        today = dataframe[(dataframe['date_time'].dt.date == datetime.now().date()) &
+                          (dataframe['user_id'] != 310115323) & (dataframe['user_id'] != 296254699)]
         return today['user_id'].unique().size
     elif time == 'За вчера':
-        yesterday = dataframe[dataframe['date_time'].dt.date == (datetime.now() - pd.Timedelta(days=1)).date()]
+        yesterday = dataframe[(dataframe['date_time'].dt.date == (datetime.now() - pd.Timedelta(days=1)).date()) &
+                              (dataframe['user_id'] != 310115323) & (dataframe['user_id'] != 296254699)]
         return yesterday['user_id'].unique().size
     elif time == 'За неделю':
-        week = dataframe[dataframe['date_time'].dt.date > (datetime.now() - pd.Timedelta(days=7)).date()]
+        week = dataframe[(dataframe['date_time'].dt.date > (datetime.now() - pd.Timedelta(days=7)).date()) &
+                         (dataframe['user_id'] != 310115323) & (dataframe['user_id'] != 296254699)]
         return week['user_id'].unique().size
 
 
@@ -43,6 +45,7 @@ def frequency_of_use():
     :return:
     """
     dataframe = activity_data()
-    week = dataframe[dataframe['date_time'] > (datetime.now() - pd.Timedelta(days=7))]
+    week = dataframe[(dataframe['date_time'] > (datetime.now() - pd.Timedelta(days=7))) &
+                     (dataframe['user_id'] != 310115323) & (dataframe['user_id'] != 296254699)]
     frequency = week['command_name'].value_counts()
     return str(frequency).split('\n')[:-1:]
