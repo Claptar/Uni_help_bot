@@ -1477,7 +1477,6 @@ async def stat_start(message: types.Message):
     """
     Функция присылает сообщение с просьбой выбрать нужную функцию
     """
-    await psg.insert_action('stat', message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ['Frequency', 'Unique']])
