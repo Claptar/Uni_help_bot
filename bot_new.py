@@ -199,7 +199,6 @@ async def start_initiate(message: types.Message):
     """
     Функция ловит сообщение с командой '/start' и приветствует пользователя.
     """
-    await psg.insert_action('start', message.chat.id)
     group = await psg.check_user_group(message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if group[0]:  # если пользователь уже есть в базе данных
@@ -217,6 +216,7 @@ async def start_initiate(message: types.Message):
             'Можешь рассказать мне немного о себе, '
             'чтобы я знал, чем могу тебе помочь?'
         )
+        await psg.insert_action('start', message.chat.id)  # Запись события о новом пользователе
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Уже не учусь', 'Выход']])
         await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
