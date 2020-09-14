@@ -19,6 +19,16 @@ def activity_data():
     return psql.read_sql('SELECT * FROM actions', connection)
 
 
+def get_user_list():
+    """
+    Функция возвращает список из chat_id всех пользователей
+    :return: numpy array
+    """
+    connection = pg.connect(f"host={HOST} dbname={DBNAME} user={USER} password={PASS}")
+    df = psql.read_sql('SELECT chat_id FROM "User"', connection)
+    return df['chat_id'].values
+
+
 def uniqe_users(time):
     """
     Функция возвращает количество уникальных пользователей за день (сегодняшний или вчерашний)
