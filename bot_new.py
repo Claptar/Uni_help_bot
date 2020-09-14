@@ -9,6 +9,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils import executor
+from aiogram.utils.exceptions import TelegramAPIError, BotBlocked, BotKicked
 
 from activity import stat
 from math_module import math_part
@@ -68,6 +69,10 @@ class Stat(StatesGroup):
     choice = State()
     unique = State()
     frequency = State()
+
+
+class Mailing(StatesGroup):
+    mailing = State()
 
 
 def today_tomorrow_keyboard():
@@ -1542,4 +1547,28 @@ async def stat_start(message: types.Message, state: FSMContext):
     await state.finish()
 
 
+@dp.message_handler(commands=['mail'])
+async def mailing_start(message):
+    pers_id = message.chat.id
+    admins = [int(os.environ['ADMIN_1']), int(os.environ['ADMIN_2'])]
+    await bot.send_chat_action(message.chat.id, 'typing')
+    if pers_id in admins:
+        await bot.send_message(message.chat.id, 'Пришли мне сообщение текст сообщения')
+    else:
+        await bot.send_message(message.chat.id, 'Боюсь, я не совсем понимаю, о чём ты. \n'
+                                                'Напиши /help, чтобы узнать, что я умею.\n')
+    await Mailing.mailing.set()
+
+
+@dp.message_handler(state=Mailing.mailing)
+async def mailing(message: types.Message, state: FSMContext):
+    users = stat.get_user_list()
+    for user in users:
+        try:
+            await bot.send_message(user, message.text)
+        except BotBlocked:
+            print(f'Bot was blocked by user with chat_id = {user}')
+        except TelegramAPIError:
+            print(f'Smth went wrong with user chat_id = {user}')
+    await state.finish()
 executor.start_polling(dp, skip_updates=True)
