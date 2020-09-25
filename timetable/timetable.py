@@ -138,8 +138,8 @@ def get_timetable(table: Worksheet):
                         # записываем значение в расписание
                         try:
                             timetable[day][hours] = colors_to_circles[color] + ' ' + pair if pair is not None else pair
-                        except KeyError:
-                            print(color, pair)  # если появится новый цвет, то он будет написан
+                        except KeyError:  # если появится новый цвет, то он будет выведен на экран
+                            print(color, pair)
 
             timetable = pd.DataFrame(timetable, dtype=object)  # заменяем None на спящие смайлики
             timetable.replace(to_replace=[None], value='😴', inplace=True)
