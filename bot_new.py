@@ -10,6 +10,7 @@ from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils import executor
 
+from activity import stat
 from math_module import math_part
 from koryavov import kor
 from data_constructor import psg
@@ -63,6 +64,12 @@ class Plots(StatesGroup):
     plot_state = State()
 
 
+class Stat(StatesGroup):
+    choice = State()
+    unique = State()
+    frequency = State()
+
+
 def today_tomorrow_keyboard():
     """
     Кнопки для получения расписания на сегодня или завтра.
@@ -90,6 +97,7 @@ async def user_exit(message: types.Message, state: FSMContext):
     """
     Функция, выполняющая выход по желанию пользователя (на любой стадии).
     """
+    await psg.insert_action('exit', message.chat.id)
     current_state = await state.get_state()  # проверка, что запущено хотя бы какое-то из состояний
     if current_state is None:
         return
@@ -126,6 +134,7 @@ async def send_today_tomorrow_schedule(message):
                                        |
                               CONN_ERR or OTHER_ERR — Попробуй позже, пожалуйста
     """
+    await psg.insert_action('to/yes', message.chat.id)
     # список дней для удобной конвертации номеров дней недели (0, 1, ..., 6) в их названия
     week = tuple(['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'])
     today = datetime.datetime.today().weekday()  # today - какой сегодня день недели (от 0 до 6)
@@ -178,6 +187,7 @@ async def help_def(message: types.Message):
     """
     Функция ловит сообщение с командой '/help' и присылает описание комманд бота.
     """
+    await psg.insert_action('help', message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     with open('files/help.txt', encoding='utf-8', mode='r') as f:
         text = f.read()
@@ -206,6 +216,7 @@ async def start_initiate(message: types.Message):
             'Можешь рассказать мне немного о себе, '
             'чтобы я знал, чем могу тебе помочь?'
         )
+        await psg.insert_action('start', message.chat.id)  # Запись события о новом пользователе
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ['Уже не учусь', 'Выход']])
         await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
@@ -351,6 +362,7 @@ async def edit_initiate(message: types.Message):
     Функция ловит сообщение с командой '/profile' и спрашивает у пользователя,
     хочет ли он изменить группу, закрепленную за ним.
     """
+    await psg.insert_action('profile', message.chat.id)
     cur_group = await psg.check_user_group(message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     if cur_group[0]:
@@ -524,6 +536,7 @@ async def koryavov(message: types.Message):
     Функция ловит сообщение с текстом /koryavov.
     Отправляет пользователю сообщение с просьбой выбрать интересующий его номер семестра курса общей физики
     """
+    await psg.insert_action('koryavov', message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, 'Выход']])  # кнопки c номерами семестров
@@ -641,6 +654,7 @@ async def timetable_initiate(message: types.Message):
     Функция ловит сообщение с текстом "/timetable".
     Отправляет пользователю вопрос, расписание своей или другой группы ему нужно.
     """
+    await psg.insert_action('timetable', message.chat.id)
     await Timetable.choose.set()  # ставим состояние Timetable.choose
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(
@@ -854,6 +868,7 @@ async def exam_initiate(message: types.Message):
     Функция ловит сообщение с текстом '/exam'.
     Отправляет запрос о выборе группы и вызывает функцию get_exam_timetable().
     """
+    await psg.insert_action('exam', message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(
         message.chat.id,
@@ -875,6 +890,7 @@ async def custom_initiate(message: types.Message):
     завести такое расписание. Если личное расписание для этого пользователя есть в базе,
     фукция посылает запрос о выборе дня недели, расписание на который нужно выдать или как-то поменять.
     """
+    await psg.insert_action('custom', message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(
         message.chat.id,
@@ -1213,6 +1229,7 @@ async def plot(message: types.Message):
     Функция ловит сообщение с текстом '/plot' и отправляет сообщение пользователю с просьбой
     указать название графика.
     """
+    await psg.insert_action('plot', message.chat.id)
     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
     await bot.send_message(message.chat.id, 'Снова лабки делаешь?) Ох уж эти графики!...'
                                             ' Сейчас быстренько всё построю, только тебе придётся'
@@ -1453,5 +1470,76 @@ async def plot_bad_input(message: types.Message):
         'Пришли .xlsx файл с данными, и всё будет готово',
         reply_markup=keyboard
     )
+
+
+@dp.message_handler(commands=['stat'])
+async def stat_start(message: types.Message):
+    """
+    Функция присылает сообщение с просьбой выбрать нужную функцию
+    """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['Frequency', 'Unique']])
+    await bot.send_message(
+        message.chat.id,
+        'Выбери нужную функцию',
+        reply_markup=keyboard
+    )
+    await Stat.choice.set()
+
+
+@dp.message_handler(Text(equals='Unique'), state=Stat.choice)
+async def stat_start(message: types.Message):
+    """
+    Функция присылает сообщение с вопросом о том за какой период вермени нужна статистика
+    """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ['За сегодня', 'За вчера', 'За неделю']])
+    await bot.send_message(
+        message.chat.id,
+        'За какой день показать колличество уникальных пользователей',
+        reply_markup=keyboard
+    )
+    await Stat.unique.set()
+
+
+@dp.message_handler(state=Stat.unique)
+async def stat_start(message: types.Message, state: FSMContext):
+    """
+    Функция присылает сообщением с числом уникальных пользователей за нужный период времени
+    """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+    number = stat.uniqe_users(message.text)
+    keyboard = today_tomorrow_keyboard()
+    await bot.send_message(
+        message.chat.id,
+        f'В этот день было {number} уникальных пользователей',
+        reply_markup=keyboard
+    )
+    await state.finish()
+
+
+@dp.message_handler(Text(equals='Frequency'), state=Stat.choice)
+async def stat_start(message: types.Message, state: FSMContext):
+    """
+    Функция присылает сообщением с частотами использования функций за последнюю неделю
+    """
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+    await bot.send_message(
+        message.chat.id,
+        'Частота использования функций за последнюю неделю:'
+    )
+    freq = stat.frequency_of_use()
+    text = '\n'.join(freq)
+    keyboard = today_tomorrow_keyboard()
+    await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+    await bot.send_message(
+        message.chat.id,
+        text,
+        reply_markup=keyboard
+    )
+    await state.finish()
+
 
 executor.start_polling(dp, skip_updates=True)
