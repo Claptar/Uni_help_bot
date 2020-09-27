@@ -1563,6 +1563,7 @@ async def mailing_start(message):
 @dp.message_handler(state=Mailing.mailing)
 async def mailing(message: types.Message, state: FSMContext):
     users = stat.get_user_list()
+    await state.finish()
     for user in users:
         try:
             await bot.send_message(user, message.text)
@@ -1570,5 +1571,4 @@ async def mailing(message: types.Message, state: FSMContext):
             print(f'Bot was blocked by user with chat_id = {user}')
         except TelegramAPIError:
             print(f'Smth went wrong with user chat_id = {user}')
-    await state.finish()
 executor.start_polling(dp, skip_updates=True)
