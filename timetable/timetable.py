@@ -5,6 +5,7 @@ import time
 import pandas as pd
 from openpyxl.cell.cell import Cell
 from openpyxl.worksheet.worksheet import Worksheet
+from openpyxl.styles.colors import COLOR_INDEX
 
 from data_constructor import psg
 
@@ -36,6 +37,24 @@ def get_value_merged(sheet: Worksheet, cell: Cell) -> any:
         if within_range(merged.bounds, cell):
             return sheet.cell(merged.min_row, merged.min_col).value  # смотрим значение в левой верхней клетке
     return cell.value
+
+
+def get_color_merged(sheet: Worksheet, cell: Cell) -> any:
+    """
+    Функция, возвращающая цвет клетки, вне зависимости от того, является ли клетка merged, или нет.
+    :param sheet: таблица с расписанием
+    :param cell: клетка таблицы
+    :return: значение, лежащее в клетке
+    """
+    for merged in sheet.merged_cells:  # смотрим в списке слитых клеток (структура данных openpyxl.worksheet)
+        if within_range(merged.bounds, cell):
+            # смотрим цвет левой верхней клетки
+            color = sheet.cell(merged.min_row, merged.min_col).fill.start_color.index
+            color = '#' + COLOR_INDEX[color][2:] if type(color) == int else '#' + color[2:]
+            return color
+    color = cell.fill.start_color.index
+    color = '#' + COLOR_INDEX[color][2:] if type(color) == int else '#' + color[2:]
+    return color
 
 
 def insert_update_group_timetable(group_name, timetable):
@@ -97,6 +116,18 @@ def get_timetable(table: Worksheet):
                     day = get_value_merged(table, table.cell(k, 1))  # значение дня недели
                     hours = get_value_merged(table, table.cell(k, 2))  # клетка, в которой лежит значение времени
                     pair = get_value_merged(table, table.cell(k, j))  # клетка, в которой лежит значение пары
+                    color = get_color_merged(table, table.cell(k, j))  # цвет клетки
+                    # цветные круги, соответствующие семинарам, лабам / англу, лекциям, базовому дню и военке
+                    colors_to_circles = {
+                        '#CCFFFF': '🔵',  # семинары
+                        '#92D050': '🔵',  # семинары
+                        '#00FFFF': '🔵',  # семинары
+                        '#66FFFF': '🔵',  # семинары
+                        '#FFFF99': '🟡',  # лабы / англ
+                        '#FF99CC': '🔴',  # лекции
+                        '#CCFFCC': '🟢',  # базовый день
+                        '#FFC000': '🟠'  # военка
+                    }
 
                     # рассматриваем только те клетки, для которых определено значение как пары, так и времени
                     if (hours, pair) != (None, None):
@@ -104,7 +135,11 @@ def get_timetable(table: Worksheet):
                         if len(hours[0][:-2]) == 1:
                             hours[0] = '0' + hours[0]
                         hours = hours[0][:-2] + ':' + hours[0][-2:] + ' – ' + hours[2][:-2] + ':' + hours[2][-2:]
-                        timetable[day][hours] = pair  # записываем значение в расписание
+                        # записываем значение в расписание
+                        try:
+                            timetable[day][hours] = colors_to_circles[color] + ' ' + pair if pair is not None else pair
+                        except KeyError:  # если появится новый цвет, то он будет выведен на экран
+                            print(color, pair)
 
             timetable = pd.DataFrame(timetable, dtype=object)  # заменяем None на спящие смайлики
             timetable.replace(to_replace=[None], value='😴', inplace=True)
