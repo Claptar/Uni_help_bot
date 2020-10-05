@@ -1307,7 +1307,7 @@ async def mnk(message: types.Message, state: FSMContext):
         keyboard.add(*[types.KeyboardButton(name) for name in ['0.0/0.0']])
         await bot.send_message(
             message.chat.id,
-            'Пришли данные для крестов погрешностей по осям х и y в '
+            'Укажи погрешности по осям х и y в '
             'формате "2.51/2.51", '
             'если кресты не нужны, то нажми на кнопку ниже.',
             reply_markup=keyboard
