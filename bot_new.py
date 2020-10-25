@@ -185,7 +185,6 @@ async def send_today_tomorrow_schedule(message):
                 'Что-то пошло не так, попробуй еще раз позже, пожалуйста)',
                 reply_markup=today_tomorrow_keyboard()
             )
-            [qwqas]
 
 
 @dp.message_handler(commands=['help'])
