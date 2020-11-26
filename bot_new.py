@@ -85,7 +85,7 @@ def today_tomorrow_keyboard():
     Кнопки для получения расписания на сегодня или завтра.
     """
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра']])
+    keyboard.add(*[types.KeyboardButton(name) for name in ['На сегодня', 'На завтра', '/help']])
     return keyboard
 
 

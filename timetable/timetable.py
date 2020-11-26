@@ -188,7 +188,7 @@ def get_exam_timetable(table: Worksheet):
                 else:
                     continue
             try:
-                timetable = pd.DataFrame(timetable, dtype=object)
+                timetable = pd.DataFrame(timetable, dtype=object, index=timetable['Экзамены'].keys())
             except TypeError:
                 print(timetable)
             insert_update_group_timetable(group_name, timetable, exam=True)

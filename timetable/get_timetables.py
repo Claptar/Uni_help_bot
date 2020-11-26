@@ -13,7 +13,6 @@ def timetable_by_course(file_name, exam=False):
     """
     course = openpyxl.load_workbook(file_name)
     for sheet in course.worksheets:
-        print(sheet)
         timetable.get_exam_timetable(sheet) if exam else timetable.get_timetable(sheet)
 
 
