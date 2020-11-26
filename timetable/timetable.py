@@ -57,22 +57,25 @@ def get_color_merged(sheet: Worksheet, cell: Cell) -> any:
     return color
 
 
-def insert_update_group_timetable(group_name, timetable):
+def insert_update_group_timetable(group_name, timetable, exam=False):
     """
-    Функция, вставляющая или обновляющая значение в таблице.
+    Функция, вставляющая или обновляющая значение расписания в таблице.
     :param group_name: номер группы
     :param timetable: расписание группы
+    :param exam: если True, то обновляется расписание экзаменов группы
     :return:
     """
     insert = psg.sync_insert_group(
         group_name,
-        pickle.dumps(timetable, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dumps(timetable, protocol=pickle.HIGHEST_PROTOCOL),
+        exam=exam
     )
     timeout = time.time() + 30  # если подключение к серверу длится дольше 30 секунд, то вызываем ошибку
     while not insert[0] and insert[1] == 'connection_error':
         insert = psg.sync_insert_group(
             group_name,
-            pickle.dumps(timetable, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dumps(timetable, protocol=pickle.HIGHEST_PROTOCOL),
+            exam=exam
         )
         if time.time() > timeout:
             raise RuntimeError
@@ -80,13 +83,15 @@ def insert_update_group_timetable(group_name, timetable):
     if not insert[0] and insert[1] == 'other_error':
         update = psg.sync_update_group(
             group_name,
-            pickle.dumps(timetable, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dumps(timetable, protocol=pickle.HIGHEST_PROTOCOL),
+            exam=exam
         )
         timeout = time.time() + 30  # если подключение к серверу длится дольше 30 секунд, то вызываем ошибку
         while not update[0] and update[1] == 'connection_error':
             update = psg.sync_update_group(
                 group_name,
-                pickle.dumps(timetable, protocol=pickle.HIGHEST_PROTOCOL)
+                pickle.dumps(timetable, protocol=pickle.HIGHEST_PROTOCOL),
+                exam=exam
             )
             if time.time() > timeout:
                 raise RuntimeError
@@ -106,7 +111,7 @@ def get_timetable(table: Worksheet):
             continue
         # иначе если столбец - это номер группы, то составляем для него расписание
         elif group_name is not None:
-            if type(group_name) == int:  # если номер группы - просто число, преобразуем его в строку
+            if isinstance(group_name, int):  # если номер группы - просто число, преобразуем его в строку
                 group_name = str(group_name)
             # group - словарь с расписанием для группы
             timetable = dict(Понедельник={}, Вторник={}, Среда={}, Четверг={}, Пятница={}, Суббота={}, Воскресенье={})
@@ -141,10 +146,10 @@ def get_timetable(table: Worksheet):
                         except KeyError:  # если появится новый цвет, то он будет выведен на экран
                             print(color, pair)
 
-            timetable = pd.DataFrame(timetable, dtype=object)  # заменяем None на спящие смайлики
-            timetable.replace(to_replace=[None], value='😴', inplace=True)
+            timetable = pd.DataFrame(timetable, dtype=object)
+            timetable.replace(to_replace=[None], value='😴', inplace=True)  # заменяем None на спящие смайлики
             # на первой итерации записываем пустую табличку для выпускников (если нужно)
-            if not os.path.exists('blank_timetable.pickle') and alumni_timetable is None:
+            if not os.path.exists('semester/blank_timetable.pickle') and alumni_timetable is None:
                 alumni_timetable = timetable
 
             # записываем или обновляем номер группы и расписание в базу данных
@@ -152,5 +157,38 @@ def get_timetable(table: Worksheet):
     # записываем или обновляем расписание для выпускников
     if alumni_timetable is not None:
         alumni_timetable.iloc[:] = '😴'
-        with open('blank_timetable.pickle', 'wb') as handle:
+        with open('semester/blank_timetable.pickle', 'wb') as handle:
             pickle.dump(alumni_timetable, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def get_exam_timetable(table: Worksheet):
+    """
+        Функция, которая из таблицы Excel с расписанием экзаменов выделяет расписание для каждой группы
+        и записывает его в базу данных.
+        :param table: таблица с расписанием
+        :return:
+    """
+    for j in range(3, table.max_column + 1):  # смотрим на значения по столбцам
+        group_name = table.cell(6, j).value  # номер группы
+        if group_name is not None:
+            if isinstance(group_name, int):  # если номер группы - просто число, преобразуем его в строку
+                group_name = str(group_name)
+            # group - словарь с расписанием для группы
+            timetable = dict(Экзамены={})
+            for k in range(7, table.max_row + 1):  # проходимся по столбцу
+                # если клетки относятся ко дню недели (не разделители)
+                date = get_value_merged(table, table.cell(k, 2))  # значение дня
+                week_day = get_value_merged(table, table.cell(k, 1))  # день недели
+                if date is not None:
+                    month = 'декабря' if date.month == 12 else 'января'
+                    day = str(date.day) + ' ' + month + ' ' + '(' + week_day.lower() + ')'
+                    exam = get_value_merged(table, table.cell(k, j))  # клетка, в которой лежит значение пары
+                    if exam is not None:
+                        timetable['Экзамены'][day] = exam
+                else:
+                    continue
+            try:
+                timetable = pd.DataFrame(timetable, dtype=object)
+            except TypeError:
+                print(timetable)
+            insert_update_group_timetable(group_name, timetable, exam=True)

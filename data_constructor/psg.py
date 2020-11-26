@@ -2,7 +2,6 @@ import asyncio
 import os
 import datetime
 import sys
-import time
 
 import aiopg
 import psycopg2
@@ -33,7 +32,7 @@ def print_psycopg2_exception(err):
     print("psycopg2 traceback:", traceback, "-- type:", err_type)
 
     # psycopg2 extensions.Diagnostics object attribute
-    print("\nextensions.Diagnostics:", err.diag) if hasattr(err, 'diag') else print()
+    # print("\nextensions.Diagnostics:", err.diag) if hasattr(err, 'diag') else print()
 
     # print the pgcode and pgerror exceptions
     # print("\npgerror:", err.pgerror) if hasattr(err, 'pgerror') else print()
@@ -134,38 +133,64 @@ def sync_select_value_from_table(sql_command: str, *args) -> tuple:
             return True, result
 
 
-def sync_insert_group(group_num, timetable):
+def sync_insert_group(group_num, timetable, exam=False):
     """
     Функция, добавляющая в таблицу Group пару номер группы - расписание группы.
     :param group_num: номер группы из расписания
     :param timetable: расписание для группы
+    :param exam: если True, то обновляется расписание экзаменов группы
     :return:
     """
-    return sync_insert_update_value_in_table(
-        """INSERT INTO "Group" (name, group_timetable) VALUES (%s, %s)""",
-        group_num,
-        timetable
-    )
+    if exam:
+        return sync_insert_update_value_in_table(
+            """INSERT INTO "Group" (name, exam_timetable) VALUES (%s, %s)""",
+            group_num,
+            timetable
+        )
+    else:
+        return sync_insert_update_value_in_table(
+            """INSERT INTO "Group" (name, group_timetable) VALUES (%s, %s)""",
+            group_num,
+            timetable
+        )
 
 
-def sync_update_group(group_num, timetable):
+def sync_update_group(group_num, timetable, exam=False, school=None):
     """
     Функция, обновляющая в таблице Group расписание группы для введенной группы.
     :param group_num: номер группы из расписания
     :param timetable: новое расписание для группы
+    :param exam: если True, то обновляется расписание экзаменов группы
+    :param school: Физтех-школа
     :return:
     """
-    return sync_insert_update_value_in_table(
-        """UPDATE "Group" SET group_timetable = %s WHERE "Group".name = %s""",
-        timetable,
-        group_num
-    )
+    if exam:
+        if school is None:
+            return sync_insert_update_value_in_table(
+                """UPDATE "Group" SET exam_timetable = %s WHERE "Group".name = %s""",
+                timetable,
+                group_num
+            )
+        else:
+            return sync_insert_update_value_in_table(
+                """UPDATE "Group" SET exam_timetable = %s, school_id = """
+                """(SELECT school_id FROM "School" WHERE "School".name = %s) WHERE "Group".name = %s""",
+                timetable,
+                school,
+                group_num
+            )
+    else:
+        return sync_insert_update_value_in_table(
+            """UPDATE "Group" SET group_timetable = %s WHERE "Group".name = %s""",
+            timetable,
+            group_num
+        )
 
 
 async def get_connection():
     """
     Функция для проверки соединения.
-    :return: pool или False, если соединение не было установлено.
+    :return: connection или False, если соединение не было установлено.
     """
     try:  # пробуем подключиться
         conn = await aiopg.connect(
@@ -298,7 +323,7 @@ async def insert_user(chat_id, group_num):
     )
 
 
-async def update_user(chat_id, group_num: str,
+async def update_user(chat_id, group_num: str
                       # update_custom=False
                       ):
     """
@@ -363,6 +388,29 @@ async def send_timetable(custom=False, my_group=False, chat_id=None, another_gro
     # 2) result is None, если такого пользователя нет в базе, или такой группы не нашлось (another_group)
 
 
+async def send_exam_timetable(my_group=False, chat_id=None, another_group=None):
+    """
+    Функция, возвращающая нужное пользователю расписание экзаменов.
+    :param my_group: если True, то возвращается расписание экзаменов группы пользователя
+    :param chat_id: id чата с пользователем
+    (по умолчанию None - для просмотра расписания экзаменов любой группы без записи в базу данных)
+    :param another_group: str или None
+    если is not None, то возвращается расписание этой группы по запросу пользователя
+    :return:
+    """
+    if my_group:
+        return await select_value_from_table(
+            """SELECT exam_timetable FROM "Group" """
+            """WHERE (SELECT group_id FROM "User" WHERE "User".chat_id = %s) = "Group".group_id""",
+            chat_id
+        )
+    elif another_group is not None:
+        return await select_value_from_table(
+            """SELECT exam_timetable FROM "Group" WHERE "Group".name = %s""",
+            another_group
+        )
+
+
 async def update_custom_timetable(chat_id, timetable):
     """
     Функция для обновления кастомного расписания пользователя.
@@ -418,18 +466,18 @@ async def get_user_info(chat_id):
     :return: строка из базы данных с информацией о пользователе (group_id, user_timetable)
     """
     return await select_value_from_table(
-        """SELECT (group_id, user_timetable) FROM "User" WHERE "User".chat_id = %s""",
+        """SELECT group_id, user_timetable FROM "User" WHERE "User".chat_id = %s""",
         chat_id
     )
     # 1) result == (SMTH - не может быть None, )
     # 2) result is None, если такого пользователя нет в базе
 
 
-async def insert_action(comand_name, user_id):
+async def insert_action(command_name, user_id):
     """
-    Функция, записывающая событие вызванное пользователям в базу данных
-    :param comand_name: Название события
-    :param group_num: id пользователя вызвавшего событие
+    Функция, записывающая событие, вызванное пользователем, в базу данных.
+    :param command_name: Название события
+    :param user_id: id пользователя вызвавшего событие
     :return:
     """
     now = datetime.datetime.now()
@@ -437,6 +485,6 @@ async def insert_action(comand_name, user_id):
         """INSERT INTO "actions" (date_time, command_name, user_id) """
         """VALUES (%s, %s, %s)""",
         now,
-        comand_name,
+        command_name,
         user_id
     )
