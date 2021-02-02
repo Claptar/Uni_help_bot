@@ -104,9 +104,13 @@ def get_timetable(table: Worksheet):
     :param table: таблица с расписанием
     :return:
     """
+    hours_list = [
+        '09:00 – 10:25', '10:45 – 12:10', '12:20 – 13:45',
+        '13:55 – 15:20', '15:30 – 16:55', '17:05 – 18:30', '18:35 - 20:00'
+    ]
     alumni_timetable = None
     for j in range(3, table.max_column + 1):  # смотрим на значения по столбцам
-        group_name = table.cell(5, j).value  # номер группы
+        group_name = table.cell(9, j).value  # номер группы
         if group_name in ['Дни', 'Часы']:  # если это не номер группы, то пропускаем столбец
             continue
         # иначе если столбец - это номер группы, то составляем для него расписание
@@ -115,7 +119,7 @@ def get_timetable(table: Worksheet):
                 group_name = str(group_name)
             # group - словарь с расписанием для группы
             timetable = dict(Понедельник={}, Вторник={}, Среда={}, Четверг={}, Пятница={}, Суббота={}, Воскресенье={})
-            for k in range(6, table.max_row + 1):  # проходимся по столбцу
+            for k in range(10, table.max_row + 1):  # проходимся по столбцу
                 # если клетки относятся ко дню недели (не разделители)
                 if get_value_merged(table, table.cell(k, 1)) in timetable:
                     day = get_value_merged(table, table.cell(k, 1))  # значение дня недели
@@ -128,6 +132,8 @@ def get_timetable(table: Worksheet):
                         '#92D050': '🔵',  # семинары
                         '#00FFFF': '🔵',  # семинары
                         '#66FFFF': '🔵',  # семинары
+                        '#FFFFFF': '🔵',  # семинары
+                        '#00B050': '🔵',  # семинары
                         '#FFFF99': '🟡',  # лабы / англ
                         '#FF99CC': '🔴',  # лекции
                         '#CCFFCC': '🟢',  # базовый день
@@ -135,7 +141,7 @@ def get_timetable(table: Worksheet):
                     }
 
                     # рассматриваем только те клетки, для которых определено значение как пары, так и времени
-                    if (hours, pair) != (None, None):
+                    if hours is not None and pair is not None:
                         hours = hours.split()  # преобразуем время пары к формату hh:mm – hh:mm
                         if len(hours[0][:-2]) == 1:
                             hours[0] = '0' + hours[0]
@@ -145,8 +151,7 @@ def get_timetable(table: Worksheet):
                             timetable[day][hours] = colors_to_circles[color] + ' ' + pair if pair is not None else pair
                         except KeyError:  # если появится новый цвет, то он будет выведен на экран
                             print(color, pair)
-
-            timetable = pd.DataFrame(timetable, dtype=object)
+            timetable = pd.DataFrame(timetable, columns=timetable.keys(), index=hours_list, dtype=object)
             timetable.replace(to_replace=[None], value='😴', inplace=True)  # заменяем None на спящие смайлики
             # на первой итерации записываем пустую табличку для выпускников (если нужно)
             if not os.path.exists('semester/blank_timetable.pickle') and alumni_timetable is None:

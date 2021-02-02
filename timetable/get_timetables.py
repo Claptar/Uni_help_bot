@@ -19,11 +19,11 @@ def timetable_by_course(file_name, exam=False):
 # Считываем расписание из экселевских файлов в базу данных
 # меняем их на новые в каждом семе, при замене, возможно, нужно внести правки в функцию timetable.get_timetable()
 def insert_timetables_to_database(first_course, last_course, distant=False, faculty=None):
-    # openpyxl умеет работать только с файлами формата .xslx, не .xsl
+    # openpyxl умеет работать только с файлами формата .xslx или .xslm, не .xsl
     distant = '_do' if distant else ''
     faculty = '' if faculty is None else '_' + faculty
     for i in range(first_course, last_course + 1):
-        timetable_by_course('semester/{}_kurs{}{}.xlsx'.format(i, distant, faculty))
+        timetable_by_course('semester/{}_kurs{}{}.xlsm'.format(i, distant, faculty))
 
 
 def insert_exam_timetables():
@@ -39,9 +39,9 @@ while command not in ['Семестр', 'Сессия']:
     command = input()
 if command == 'Семестр':
     insert_timetables_to_database(1, 5)
-    insert_timetables_to_database(6, 6, faculty='faki')
-    insert_timetables_to_database(6, 6, faculty='fupm')
-    insert_timetables_to_database(1, 3, distant=True)
+    # insert_timetables_to_database(6, 6, faculty='faki')  # есть только в нечетных семестрах
+    # insert_timetables_to_database(6, 6, faculty='fupm')  # есть только в нечетных семестрах
+    # insert_timetables_to_database(1, 3, distant=True)  # особенность 2020 года
     with open('semester/blank_timetable.pickle', 'rb') as handle:
         alumni = pickle.load(handle)
     timetable.insert_update_group_timetable(

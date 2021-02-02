@@ -164,17 +164,26 @@ async def send_today_tomorrow_schedule(message):
     else:
         group_timetable = await psg.send_timetable(my_group=True, chat_id=message.chat.id)
         if group_timetable[0]:  # если пользователь есть в базе
-            schedule = pickle.loads(group_timetable[1][0])[week[day]].to_frame()
-            await bot.send_message(  # отправляем расписание
-                message.chat.id,
-                schedule_string(schedule),
-                parse_mode='HTML'
-            )
-            await bot.send_message(
-                message.chat.id,
-                'Чем ещё я могу помочь?',
-                reply_markup=today_tomorrow_keyboard()
-            )
+            if bytes(group_timetable[1][0]) == b'DEFAULT':
+                await bot.send_message(  # отправляем расписание
+                    message.chat.id,
+                    'В этом семестре нет официального расписания для твоей группы( '
+                    'Пожалуйста, измени номер своей группы в /profile '
+                    'или создай личное расписание в /custom 😉',
+                    reply_markup=today_tomorrow_keyboard()
+                )
+            else:
+                schedule = pickle.loads(group_timetable[1][0])[week[day]].to_frame()
+                await bot.send_message(  # отправляем расписание
+                    message.chat.id,
+                    schedule_string(schedule),
+                    parse_mode='HTML'
+                )
+                await bot.send_message(
+                    message.chat.id,
+                    'Чем ещё я могу помочь?',
+                    reply_markup=today_tomorrow_keyboard()
+                )
         # если в базе данных нет этого пользователя
         elif not group_timetable[0] and group_timetable[1] == 'empty_result':
             await bot.send_message(
@@ -779,7 +788,15 @@ async def timetable_proceed_my_group_custom(message: types.Message, state: FSMCo
     timetable = (await psg.send_timetable(custom=True, chat_id=message.chat.id) if message.text == 'Личное' else
                  await psg.send_timetable(my_group=True, chat_id=message.chat.id))
     if timetable[0]:  # если расписание было найдено
-        if timetable[1][0] is not None:
+        if bytes(timetable[1][0]) == b'DEFAULT':
+            await bot.send_message(  # отправляем расписание
+                message.chat.id,
+                'В этом семестре нет официального расписания для твоей группы( '
+                'Пожалуйста, измени номер своей группы в /profile 😉',
+                reply_markup=today_tomorrow_keyboard()
+            )
+            await state.finish()
+        elif timetable[1][0] is not None and bytes(timetable[1][0]) != b'DEFAULT':
             await Timetable.weekday.set()  # изменяем состояние на Timetable.weekday
             async with state.proxy() as data:
                 data['schedule'] = pickle.loads(timetable[1][0])  # записываем расписание
