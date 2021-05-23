@@ -18,35 +18,42 @@ def timetable_by_course(file_name, exam=False):
 
 # Считываем расписание из экселевских файлов в базу данных
 # меняем их на новые в каждом семе, при замене, возможно, нужно внести правки в функцию timetable.get_timetable()
-def insert_timetables_to_database(first_course, last_course, distant=False, faculty=None):
+def insert_timetables_to_database(
+    first_course, last_course, distant=False, faculty=None
+):
     # openpyxl умеет работать только с файлами формата .xslx или .xslm, не .xsl
-    distant = '_do' if distant else ''
-    faculty = '' if faculty is None else '_' + faculty
+    distant = "_do" if distant else ""
+    faculty = "" if faculty is None else "_" + faculty
     for i in range(first_course, last_course + 1):
-        timetable_by_course('semester/{}_kurs{}{}.xlsm'.format(i, distant, faculty))
+        timetable_by_course("semester/{}_kurs{}{}.xlsm".format(i, distant, faculty))
 
 
 def insert_exam_timetables():
-    for i in range(1, 7):
-        timetable_by_course('sessiya/{}_kurs.xlsx'.format(i), exam=True)
-    timetable_by_course('sessiya/Spetsialitet.xlsx')
+    for i in range(1, 5):
+        timetable_by_course("sessiya/{}Kurs.xlsx".format(i), exam=True)
+    timetable_by_course("sessiya/1KursMagistratura.xlsx", exam=True)
 
 
 print('Введите команду для заполнения расписания: "Семестр" или "Сессия"')
 command = input()
-while command not in ['Семестр', 'Сессия']:
+try:
+    command = command.lower()
+except TypeError:
+    print("Введите команду верного типа: строка")
+while command not in ["семестр", "сессия"]:
     print('Введите верную команду: "Семестр" или "Сессия"')
     command = input()
-if command == 'Семестр':
+    try:
+        command = command.lower()
+    except TypeError:
+        print("Введите команду верного типа: строка")
+if command == "семестр":
     insert_timetables_to_database(1, 5)
     # insert_timetables_to_database(6, 6, faculty='faki')  # есть только в нечетных семестрах
     # insert_timetables_to_database(6, 6, faculty='fupm')  # есть только в нечетных семестрах
     # insert_timetables_to_database(1, 3, distant=True)  # особенность 2020 года
-    with open('semester/blank_timetable.pickle', 'rb') as handle:
+    with open("semester/blank_timetable.pickle", "rb") as handle:
         alumni = pickle.load(handle)
-    timetable.insert_update_group_timetable(
-        'ALUMNI',
-        alumni
-    )
-elif command == 'Сессия':
+    timetable.insert_update_group_timetable("ALUMNI", alumni)
+elif command == "сессия":
     insert_exam_timetables()

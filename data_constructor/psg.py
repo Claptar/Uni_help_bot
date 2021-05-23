@@ -5,15 +5,20 @@ import sys
 
 import aiopg
 import psycopg2
+
 # from psycopg2 import errorcodes
 
-DBNAME = os.environ['DATABASE']
-USER = os.environ['USER']
-PASS = os.environ['PASS']
-HOST = os.environ['HOST']
+DBNAME = os.environ["DATABASE"]
+USER = os.environ["USER"]
+PASS = os.environ["PASS"]
+HOST = os.environ["HOST"]
 # PORT = os.environ['PORT']
 
-if sys.version_info[0] == 3 and sys.version_info[1] >= 8 and sys.platform.startswith('win'):
+if (
+    sys.version_info[0] == 3
+    and sys.version_info[1] >= 8
+    and sys.platform.startswith("win")
+):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
@@ -45,13 +50,12 @@ def sync_get_connection():
     :return: pool или False, если соединение не было установлено.
     """
     try:  # пробуем подключиться
-        conn = psycopg2.connect(
-            dbname=DBNAME,
-            user=USER,
-            password=PASS,
-            host=HOST
-        )
-    except (OSError, TimeoutError, ConnectionError) as err:  # ловим ошибку, если не удалось подключиться
+        conn = psycopg2.connect(dbname=DBNAME, user=USER, password=PASS, host=HOST)
+    except (
+        OSError,
+        TimeoutError,
+        ConnectionError,
+    ) as err:  # ловим ошибку, если не удалось подключиться
         last_err = err  # если соединение не установлено
         print_psycopg2_exception(err)
     else:
@@ -76,21 +80,18 @@ def sync_insert_update_value_in_table(sql_command: str, *args) -> tuple:
     try:
         conn = sync_get_connection()
         with conn.cursor() as cur:
-            cur.execute(
-                sql_command,
-                args
-            )
+            cur.execute(sql_command, args)
     # если при записи произошла ошибка, то возвращаем False + разделяем ошибки соединения и другие ошибки
     except (OSError, TimeoutError, ConnectionError) as err:
         print_psycopg2_exception(err)
-        return False, 'connection_error'
+        return False, "connection_error"
     except Exception as err:
         print_psycopg2_exception(err)
-        return False, 'other_error'
+        return False, "other_error"
     else:
         conn.commit()
         conn.close()
-        return True, ''
+        return True, ""
 
 
 def sync_select_value_from_table(sql_command: str, *args) -> tuple:
@@ -112,23 +113,20 @@ def sync_select_value_from_table(sql_command: str, *args) -> tuple:
     try:
         conn = sync_get_connection()
         with conn.cursor() as cur:
-            cur.execute(
-                sql_command,
-                args
-            )
+            cur.execute(sql_command, args)
             result = conn.fetchone()  # (SMTH_0, SMTH_1, ..., SMTH_(k-1), )
     # если при записи произошла ошибка, то возвращаем False + разделяем ошибки соединения и другие ошибки
     except (OSError, TimeoutError, ConnectionError) as err:
         print_psycopg2_exception(err)
-        return False, 'connection_error'
+        return False, "connection_error"
     except Exception as err:
         print_psycopg2_exception(err)
-        return False, 'other_error'
+        return False, "other_error"
     else:
         conn.commit()
         conn.close()
         if result is None:
-            return False, 'empty_result'
+            return False, "empty_result"
         else:
             return True, result
 
@@ -145,13 +143,13 @@ def sync_insert_group(group_num, timetable, exam=False):
         return sync_insert_update_value_in_table(
             """INSERT INTO "Group" (name, exam_timetable) VALUES (%s, %s)""",
             group_num,
-            timetable
+            timetable,
         )
     else:
         return sync_insert_update_value_in_table(
             """INSERT INTO "Group" (name, group_timetable) VALUES (%s, %s)""",
             group_num,
-            timetable
+            timetable,
         )
 
 
@@ -169,7 +167,7 @@ def sync_update_group(group_num, timetable, exam=False, school=None):
             return sync_insert_update_value_in_table(
                 """UPDATE "Group" SET exam_timetable = %s WHERE "Group".name = %s""",
                 timetable,
-                group_num
+                group_num,
             )
         else:
             return sync_insert_update_value_in_table(
@@ -177,13 +175,13 @@ def sync_update_group(group_num, timetable, exam=False, school=None):
                 """(SELECT school_id FROM "School" WHERE "School".name = %s) WHERE "Group".name = %s""",
                 timetable,
                 school,
-                group_num
+                group_num,
             )
     else:
         return sync_insert_update_value_in_table(
             """UPDATE "Group" SET group_timetable = %s WHERE "Group".name = %s""",
             timetable,
-            group_num
+            group_num,
         )
 
 
@@ -193,13 +191,12 @@ async def get_connection():
     :return: connection или False, если соединение не было установлено.
     """
     try:  # пробуем подключиться
-        conn = await aiopg.connect(
-            dbname=DBNAME,
-            user=USER,
-            password=PASS,
-            host=HOST
-        )
-    except (OSError, TimeoutError, ConnectionError) as err:  # ловим ошибку, если не удалось подключиться
+        conn = await aiopg.connect(dbname=DBNAME, user=USER, password=PASS, host=HOST)
+    except (
+        OSError,
+        TimeoutError,
+        ConnectionError,
+    ) as err:  # ловим ошибку, если не удалось подключиться
         last_err = err  # если соединение не установлено
         print_psycopg2_exception(err)
     else:
@@ -224,20 +221,17 @@ async def insert_update_value_in_table(sql_command: str, *args) -> tuple:
     try:
         conn = await get_connection()
         async with conn.cursor() as cur:
-            await cur.execute(
-                sql_command,
-                args
-            )
+            await cur.execute(sql_command, args)
     # если при записи произошла ошибка, то возвращаем False + разделяем ошибки соединения и другие ошибки
     except (OSError, TimeoutError, ConnectionError) as err:
         print_psycopg2_exception(err)
-        return False, 'connection_error'
+        return False, "connection_error"
     except Exception as err:
         print_psycopg2_exception(err)
-        return False, 'other_error'
+        return False, "other_error"
     else:
         conn.close()
-        return True, ''
+        return True, ""
 
 
 async def select_value_from_table(sql_command: str, *args) -> tuple:
@@ -259,22 +253,19 @@ async def select_value_from_table(sql_command: str, *args) -> tuple:
     try:
         conn = await get_connection()
         async with conn.cursor() as cur:
-            await cur.execute(
-                sql_command,
-                args
-            )
+            await cur.execute(sql_command, args)
             result = await cur.fetchone()  # (SMTH_0, SMTH_1, ..., SMTH_(k-1), )
     # если при записи произошла ошибка, то возвращаем False + разделяем ошибки соединения и другие ошибки
     except (OSError, TimeoutError, ConnectionError) as err:
         print_psycopg2_exception(err)
-        return False, 'connection_error'
+        return False, "connection_error"
     except Exception as err:
         print_psycopg2_exception(err)
-        return False, 'other_error'
+        return False, "other_error"
     else:
         conn.close()
         if result is None:
-            return False, 'empty_result'
+            return False, "empty_result"
         else:
             return True, result
 
@@ -289,7 +280,7 @@ async def insert_group(group_num, timetable):
     return await insert_update_value_in_table(
         """INSERT INTO "Group" (name, group_timetable) VALUES (%s, %s)""",
         group_num,
-        timetable
+        timetable,
     )
 
 
@@ -303,7 +294,7 @@ async def update_group(group_num, timetable):
     return await insert_update_value_in_table(
         """UPDATE "Group" SET group_timetable = %s WHERE "Group".name = %s""",
         timetable,
-        group_num
+        group_num,
     )
 
 
@@ -319,13 +310,15 @@ async def insert_user(chat_id, group_num):
         """INSERT INTO "User" (chat_id, group_id) """
         """VALUES (%s, (SELECT group_id FROM "Group" WHERE "Group".name = %s))""",
         chat_id,
-        group_num
+        group_num,
     )
 
 
-async def update_user(chat_id, group_num: str
-                      # update_custom=False
-                      ):
+async def update_user(
+    chat_id,
+    group_num: str
+    # update_custom=False
+):
     """
     Функция для обновления данных пользователя по его желанию.
     :param chat_id: id чата с пользователем
@@ -349,11 +342,13 @@ async def update_user(chat_id, group_num: str
         """(SELECT group_id FROM "Group" WHERE "Group".name = %s) """
         """WHERE chat_id = %s""",
         group_num,
-        chat_id
+        chat_id,
     )
 
 
-async def send_timetable(custom=False, my_group=False, chat_id=None, another_group=None):
+async def send_timetable(
+    custom=False, my_group=False, chat_id=None, another_group=None
+):
     """
     Функция, возвращающая нужное пользователю расписание.
     Могут быть варианты (custom=True, my_group=False, chat_id=SMTH_IN_"User"),
@@ -369,19 +364,18 @@ async def send_timetable(custom=False, my_group=False, chat_id=None, another_gro
     """
     if custom:
         return await select_value_from_table(
-            """SELECT user_timetable FROM "User" WHERE "User".chat_id = %s""",
-            chat_id
+            """SELECT user_timetable FROM "User" WHERE "User".chat_id = %s""", chat_id
         )
     elif my_group:
         return await select_value_from_table(
             """SELECT group_timetable FROM "Group" """
             """WHERE (SELECT group_id FROM "User" WHERE "User".chat_id = %s) = "Group".group_id""",
-            chat_id
+            chat_id,
         )
     elif another_group is not None:
         return await select_value_from_table(
             """SELECT group_timetable FROM "Group" WHERE "Group".name = %s""",
-            another_group
+            another_group,
         )
     # 1) result == (SMTH - может быть None, ),
     # если result == (None, ), то этот пользователь не завел кастомное расписание
@@ -402,12 +396,12 @@ async def send_exam_timetable(my_group=False, chat_id=None, another_group=None):
         return await select_value_from_table(
             """SELECT exam_timetable FROM "Group" """
             """WHERE (SELECT group_id FROM "User" WHERE "User".chat_id = %s) = "Group".group_id""",
-            chat_id
+            chat_id,
         )
     elif another_group is not None:
         return await select_value_from_table(
             """SELECT exam_timetable FROM "Group" WHERE "Group".name = %s""",
-            another_group
+            another_group,
         )
 
 
@@ -421,7 +415,7 @@ async def update_custom_timetable(chat_id, timetable):
     return await insert_update_value_in_table(
         """UPDATE "User" SET user_timetable = %s WHERE chat_id = %s""",
         timetable,
-        chat_id
+        chat_id,
     )
 
 
@@ -437,7 +431,7 @@ async def create_custom_timetable(chat_id):
         """ON "Group".group_id = "User".group_id WHERE chat_id = %s) """
         """WHERE chat_id = %s""",
         chat_id,
-        chat_id  # вот ЗДЕСЬ проебался
+        chat_id,  # вот ЗДЕСЬ проебался
     )
 
 
@@ -451,7 +445,7 @@ async def check_user_group(chat_id):
     res = await select_value_from_table(
         """SELECT name FROM "Group" """
         """WHERE (SELECT group_id FROM "User" WHERE "User".chat_id = %s) = "Group".group_id""",
-        chat_id
+        chat_id,
     )
     return res
     # 1) result == (SMTH - не может быть None, )
@@ -467,7 +461,7 @@ async def get_user_info(chat_id):
     """
     return await select_value_from_table(
         """SELECT group_id, user_timetable FROM "User" WHERE "User".chat_id = %s""",
-        chat_id
+        chat_id,
     )
     # 1) result == (SMTH - не может быть None, )
     # 2) result is None, если такого пользователя нет в базе
@@ -486,5 +480,5 @@ async def insert_action(command_name, user_id):
         """VALUES (%s, %s, %s)""",
         now,
         command_name,
-        user_id
+        user_id,
     )

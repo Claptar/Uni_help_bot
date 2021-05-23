@@ -8,7 +8,7 @@ import pandas as pd
 import sympy as sp
 
 # Переменная, которая хранит путь к директории
-PATH = os.path.abspath('')
+PATH = os.path.abspath("")
 
 
 def is_digit(string):
@@ -50,7 +50,7 @@ def plt_const(x, y):
     :param y: Массив оридинат точек
     :return: [значение углового коэфф a, значение коэфф b, значение погрешности a, значение погрешности b]
     """
-    r = (x*y).mean() - x.mean() * y.mean()
+    r = (x * y).mean() - x.mean() * y.mean()
     a = r / x.var()
     b = y.mean() - a * x.mean()
     try:
@@ -58,8 +58,8 @@ def plt_const(x, y):
         d_b = d_a * math.sqrt(x.var() + x.mean() ** 2)
     except Exception as e:
         print(e)
-        d_a = 'error'
-        d_b = 'error'
+        d_a = "error"
+        d_b = "error"
     return [a, b, d_a, d_b]
 
 
@@ -90,21 +90,21 @@ def plots_drawer(data_file, tit, xerr=0, yerr=0, mnk=False):
     coef = []
     for i in range(0, x.shape[1]):
         if xerr != 0 or yerr != 0:
-            ax.errorbar(x[:, i], y[:, i], xerr=xerr, yerr=yerr, fmt='k+', capsize=3)
+            ax.errorbar(x[:, i], y[:, i], xerr=xerr, yerr=yerr, fmt="k+", capsize=3)
         if x.shape[0] > 15:
-            ax.plot(x[:, i], y[:, i], '.')
+            ax.plot(x[:, i], y[:, i], ".")
         else:
-            ax.plot(x[:, i], y[:, i], 'o')
+            ax.plot(x[:, i], y[:, i], "o")
         delta = (max(x[:, i]) - min(x[:, i])) / len(x[:, i])
         x_.append([min(x[:, i]) - delta, max(x[:, i]) + delta])
     if mnk:
         for i in range(0, x.shape[1]):
             a, b, da, db = plt_const(x[:, i], y[:, i])
             coef.append([a, b, da, db])
-            ax.plot(np.array(x_[i]), a * (np.array(x_[i])) + b, 'r--')
+            ax.plot(np.array(x_[i]), a * (np.array(x_[i])) + b, "r--")
     plot_decor(ax, fig, tit, legend, label_list)
-    plt.savefig('plot.pdf')
-    plt.savefig('plot.png')
+    plt.savefig("plot.pdf")
+    plt.savefig("plot.png")
     plt.show()
     plt.clf()
     return coef
@@ -122,9 +122,9 @@ def plot_decor(ax, fig, tit, legend, label_list):
     """
     ax.minorticks_on()
     # Настраиваем основную стеку графика
-    ax.grid(which='major', linestyle='-', linewidth='0.5', color='black')
+    ax.grid(which="major", linestyle="-", linewidth="0.5", color="black")
     # Добавляем промежуточную сетку
-    ax.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
+    ax.grid(which="minor", linestyle=":", linewidth="0.5", color="black")
     ax.set_xlabel(label_list[0])
     ax.set_ylabel(label_list[1])
     ax.legend(legend)
@@ -138,22 +138,46 @@ def plot_decor(ax, fig, tit, legend, label_list):
     bbox = ax.get_window_extent().transformed(dps)
     width, height = bbox.width, bbox.height
     # manual arrowhead width and length
-    hw = 1. / 20. * (ymax - ymin)
-    hl = 1. / 20. * (xmax - xmin)
-    lw = .1  # axis line width
+    hw = 1.0 / 20.0 * (ymax - ymin)
+    hl = 1.0 / 20.0 * (xmax - xmin)
+    lw = 0.1  # axis line width
     ohg = 0.25  # arrow overhang
     # compute matching arrowhead length and width
     yhw = hw / (ymax - ymin) * (xmax - xmin) * height / width
     yhl = hl / (xmax - xmin) * (ymax - ymin) * width / height
 
     # draw x and y axis
-    ax.arrow(xmin, ymin, xmax - xmin, 0., fc='k', ec='k', lw=lw,
-             head_width=hw / 1.5, head_length=hl / 1.5, overhang=ohg,
-             length_includes_head=True, clip_on=False, width=1e-5)
+    ax.arrow(
+        xmin,
+        ymin,
+        xmax - xmin,
+        0.0,
+        fc="k",
+        ec="k",
+        lw=lw,
+        head_width=hw / 1.5,
+        head_length=hl / 1.5,
+        overhang=ohg,
+        length_includes_head=True,
+        clip_on=False,
+        width=1e-5,
+    )
 
-    ax.arrow(xmin, ymin, 0., ymax - ymin, fc='k', ec='k', lw=lw,
-             head_width=yhw / 1.5, head_length=yhl / 1.5, overhang=ohg,
-             length_includes_head=True, clip_on=False, width=1e-5)
+    ax.arrow(
+        xmin,
+        ymin,
+        0.0,
+        ymax - ymin,
+        fc="k",
+        ec="k",
+        lw=lw,
+        head_width=yhw / 1.5,
+        head_length=yhl / 1.5,
+        overhang=ohg,
+        length_includes_head=True,
+        clip_on=False,
+        width=1e-5,
+    )
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
 
@@ -169,10 +193,18 @@ def error_calc(equation, var_list, point_list, error_list):
     """
     sigma = 0  # Объявляем переменную
     for number in range(len(var_list)):
-        elem = sp.Symbol(var_list[number])  # переводит символ в приемлемый формат для дифференцирования
-        der = sp.diff(equation, elem)  # дифференцируем выражение equation по переменной elem
-        for score in range(len(point_list)):  # задаем каждую переменную, чтобы подставить ее значение
-            der = sp.lambdify(var_list[score], der, 'numpy')  # говорим, что функция будет конкретной переменной
+        elem = sp.Symbol(
+            var_list[number]
+        )  # переводит символ в приемлемый формат для дифференцирования
+        der = sp.diff(
+            equation, elem
+        )  # дифференцируем выражение equation по переменной elem
+        for score in range(
+            len(point_list)
+        ):  # задаем каждую переменную, чтобы подставить ее значение
+            der = sp.lambdify(
+                var_list[score], der, "numpy"
+            )  # говорим, что функция будет конкретной переменной
             der = der(point_list[score])  # задаем функцию в строчном виде
         sigma += error_list[number] ** 2 * der ** 2  # считем погрешность
 
