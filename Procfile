@@ -1,1 +1,1 @@
-bot: python3 bot_new.py
+bot: python3 bot.py

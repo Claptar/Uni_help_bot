@@ -1,297 +1,611 @@
-from telebot import types
-from data_constructor import psg
+import os
+import logging
+import pickle
+
+import pandas as pd
+from aiogram import Bot, Dispatcher, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import Text
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.utils import executor
+from aiogram.utils.exceptions import TelegramAPIError, BotBlocked
+
+from activity import stat
 from math_module import math_part
 from koryavov import kor
+from data_constructor import psg
+from datetime import datetime
+from pytz import timezone
 
-import os
-import random
-import re
-import numpy as np
-import pandas as pd
-import requests
-import telebot
-import texting.texting_symbols
-import timetable.timetable
-import datetime
+logging.basicConfig(level=logging.INFO)
 
-token = os.environ["TOKEN"]  # Токен для бота берётся из переменных окружения
-bot = telebot.TeleBot(token)
-MESSAGE_NUM = 0
-MESSAGE_COM = ""
-Q_NUM = 0
-PAR_NUM = 0
-GROUP_NUM = ""
-COURSE_NUM = 0
-SUBJECT_NOW = ""
-Q_SEQUENCE = []
-SUBJECTS_PATH = {"Матан": "math", "Химия": "chem_org"}
-SUBJECTS = {
-    "Матан": {
-        "Множество Rn": 1,
-        "Предел и непрерывность": 2,
-        "Дифференциальное исчисление в Rn": 3,
-        "Интеграл Римана": 4,
-        "Мера Жордана": 5,
-        "Числовые ряды": 6,
-    },
-    "Химия": {
-        "Билеты 1-2": 1,
-        "Билеты 3,5": 2,
-        "Билеты 4,6": 3,
-        "Билет 7": 4,
-        "Билет 8": 5,
-        "Билет 9": 6,
-        "Билеты 10-11": 7,
-        "Билет 12": 8,
-        "Билет 13": 9,
-        "Билет 14": 10,
-        "Билет 15": 11,
-        "Билет 16": 12,
-        "Билет 17": 13,
-        "Билет 18-19": 14,
-        "Билет 20-21": 15,
-        "Билет 22": 16,
-        "Билет 24": 17,
-        "Билет 25": 18,
-        "Билет 26": 19,
-        "Билет 27": 20,
-        "Билет 23": 21,
-        "Билет 34": 22,
-        "Билет 35": 23,
-        "Билет 36": 24,
-    },
-}
+API_TOKEN = os.environ["TOKEN"]
+
+bot = Bot(token=API_TOKEN)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
 
-comms = ["help", "start", "plot", "timetable", "exam"]  # Comands list
-
-crazy_tokens = 0
-ANSW_ID = 0
-
-# Plot constants
-PLOT_MESSEGE = 0
-PLOT_BUTTONS = [
-    "Название графика",
-    "Подпись осей",
-    "Кресты погрешностей",
-    "Готово",
-    "MНК",
-]
+class Start(StatesGroup):
+    group = State()
+    custom = State()
 
 
-@bot.message_handler(commands=["help"])
-def help_def(message):
+class Profile(StatesGroup):
+    choose = State()
+    group = State()
+    custom = State()
+
+
+class Timetable(StatesGroup):
+    choose = State()
+    another_group = State()
+    weekday = State()
+
+
+class Koryavov(StatesGroup):
+    sem_num_state = State()
+    task_num_state = State()
+    finish_state = State()
+
+
+class Custom(StatesGroup):
+    existing = State()
+    new = State()
+    weekday = State()
+    time = State()
+    edit = State()
+    again = State()
+
+
+class Exam(StatesGroup):
+    another_group = State()
+    choose = State()
+
+
+class Plots(StatesGroup):
+    title_state = State()
+    mnk_state = State()
+    error_bars_state = State()
+    plot_state = State()
+
+
+class Stat(StatesGroup):
+    choice = State()
+    unique = State()
+    frequency = State()
+
+
+class Mailing(StatesGroup):
+    mailing = State()
+
+
+def today_tomorrow_keyboard():
     """
-    Функция ловит сообщение с командой '/help' и присылает описание комманд бота
-    :param message: telebot.types.Message
-    :return:
-    """
-    bot.send_message(
-        message.chat.id,
-        "Сейчас я расскажу, чем я могу тебе помочь ☺️\n"
-        "/plot — Получил данные на лабе и уже хочешь построить график? Запросто!\n"
-        "/timetable — Забыл расписание?) Бывает, пиши, я помогу 😉📱\n"
-        "/exam — Подскажу расписание экзаменов, но ты сам захотел... "
-        " Я не люблю напоминать "
-        "о плохом...\n"
-        "/koryavov — Подскажу номер страницы с этой задачей по физике в Корявове."
-        "Информация берётся с замечательного сайта mipt1.ru \n"
-        "/profile — Опечатка в номере курса или группы? Нажимай, сейчас исправим)\n"
-        "/custom — Не ходишь на лекции или есть факультативы ?"
-        "Измени расписание под себя !",
-    )
-
-
-@bot.message_handler(commands=["profile"])
-def choose_edit(message):
-    """
-    Функция ловит сообщение с командой '/profile' и спрашивает у пользователя
-    какие данные он хочет изменить в базе данных
-    :param message:
-    :return:
+    Кнопки для получения расписания на сегодня или завтра.
     """
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(
-        *[
-            types.KeyboardButton(name)
-            for name in ["Номер курса", "Номер группы", "Выход"]
+        *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра", "/help"]]
+    )
+    return keyboard
+
+
+def schedule_string(schedule: pd.DataFrame):
+    """
+    Строка с расписанием, которую отправляет бот.
+    ВАЖНО! parse_mode='HTML' - чтобы читалcя измененный шрифт.
+    """
+    STRING = ""  # "строка" с расписанием, которую отправляем сообщением
+    for (
+        row
+    ) in (
+        schedule.iterrows()
+    ):  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
+        # время пары - жирный + наклонный шрифт, название пары на следующей строке
+        string: str = "<b>" + "<i>" + row[0] + "</i>" + "</b>" + "\n" + row[1][0]
+        STRING += string + "\n\n"  # между парами пропуск (1 enter)
+    return STRING
+
+
+@dp.message_handler(Text(equals="Выход"), state="*")
+async def user_exit(message: types.Message, state: FSMContext):
+    """
+    Функция, выполняющая выход по желанию пользователя (на любой стадии).
+    """
+    await psg.insert_action("exit", message.chat.id)
+    current_state = (
+        await state.get_state()
+    )  # проверка, что запущено хотя бы какое-то из состояний
+    if current_state is None:
+        return
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await bot.send_message(
+        message.chat.id,
+        "Без проблем! Но ты это, заходи, если что 😉",
+        reply_markup=today_tomorrow_keyboard(),
+    )
+    # стикос "Ты заходи есчо"
+    await bot.send_sticker(
+        message.chat.id,
+        "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
+    )
+    # При выходе выключаем машину состояний
+    await state.finish()
+
+
+@dp.message_handler(Text(equals=["На сегодня", "На завтра"]))
+async def send_today_tomorrow_schedule(message):
+    """
+    Функция ловит сообщение с текстом 'На сегодня/завтра'.
+    Возвращает расписание на этот день, вызывает функцию timetable.timetable_by_group().
+    По умолчанию, если у этого пользователя есть личное расписание, выдает его,
+    иначе - расписание группы пользователя.
+    Схема:
+                             CUSTOM
+                            /     \
+                        True    False (ERR or EMPTY_RES)
+                       /   \         \
+                  (SMTH,) (None,) — MY_GROUP — True — SEND()
+                    /                   /
+                  SEND()             False — EMPTY_RES — Знакомы ли мы?
+                                       |
+                              CONN_ERR or OTHER_ERR — Попробуй позже, пожалуйста
+    """
+    await psg.insert_action("to/yes", message.chat.id)
+    # список дней для удобной конвертации номеров дней недели (0, 1, ..., 6) в их названия
+    week = tuple(
+        [
+            "Понедельник",
+            "Вторник",
+            "Среда",
+            "Четверг",
+            "Пятница",
+            "Суббота",
+            "Воскресенье",
         ]
-    )  # кнопки c номерами семестров
-    try:
-        student = psg.get_student(message.chat.id)
-        msg = bot.send_message(
-            message.chat.id,
-            f"Сейчас у тебя указано, что ты учишься на {student[1]} курсе "
-            f"в {student[0]} группе."
-            f" Что именно ты хочешь изменить?",
-            reply_markup=keyboard,
+    )
+    # today - какой сегодня день недели (от 0 до 6)
+    today = datetime.now(tz=timezone("Europe/Moscow")).weekday()
+    tomorrow = (
+        today + 1 if today in range(6) else 0
+    )  # номер дня для завтра, если это воскресенье (6), то 0
+    day = (
+        today if message.text == "На сегодня" else tomorrow
+    )  # выбор дня в зависимости от запроса
+    custom_timetable = await psg.send_timetable(custom=True, chat_id=message.chat.id)
+    # проверка, есть ли у этого пользователя личное расписание в базе данных (+ не произошло ли ошибок)
+    if custom_timetable[0] and custom_timetable[1][0] is not None:
+        schedule = pickle.loads(custom_timetable[1][0])[week[day]].to_frame()
+        await bot.send_message(  # отправляем расписание
+            message.chat.id, schedule_string(schedule), parse_mode="HTML"
         )
-        bot.register_next_step_handler(msg, edit_values)
-    except Exception as e:
-        print("АШИПКА")
-        print(e)
-        bot.send_message(
-            os.environ["ADMIN_1"],
-            f"Посмотри логи у чувака"
-            f" user = {message.from_user} id={message.chat.id}"
-            f" пошла по пизде 109 строчка...",
-        )
-        bot.send_message(
-            os.environ["ADMIN_2"],
-            f"Посмотри логи у чувака"
-            f" user = {message.from_user} id={message.chat.id}"
-            f" пошла по пизде 109 строчка...",
-        )
-        bot.send_message(
-            message.chat.id,
-            "Извини, что-то пошло не так, команда устранения ошибок уже взялась за дело,"
-            " попробуй эту функцию позже) Чтобы проблема решилась быстрее"
-            " ты можешь написать @Error404NF",
-        )
-
-
-def edit_values(message):
-    if message.content_type == "text":
-        if message.text == "Номер курса":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, "Выход"]]
-            )
-            msg = bot.send_message(
-                message.chat.id, "Введи номер своего курса", reply_markup=keyboard
-            )
-            bot.register_next_step_handler(msg, edit_course)
-        elif message.text == "Номер группы":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-            msg = bot.send_message(
-                message.chat.id, "Введи номер своей группы", reply_markup=keyboard
-            )
-            bot.register_next_step_handler(msg, edit_group)
-        elif message.text == "Выход":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Передумал? Ну ладно...", reply_markup=keyboard
-            )
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
-            )
-        else:
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[
-                    types.KeyboardButton(name)
-                    for name in ["Номер курса", "Номер группы", "Выход"]
-                ]
-            )
-            msg = bot.send_message(
-                message.chat.id, "Что-то не так, давай ещё раз", reply_markup=keyboard
-            )
-            bot.register_next_step_handler(msg, edit_values)
+    # если у этого пользователя нет личного расписания в базе данных или произошла ошибка при запросе
+    # личного расписания, то пробуем отправить расписание группы
     else:
+        group_timetable = await psg.send_timetable(
+            my_group=True, chat_id=message.chat.id
+        )
+        if group_timetable[0]:  # если пользователь есть в базе
+            if bytes(group_timetable[1][0]) == b"DEFAULT":
+                await bot.send_message(  # отправляем расписание
+                    message.chat.id,
+                    "В этом семестре нет официального расписания для твоей группы( "
+                    "Пожалуйста, измени номер своей группы в /profile "
+                    "или создай личное расписание в /custom 😉",
+                    reply_markup=today_tomorrow_keyboard(),
+                )
+            else:
+                schedule = pickle.loads(group_timetable[1][0])[week[day]].to_frame()
+                await bot.send_message(  # отправляем расписание
+                    message.chat.id, schedule_string(schedule), parse_mode="HTML"
+                )
+                await bot.send_message(
+                    message.chat.id,
+                    "Чем ещё я могу помочь?",
+                    reply_markup=today_tomorrow_keyboard(),
+                )
+        # если в базе данных нет этого пользователя
+        elif not group_timetable[0] and group_timetable[1] == "empty_result":
+            await bot.send_message(
+                message.chat.id,
+                "Кажется, мы с тобой еще не знакомы... 😢\n" "Скорей пиши мне /start!",
+                reply_markup=today_tomorrow_keyboard(),
+            )
+        # если произошла ошибка
+        else:
+            await bot.send_message(
+                message.chat.id,
+                "Что-то пошло не так, попробуй еще раз позже, пожалуйста)",
+                reply_markup=today_tomorrow_keyboard(),
+            )
+
+
+@dp.message_handler(commands=["help"])
+async def help_def(message: types.Message):
+    """
+    Функция ловит сообщение с командой '/help' и присылает описание комманд бота.
+    """
+    await psg.insert_action("help", message.chat.id)
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    with open("files/help.txt", encoding="utf-8", mode="r") as f:
+        text = f.read()
+    await bot.send_message(message.chat.id, text)
+
+
+@dp.message_handler(commands="start")
+async def start_initiate(message: types.Message):
+    """
+    Функция ловит сообщение с командой '/start' и приветствует пользователя.
+    """
+    group = await psg.check_user_group(message.chat.id)
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    if group[0]:  # если пользователь уже есть в базе данных
+        await bot.send_message(
+            message.chat.id,
+            "Привет-привет! 🙃\nМы уже с тобой знакомы 😉 "
+            "Напиши /help, чтобы я напомнил тебе, что я умею)",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+    elif not group[0] and group[1] == "empty_result":  # пользователя нет в базе данных
+        await Start.group.set()  # изменяем состояние на Start.group
+        await bot.send_message(
+            message.chat.id,
+            "Привет-привет! 🙃\nДавай знакомиться! Меня зовут Помогатор. "
+            "Можешь рассказать мне немного о себе, "
+            "чтобы я знал, чем могу тебе помочь?",
+        )
+        await psg.insert_action(
+            "start", message.chat.id
+        )  # Запись события о новом пользователе
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(
-            *[
-                types.KeyboardButton(name)
-                for name in ["Номер курса", "Номер группы", "Выход"]
-            ]
+            *[types.KeyboardButton(name) for name in ["Уже не учусь", "Выход"]]
         )
-        msg = bot.send_message(
-            message.chat.id, "Что-то не так, давай ещё раз", reply_markup=keyboard
+        await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+        await bot.send_message(  # 'Уже не учусь' - вариант для выпускников
+            message.chat.id,
+            " Не подскажешь номер своей группы?\n"
+            "(В формате Б00-228 или 777, как в расписании)",
+            reply_markup=keyboard,
         )
-        bot.register_next_step_handler(msg, edit_values)
+    # произошла какая-то ошибка (с соединением или другая)
+    else:
+        await bot.send_message(
+            message.chat.id, "Что-то пошло не так, попробуй еще раз позже, пожалуйста)"
+        )
 
 
-def edit_course(message):
-    if message.content_type == "text":
-        if message.text == "Выход":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Передумал? Ну ладно...", reply_markup=keyboard
-            )
-            bot.send_sticker(
+@dp.message_handler(state=Start.group)
+async def start_proceed_group(message: types.Message, state: FSMContext):
+    """
+    Функция принимает значение номера группы и проверяет, есть ли такая группа в базе.
+    Если группы нет в базе данных (или произошла какая-то ошибка), то функция просит ввести номер группы заново.
+    Если группа есть в базе данных, информация о пользователе заносится в таблицу User, а пользователю
+    отправляется запрос, нужно ли ему личное расписание.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    (group, text) = (
+        ("ALUMNI", "Привет достопочтенному выпускнику! 👋")
+        if message.text == "Уже не учусь"
+        else (  # разные варианты для выпускника и студента
+            message.text,
+            "Отлично, вот мы и познакомились 🙃",
+        )
+    )
+    insert = await psg.insert_user(message.chat.id, group)
+    if insert[0]:  # группа есть в базе, добавление пользователя прошло успешно
+        # async with state.proxy() as data:
+        #     data['group'] = group
+        await Start.custom.set()  # меняем состояние на Start.custom
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ["Хочу", "Не хочу"]])
+        await bot.send_message(  # запрос о личном расписании
+            message.chat.id,
+            text + "\nЕсли хочешь получить возможность использовать "
+            "личное расписание, нажми на нужную кнопку внизу.",
+            reply_markup=keyboard,
+        )
+    # группы нет в базе / что-то другое, не связанное с подключением, просим повторить ввод
+    elif not insert[0] and insert[1] == "other_error":
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(
+            *[types.KeyboardButton(name) for name in ["Уже не учусь", "Выход"]]
+        )
+        await bot.send_message(
+            message.chat.id,
+            "Что-то пошло не так, введи номер своей группы ещё раз, пожалуйста)",
+            reply_markup=keyboard,
+        )
+    # произошла какая-то ошибка с соединением
+    else:
+        await bot.send_message(
+            message.chat.id,
+            "Что-то не так с соединением, попробуй ещё раз позже, пожалуйста)",
+        )
+        await state.finish()
+
+
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT,
+    content_types=types.message.ContentType.ANY,
+    state=Start.group,
+)
+async def start_proceed_group_invalid_type(message: types.Message):
+    """
+    Функция просит ввести номер группы заново, если формат ввода номера группы неправильный.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Пришли номер группы в верном формате, пожалуйста)")
+
+
+@dp.message_handler(Text(equals=["Хочу", "Не хочу"]), state=Start.custom)
+async def start_proceed_custom(message: types.Message, state: FSMContext):
+    """
+    Функция принимает ответ пользователя, нужно ли ему личное расписание, заносит заготовку
+    в базу данных, если ответ положительный.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    if message.text == "Не хочу":  # ответ пользователя отрицательный
+        await bot.send_message(
+            message.chat.id,
+            "Хорошо, но не забывай, что ты всегда можешь вернуться, "
+            "если захочешь опробовать его в деле 😉\n"
+            "Чтобы вызвать личное расписание, напиши /custom.",
+        )
+        await bot.send_message(  # в любом случае пишем про /help
+            message.chat.id,
+            "А теперь скорее пиши /help, чтобы узнать, " "чем еще я могу помочь тебе!",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+    elif message.text == "Хочу":  # ответ пользователя положительный
+        # async with state.proxy() as data:
+        #     group = data['group']
+        # если номер группы верный (по идее должно быть выполнено)
+        # и добавление заготовки расписания прошло успешно
+        update = await psg.create_custom_timetable(message.chat.id)
+        if update[0]:
+            await bot.send_message(
                 message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
+                "Отлично, все получилось 🙃\n"
+                "Теперь ты можешь использовать личное расписание! "
+                "Чтобы вызвать его, напиши /custom.",
             )
-        elif message.text.isdigit():
-            psg.update_course(message.chat.id, int(message.text))
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Всё готово, проверяй)", reply_markup=keyboard
+            await bot.send_message(
+                message.chat.id,
+                "А теперь скорее пиши /help, чтобы узнать, "
+                "чем еще я могу помочь тебе!",
+                reply_markup=today_tomorrow_keyboard(),
             )
         else:
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, "Выход"]]
-            )
-            msg = bot.send_message(
+            await bot.send_message(
                 message.chat.id,
-                "Что-то не так, выбери номер курса ещё раз",
+                "Что-то пошло не так, попробуй еще раз позже, пожалуйста)\n"
+                "Чтобы настроить личное расписание, напиши /custom.",
+            )
+            await bot.send_message(
+                message.chat.id,
+                "Не расстраивайся! Напиши /help, чтобы узнать, "
+                "чем еще я могу помочь тебе!",
+                reply_markup=today_tomorrow_keyboard(),
+            )
+    await state.finish()  # в любом случае останавливаем машину состояний
+
+
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT
+    or message.text not in ["Хочу", "Не хочу"],
+    content_types=types.message.ContentType.ANY,
+    state=Start.custom,
+)
+async def start_proceed_custom_invalid(message: types.Message):
+    """
+    Функция просит выбрать вариант из предложенных, если формат ввода неправильный.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Выбери вариант из предложенных, пожалуйста)")
+
+
+@dp.message_handler(commands="profile")
+async def edit_initiate(message: types.Message):
+    """
+    Функция ловит сообщение с командой '/profile' и спрашивает у пользователя,
+    хочет ли он изменить группу, закрепленную за ним.
+    """
+    await psg.insert_action("profile", message.chat.id)
+    cur_group = await psg.check_user_group(message.chat.id)
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    if cur_group[0]:
+        await Profile.choose.set()  # изменяем состояние на Profile.choose
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ["Да", "Нет", "Выход"]])
+        if cur_group[1][0] == "ALUMNI":
+            await bot.send_message(
+                message.chat.id,
+                f"Сейчас у тебя указано, что ты – выпускник. "
+                "Ты хочешь изменить это значение на номер группы?",
                 reply_markup=keyboard,
             )
-            bot.register_next_step_handler(msg, edit_course)
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, "Выход"]])
-        msg = bot.send_message(
-            message.chat.id,
-            "Что-то не так, выбери номер курса ещё раз",
-            reply_markup=keyboard,
-        )
-        bot.register_next_step_handler(msg, edit_course)
-
-
-def edit_group(message):
-    if message.content_type == "text":
-        if message.text == "Выход":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Передумал? Ну ладно...", reply_markup=keyboard
-            )
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
-            )
         else:
-            psg.update_group_num(message.chat.id, message.text)
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
+            await bot.send_message(
+                message.chat.id,
+                f"Сейчас у тебя указано, что ты учишься в группе {cur_group[1][0]}. "
+                "Ты хочешь изменить это значение?",
+                reply_markup=keyboard,
             )
-            bot.send_message(
-                message.chat.id, "Всё готово, проверяй)", reply_markup=keyboard
-            )
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-        msg = bot.send_message(
+    # если в базе данных нет этого пользователя
+    elif not cur_group[0] and cur_group[1] == "empty_result":
+        await bot.send_message(
             message.chat.id,
-            "Что-то не так, введи номер своей группы ещё раз",
+            "Кажется, мы с тобой еще не знакомы... 😢\n" "Скорей пиши мне /start!",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+    # если произошла ошибка
+    else:
+        await bot.send_message(
+            message.chat.id,
+            "Что-то пошло не так, попробуй еще раз позже, пожалуйста)",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+
+
+@dp.message_handler(Text(equals=["Да", "Нет"]), state=Profile.choose)
+async def edit_proceed_choose(message: types.Message, state: FSMContext):
+    """
+    Функция принимает ответ пользователя, хочет ли он поменять значение группы
+    и просит пользователя ввести желаемый номер группы.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    if message.text == "Да":  # положительный ответ, запрос о вводе номера группы
+        await Profile.group.set()  # изменяем состояние на Profile.group
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(
+            *[types.KeyboardButton(name) for name in ["Уже не учусь", "Выход"]]
+        )
+        await bot.send_message(
+            message.chat.id, "Введи номер группы, пожалуйста)", reply_markup=keyboard
+        )
+    elif message.text == "Нет":  # отрицательный ответ
+        await bot.send_message(
+            message.chat.id,
+            "Я рад, что тебя все устраивает 😉",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+        await state.finish()  # выключаем машину состояний
+
+
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT
+    or message.text not in ["Да", "Нет", "Выход"],
+    content_types=types.message.ContentType.ANY,
+    state=Profile.choose,
+)
+async def edit_proceed_choose_invalid(message: types.Message):
+    """
+    Функция просит выбрать из вариант из предложенных, если формат ввода неправильный.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Выбери вариант из предложенных, пожалуйста)")
+
+
+@dp.message_handler(state=Profile.group)
+async def edit_proceed_group(message: types.Message, state: FSMContext):
+    """
+    Функция ловит ответ пользователя с номером группы, если обновление удалось сделать,
+    посылает пользователю запрос, хочет ли он изменить свое личное расписание.
+    :param message:
+    :param state:
+    :return:
+    """
+    # получилось обновить номер группы, запрос о изменении личного расписания
+    group = "ALUMNI" if message.text == "Уже не учусь" else message.text
+    update = await psg.update_user(message.chat.id, group)
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    if update[0]:
+        # async with state.proxy() as data:
+        #     data['group'] = group
+        await Profile.custom.set()  # изменяем состояние на Profile.custom
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ["Хочу", "Не хочу"]])
+        await bot.send_message(
+            message.chat.id,
+            "Все готово) Ты хочешь поменять личное "
+            "расписание на расписание новой группы?",
             reply_markup=keyboard,
         )
-        bot.register_next_step_handler(msg, edit_group)
+    # номера группы нет в базе (или произошла какая-то другая ошибка, не связанная с соединением)
+    elif not update[0] and update[1] == "other_error":
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(
+            *[types.KeyboardButton(name) for name in ["Уже не учусь", "Выход"]]
+        )
+        await bot.send_message(  # просим пользователя ввести номер группы еще раз
+            message.chat.id,
+            "Что-то пошло не так, введи номер своей группы ещё раз, пожалуйста)",
+            reply_markup=keyboard,
+        )
+    else:
+        await bot.send_message(  # просим пользователя ввести номер группы еще раз
+            message.chat.id,
+            "Что-то не так с соединением, попробуй ещё раз позже, пожалуйста)",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+        await state.finish()
 
 
-@bot.message_handler(commands=["koryavov"])
-def koryavov1(message):
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT,
+    content_types=types.message.ContentType.ANY,
+    state=Profile.group,
+)
+async def edit_proceed_group_invalid_type(message: types.Message):
+    """
+    Функция просит ввести номер группы заново, если формат ввода номера группы неправильный.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Пришли номер группы в верном формате, пожалуйста)")
+
+
+@dp.message_handler(Text(equals=["Хочу", "Не хочу"]), state=Profile.custom)
+async def edit_proceed_custom(message: types.Message, state: FSMContext):
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    if message.text == "Не хочу":  # если пришел отрицательный ответ
+        await bot.send_message(
+            message.chat.id,
+            "Я рад, что тебя все устраивает 😉",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+    elif (
+        message.text == "Хочу"
+    ):  # если пришел положительный ответ, то изменяем личное расписание
+        # async with state.proxy() as data:
+        #     group = data['group']
+        update = await psg.create_custom_timetable(message.chat.id)
+        if update[0]:
+            await bot.send_message(
+                message.chat.id,
+                "Отлично, все получилось 🙃\n"
+                "Чтобы вызвать личное расписание, напиши /custom.",
+                reply_markup=today_tomorrow_keyboard(),
+            )
+        else:  # если произошла ошибка при обновлении расписания
+            await bot.send_message(
+                message.chat.id,
+                "Что-то пошло не так, попробуй еще раз позже, пожалуйста)\n"
+                "Чтобы настроить личное расписание, напиши /custom.",
+                reply_markup=today_tomorrow_keyboard(),
+            )
+    await state.finish()
+
+
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT
+    or message.text not in ["Хочу", "Не хочу"],
+    content_types=types.message.ContentType.ANY,
+    state=Profile.custom,
+)
+async def edit_proceed_custom_invalid(message: types.Message):
+    """
+    Функция просит выбрать из вариант из предложенных, если формат ввода неправильный.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Выбери вариант из предложенных, пожалуйста)")
+
+
+@dp.message_handler(commands="koryavov")
+async def koryavov(message: types.Message):
+    """
+    Функция ловит сообщение с текстом /koryavov.
+    Отправляет пользователю сообщение с просьбой выбрать интересующий его номер семестра курса общей физики
+    """
+    await psg.insert_action("koryavov", message.chat.id)
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(
         *[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, "Выход"]]
     )  # кнопки c номерами семестров
-    msg = bot.send_message(
+    await bot.send_message(
         message.chat.id,
         "Выбери номер семестра общей физики: \n"
         "1) Механика \n"
@@ -301,1024 +615,267 @@ def koryavov1(message):
         "5) Атомная и ядерная физика",
         reply_markup=keyboard,
     )
-    bot.register_next_step_handler(msg, task_number)
+    await Koryavov.sem_num_state.set()
 
 
-def task_number(message):
-    if message.content_type == "text":
-        if message.text.isdigit() and 1 <= int(message.text) <= 5:
-            kor.SEM = int(message.text)
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-            msg = bot.send_message(
-                message.chat.id,
-                "Отлично, напиши теперь номер задачи",
-                reply_markup=keyboard,
-            )
-            bot.register_next_step_handler(msg, task_page)
-        elif message.text == "Выход":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Передумал? Ну ладно...", reply_markup=keyboard
-            )
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
-            )
-        else:
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, "Выход"]]
-            )  # кнопки c номерами семестров
-            msg = bot.send_message(
-                message.chat.id, "Что-то не так, давай ещё раз. Выбери номер семестра:"
-            )
-            bot.register_next_step_handler(msg, task_number)
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(
-            *[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, "Выход"]]
-        )  # кнопки c номерами семестров
-        msg = bot.send_message(
-            message.chat.id, "Что-то не так, давай ещё раз. Выбери номер семестра:"
-        )
-        bot.register_next_step_handler(msg, task_number)
+@dp.message_handler(
+    lambda message: message.text.isdigit(), state=Koryavov.sem_num_state
+)
+async def sem_num(message: types.Message, state: FSMContext):
+    """
+    Функция принимает сообщение от пользователя с номером семестра и записывает его в data storage.
+    Так же отправляется сообщение с просьбой указать номер задачи, интересующей пользователя.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    async with state.proxy() as data:
+        data["sem_num"] = message.text
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
+    await bot.send_message(
+        message.chat.id, "Отлично, напиши теперь номер задачи", reply_markup=keyboard
+    )
+    await Koryavov.task_num_state.set()
 
 
-def task_page(message):
-    if message.content_type == "text":
-        if math_part.is_digit(message.text):
-            kor.TASK = message.text
-            reply = "Информация взята с сайта mipt1.ru \n\n" + kor.kor_page(
-                kor.SEM, kor.TASK
-            )
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(message.chat.id, reply, reply_markup=keyboard)
-        elif message.text == "Выход":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Передумал? Ну ладно...", reply_markup=keyboard
-            )
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
-            )
-        else:
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-            msg = bot.send_message(
-                message.chat.id,
-                "Что-то не так, давай ещё раз. Введи номер задачи.",
-                reply_markup=keyboard,
-            )
-            bot.register_next_step_handler(msg, task_page)
-    else:
+# If some invalid input
+@dp.message_handler(state=Koryavov.sem_num_state)
+async def kor_sem_inv_input(message: types.Message):
+    """
+    В случае некоректного ответа на запрос номера семестра отправляется сообщение с просьбой
+    указать правильный номер семестра
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(
+        *[types.KeyboardButton(name) for name in [1, 2, 3, 4, 5, "Выход"]]
+    )  # кнопки c номерами семестров
+    await bot.send_message(
+        message.chat.id, "Что-то не так, давай ещё раз. Выбери номер семестра:"
+    )
+
+
+@dp.message_handler(
+    lambda message: math_part.is_digit(message.text) or message.text == "Ещё одну",
+    state=Koryavov.task_num_state,
+)
+async def task_page(message: types.Message, state: FSMContext):
+    """
+    Функция ловит сообщение с номером задачи и делает запрос на сайт mipt1.ru чтобы
+    узнать номер страницы в корявове с этой задаче. После чего отправляет пользователю
+    эту информацию. Так же присылается вопрос "нужна ли ещё одна задача ?".
+    """
+    task_num = message.text
+    await bot.send_chat_action(message.chat.id, "typing")
+    async with state.proxy() as data:
+        sem_num = int(data["sem_num"])
+    reply = "Информация взята с сайта mipt1.ru \n\n" + kor.kor_page(sem_num, task_num)
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Ещё одну", "Всё, хватит"]])
+    await bot.send_message(message.chat.id, reply, reply_markup=keyboard)
+    await Koryavov.finish_state.set()
+
+
+# If some invalid input
+@dp.message_handler(state=Koryavov.task_num_state)
+async def kor_task_inv_input(message: types.Message):
+    """
+    В случае некорректоного ввода номера задачи, функция отправляет сообщение с просьбой повторить ввод
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
+    await bot.send_message(
+        message.chat.id,
+        "Что-то не так, введи номер задачи ещё раз)",
+        reply_markup=keyboard,
+    )
+
+
+@dp.message_handler(
+    Text(equals=["Ещё одну", "Всё, хватит"]),
+    state=Koryavov.finish_state,
+)
+async def kor_finish(message: types.Message, state: FSMContext):
+    """
+    Функция принимает сообщение содержащее ['Ещё одну', 'Всё, хватит'] и Koryavov.finish_state(). И в зависимости
+    от сообщения завершает функцию /koryavov или отправляет на предыдущий шаг.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    if message.text == "Ещё одну":
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-        msg = bot.send_message(
-            message.chat.id,
-            "Что-то не так, давай ещё раз. Введи номер задачи.",
-            reply_markup=keyboard,
+        await bot.send_message(
+            message.chat.id, "Окей, напиши номер нужной задачи", reply_markup=keyboard
         )
-        bot.register_next_step_handler(msg, task_page)
-
-
-@bot.message_handler(commands=["start"])
-def check(message):
-    data = psg.read_data()
-    if message.chat.id in data.index:
-        pass
+        await Koryavov.task_num_state.set()
     else:
-        psg.insert_data(message.chat.id, "Б00-228", 0)
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(
-            *[types.KeyboardButton(name) for name in range(1, 6)]
-        )  # кнопки c номерами курсов
-        msg = bot.send_message(
+        async with state.proxy() as data:
+            data.clear()
+        await bot.send_message(
             message.chat.id,
-            "Привет-привет 🙃 Давай знакомиться! Меня зовут A2."
-            " Можешь рассказать мне немного о себе,"
-            " чтобы я знал, как могу тебе помочь?"
-            " Для начала выбери номер своего курса.",
-            reply_markup=keyboard,
+            "Рад был помочь😉 Удачи !",
+            reply_markup=today_tomorrow_keyboard(),
         )
-        bot.register_next_step_handler(msg, group_num)
+        await state.finish()
 
 
-def group_num(message):
-    if (message.text.isdigit()) and (1 <= int(message.text) <= 5):
-        psg.update_course(message.chat.id, int(message.text))
-        keyboard = types.ReplyKeyboardRemove()
-        msg = bot.send_message(
-            message.chat.id,
-            "Отлично, а теперь не подскажешь номер своей группы?\n"
-            "(В формате Б00–228 или 777, как в расписании)",
-            reply_markup=keyboard,
-        )
-        bot.register_next_step_handler(msg, end)
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(
-            *[types.KeyboardButton(name) for name in range(1, 6)]
-        )  # кнопки c номерами курсов
-        msg = bot.send_message(
-            message.chat.id,
-            "Выбери номер курса из предложенных, пожалуйста)",
-            reply_markup=keyboard,
-        )
-        bot.register_next_step_handler(msg, group_num)
-
-
-def end(message):
-    psg.update_group_num(message.chat.id, message.text)
-    keyboard = types.ReplyKeyboardMarkup(
-        resize_keyboard=True
-    )  # кнопки для получения расписания на сегодня или завтра
-    keyboard.add(*[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]])
-    bot.send_message(
-        message.chat.id,
-        "Отлично, вот мы и познакомились 🙃 Я очень люблю помогать людям,"
-        " напиши /help чтобы узнать, что я умею. ",
-        reply_markup=keyboard,
-    )
-
-
-@bot.message_handler(commands=["pb"])
-def pb(message):
-    bot.send_message(message.chat.id, "Хочешь вспомнить парочку определений?)📚📚")
+# If some invalid input
+@dp.message_handler(state=Koryavov.finish_state)
+async def kor_task_inv_input(message: types.Message):
+    """
+    В случае некорректоного сообщения, функция отправляет сообщение с просьбой попробовать ещё раз.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in SUBJECTS.keys()])
-    msg = bot.send_message(
-        message.chat.id, "Сначала выбери предмет", reply_markup=keyboard
-    )
-    bot.register_next_step_handler(msg, sub)
-
-
-def sub(message):
-    """
-    Функция вызывается функцией start, в зависимости от выбора предмета пользователем функция предлагает
-     параграфы этого предмета и вызывает функцию  paragraph()
-    :param message: telebot.types.Message
-    :return:
-    """
-    global Q_NUM, SUBJECT_NOW, SUBJECTS
-    if message.text in SUBJECTS.keys():
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(
-            *[types.KeyboardButton(name) for name in SUBJECTS[message.text].keys()]
-        )
-        msg = bot.send_message(
-            message.chat.id, "Какой раздел ты хочешь поботать?", reply_markup=keyboard
-        )
-        SUBJECT_NOW = message.text
-        bot.register_next_step_handler(msg, par)
-
-    elif message.text == "Выбрать другой параграф":
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(
-            *[types.KeyboardButton(name) for name in SUBJECTS[SUBJECT_NOW].keys()]
-        )
-        msg = bot.send_message(
-            message.chat.id, "Какой параграф ты хочешь поботать?", reply_markup=keyboard
-        )
-        bot.register_next_step_handler(msg, par)
-
-    elif message.text == "Всё, хватит" or message.text == "В другой раз...":
-        keyboard = types.ReplyKeyboardRemove()
-        bot.send_message(message.chat.id, "Возвращайся ещё!", reply_markup=keyboard)
-        SUBJECT_NOW = ""
-
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(
-            *[types.KeyboardButton(name) for name in ["Матан", "В другой раз..."]]
-        )
-        msg = bot.send_message(
-            message.chat.id,
-            "Извини, я тебя не понял, можешь, пожалуйста, повторить?",
-            reply_markup=keyboard,
-        )
-        bot.register_next_step_handler(msg, sub)
-
-
-def par(message):
-    """
-    Функция вызывается функцией subject(). Она рандомно генерирует номер вопроса и присылает вопрос пользователю
-    :param message: telebot.types.Message
-    :return:
-    """
-    global Q_NUM, PAR_NUM, SUBJECTS, SUBJECT_NOW
-    path = os.path.abspath("")
-    if (message.text in SUBJECTS[SUBJECT_NOW].keys()) or (message.text == "Ещё"):
-        if message.text in SUBJECTS[SUBJECT_NOW].keys():
-            PAR_NUM = SUBJECTS[SUBJECT_NOW][message.text]
-        questions = pd.read_excel(
-            f"{path}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/flash_data.xlsx",
-            header=None,
-        )
-        d = np.array(questions)
-        for i in range(0, len(d)):
-            Q_NUM = i
-            question = d[Q_NUM, 0]
-            bot.send_message(message.chat.id, question)
-            with open(
-                f"{path}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/{Q_NUM + 1}.png",
-                "rb",
-            ) as photo:
-                bot.send_photo(message.chat.id, photo)
-
-
-@bot.message_handler(commands=["flash_cards"])
-def flash_cards(message):
-    """
-    Функция ловит сообщение с коммандой '/flash_cards' и запускает сессию этой функции
-     отправляя кнопки с выбором предмета. Добавляется inline-клавиатура, нажатие кнопок которой
-     передаются дальше в callback_query_handler
-    :param message: telebot.types.Message
-    :return:
-    """
-    bot.send_message(message.chat.id, "Хочешь вспомнить парочку определений?)📚📚")
-    keyboard = types.InlineKeyboardMarkup()
     keyboard.add(
-        *[
-            types.InlineKeyboardButton(text=name, callback_data=name)
-            for name in SUBJECTS.keys()
-        ]
+        *[types.KeyboardButton(name) for name in ["Ещё одну", "Всё, хватит", "Выход"]]
     )
-    bot.send_message(message.chat.id, "Сначала выбери предмет", reply_markup=keyboard)
-
-
-@bot.callback_query_handler(func=lambda c: c.data in SUBJECTS.keys())
-def subject(c):
-    """
-    Функция ловит callback с названием предмета и изменяет
-     это сообщение на предложение выбора разделов.
-    :param c: telebot.types.CallbackQuery
-    :return:
-    """
-    global Q_NUM, SUBJECT_NOW, SUBJECTS
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(
-        *[
-            types.InlineKeyboardButton(text=name, callback_data=name)
-            for name in SUBJECTS[c.data].keys()
-        ]
-    )
-    bot.edit_message_text(
-        chat_id=c.message.chat.id,
-        message_id=c.message.message_id,
-        text="Какой раздел ты хочешь поботать?",
-        parse_mode="Markdown",
-        reply_markup=keyboard,
-    )
-    SUBJECT_NOW = c.data
-
-
-@bot.callback_query_handler(func=lambda c: (SUBJECT_NOW != "") or (c.data == "Ещё"))
-def paragraph(c):
-    """
-    Функция ловит callback с названием раздела выбранного ранее предмета
-    и изменяет это сообщение на вопрос из этого раздела.
-    :param c: telebot.types.CallbackQuery
-    :return:
-    """
-    global Q_NUM, PAR_NUM, SUBJECTS, SUBJECT_NOW, Q_SEQUENCE
-    path = os.path.abspath("")
-    if ANSW_ID:
-        bot.delete_message(c.message.chat.id, ANSW_ID)
-    if c.data in SUBJECTS[SUBJECT_NOW].keys():
-        PAR_NUM = SUBJECTS[SUBJECT_NOW][c.data]
-    # импортирую список вопросов
-    questions = pd.read_excel(
-        f"{path}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/flash_data.xlsx",
-        header=None,
-    )
-    # преобразования списка в numpy массив
-    questions = np.array(questions)
-    if not Q_SEQUENCE:
-        i = 0
-        for _ in questions:
-            Q_SEQUENCE.append(i)
-            i += 1
-        random.shuffle(Q_SEQUENCE)
-    Q_NUM = Q_SEQUENCE[0]
-    Q_SEQUENCE.pop(0)
-    question = questions[Q_NUM, 0]
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(
-        *[
-            types.InlineKeyboardButton(text=name, callback_data=name)
-            for name in ["Покажи"]
-        ]
-    )
-    bot.edit_message_text(
-        chat_id=c.message.chat.id,
-        message_id=c.message.message_id,
-        text=question,
-        parse_mode="Markdown",
-        reply_markup=keyboard,
-    )
-
-
-@bot.callback_query_handler(func=lambda c: c.data == "Покажи")
-def answer(c):
-    """
-    Функция ловит callback с текстом "Покажи". Присылает пользователю ответ на вопрос.
-    :param c: telebot.types.CallbackQuery
-    :return:
-    """
-    global Q_NUM, PAR_NUM, ANSW_ID
-    path = os.path.abspath("")
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(
-        *[
-            types.InlineKeyboardButton(text=name, callback_data=name)
-            for name in ["Ещё", "Всё, хватит"]
-        ]
-    )
-    with open(
-        f"{path}/flash_cards/{SUBJECTS_PATH[SUBJECT_NOW]}/{PAR_NUM}/{Q_NUM + 1}.png",
-        "rb",
-    ) as photo:
-        bot.edit_message_text(
-            chat_id=c.message.chat.id,
-            message_id=c.message.message_id,
-            text="Правильный ответ",
-            parse_mode="Markdown",
-            reply_markup=keyboard,
-        )
-        msg = bot.send_photo(c.message.chat.id, photo)
-        ANSW_ID = msg.message_id
-
-
-@bot.callback_query_handler(func=lambda c: c.data == "Всё, хватит")
-def stop_cards(c):
-    """
-    Функция ловит callback с текстом "Всё, хватит". Завершает сеанс игры.
-    :param c: telebot.types.CallbackQuery
-    :return:
-    """
-    global ANSW_ID
-    bot.edit_message_text(
-        chat_id=c.message.chat.id,
-        message_id=c.message.message_id,
-        text="Возвращайся ещё 😉",
-        parse_mode="Markdown",
-    )
-    bot.delete_message(c.message.chat.id, ANSW_ID)
-
-
-@bot.message_handler(commands=["plot"])
-def plot(message):
-    """
-    Функция ловит сообщение с текстом '/plot'. Инициируется процесс рисования графика. Запускает функцию ax_x()
-    :param message: telebot.types.Message
-    :return:
-    """
-    global MESSAGE_COM
-    bot.send_message(
+    await bot.send_message(
         message.chat.id,
-        "Снова лабки делаешь?) Ох уж эти графики!..."
-        " Сейчас быстренько всё построю, только тебе придётся ответить на пару вопросов"
-        "😉. И не засиживайся, ложись спать)",
-    )
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(*[types.KeyboardButton(name) for name in ["Без названия", "Выход"]])
-    msg = bot.send_message(
-        message.chat.id,
-        "Как мы назовём график?"
-        " Если не хочешь давать ему название,"
-        " то нажми кнопку ниже 😉",
+        "Что-то пошло не так. Ты хочешь узнать номер страницы для ещё одной задачи ?",
         reply_markup=keyboard,
     )
-    MESSAGE_COM = "plot"
-    bot.register_next_step_handler(msg, tit)
 
 
-def tit(message):
-    """
-    Функция вызывается ax_x(), записывает введённое пользователем название графика, вызывает data_mnk()
-    :param message: сообщение пользователя
-    :return:
-    """
-    global MESSAGE_COM
-    if message.content_type == "text":
-        if message.text == "Выход":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Передумал? Ну ладно...", reply_markup=keyboard
-            )
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
-            )
-        elif message.text == "Без названия":
-            math_part.TITLE = ""
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ["✅", "❌", "Выход"]])
-            msg = bot.send_message(
-                message.chat.id, "Прямую по МНК строим?", reply_markup=keyboard
-            )
-            bot.register_next_step_handler(msg, mnk)
-        else:
-            math_part.TITLE = message.text
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ["✅", "❌", "Выход"]])
-            msg = bot.send_message(
-                message.chat.id, "Прямую по МНК строим?", reply_markup=keyboard
-            )
-            bot.register_next_step_handler(msg, mnk)
-
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ["Без названия"]])
-        msg = bot.send_message(
-            message.chat.id,
-            "Я тебя не понял... Напиши ещё раз название графика."
-            " Если не хочешь давать ему название,"
-            " то нажми кнопку ниже 😉",
-            reply_markup=keyboard,
-        )
-        MESSAGE_COM = "plot"
-        bot.register_next_step_handler(msg, tit)
-
-
-def mnk(message):
-    """
-    Функция вызывается tit(), записывается выбор пользователя: строить мнк прямую или нет. Вызывает
-    :param message: сообщение пользователя
-    :return:
-    """
-    if message.content_type == "text":
-        if message.text == "Выход":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Передумал? Ну ладно...", reply_markup=keyboard
-            )
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
-            )
-        elif message.text == "✅":
-            math_part.ERROR_BAR = True
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ["0.0/0.0"]])
-            msg = bot.send_message(
-                message.chat.id,
-                "Пришли данные для крестов погрешностей по осям х и y в"
-                ' формате "123.213/123.231", если кресты не нужны, то'
-                " нажми на кнопку ниже",
-                reply_markup=keyboard,
-            )
-            bot.register_next_step_handler(msg, error_bars)
-        elif message.text == "❌":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-            with open("files/Example.xlsx", "rb") as example:
-                bot.send_document(message.chat.id, example)
-            msg = bot.send_message(
-                message.chat.id,
-                "Пришли .xlsx файл с данными как в example.xlsx, и всё будет готово",
-                reply_markup=keyboard,
-            )
-            bot.register_next_step_handler(msg, date_mnk)
-        else:
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ["✅", "❌", "Выход"]])
-            msg = bot.send_message(
-                message.chat.id,
-                "Извини, повтори ещё раз... Прямую по МНК строим?",
-                reply_markup=keyboard,
-            )
-            bot.register_next_step_handler(msg, mnk)
-
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ["✅", "❌", "Выход"]])
-        msg = bot.send_message(
-            message.chat.id,
-            "Извини, повтори ещё раз... Прямую по МНК строим?",
-            reply_markup=keyboard,
-        )
-        bot.register_next_step_handler(msg, mnk)
-
-
-def error_bars(message):
-    if message.content_type == "text":
-        if message.text == "Выход":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Передумал? Ну ладно...", reply_markup=keyboard
-            )
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
-            )
-        try:
-            math_part.ERRORS = list(map(float, message.text.split("/")))
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-            with open("files/Example.xlsx", "rb") as expl:
-                bot.send_document(message.chat.id, expl)
-            msg = bot.send_message(
-                message.chat.id,
-                "Пришли .xlsx файл с данными как в example.xlsx и всё будет готово",
-                reply_markup=keyboard,
-            )
-            bot.register_next_step_handler(msg, date_mnk)
-        except Exception as e:
-            print(e)
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ["0.0/0.0"]])
-            msg = bot.send_message(
-                message.chat.id,
-                "Не могу распознать формат данных( Давай ещё раз. "
-                "Пришли данные для крестов погрешностей по осям х и y в "
-                'формате "123.213/123.231", если кресты не нужны, то'
-                " нажми на кнопку ниже",
-                reply_markup=keyboard,
-            )
-            bot.register_next_step_handler(msg, error_bars)
-    else:
-        math_part.ERROR_BAR = True
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ["0.0/0.0"]])
-        msg = bot.send_message(
-            message.chat.id,
-            "Ты прислал что-то не то( Давай ещё раз. "
-            "Пришли данные для крестов погрешностей по осям х и y в "
-            'формате "123.213/123.231", если кресты не нужны, то'
-            " нажми на кнопку ниже",
-            reply_markup=keyboard,
-        )
-        bot.register_next_step_handler(msg, error_bars)
-
-
-def date_mnk(message):
-    """
-    Функция активирует рисование графика/линеаризованного графика/подсчёта констант и погрешностей, в зависимости от
-    того, какая функция была написана пользователем.
-    :param message:
-    :return:
-    """
-    if message.content_type == "text":
-        if message.text == "Выход":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Передумал? Ну ладно...", reply_markup=keyboard
-            )
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
-            )
-        else:
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-            msg = bot.send_message(
-                message.chat.id,
-                "Ты точно прислал .xlsx файл? Давай ещё раз! "
-                "Пришли .xlsx файл с данными, и всё будет готово",
-                reply_markup=keyboard,
-            )
-            bot.register_next_step_handler(msg, date_mnk)
-    elif message.content_type == "document":
-        if message.document.file_name == "Example.xlsx":
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-            msg = bot.send_message(
-                message.chat.id,
-                "Переименуй файл, пожалуйста🥺 И присылай снова, я подожду",
-                reply_markup=keyboard,
-            )
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAMDXj8HbU7hkvX2ou3kfBAsN6kHtKcAAsUFAAL6C7YIqZjbAAHdPGrWGAQ",
-            )
-            bot.register_next_step_handler(msg, date_mnk)
-        else:
-            try:
-                file_id = message.json.get("document").get("file_id")
-                file_path = bot.get_file(file_id).file_path
-                downloaded_file = bot.download_file(file_path)
-                FILE_NAME = message.document.file_name
-                with open(FILE_NAME, "wb") as new_file:
-                    new_file.write(downloaded_file)
-                a, b, d_a, d_b = math_part.mnk_calc(FILE_NAME)
-                math_part.BOT_PLOT = True
-                math_part.plots_drawer(
-                    FILE_NAME,
-                    math_part.TITLE,
-                    math_part.ERRORS[0],
-                    math_part.ERRORS[1],
-                    math_part.ERROR_BAR,
-                )
-                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                keyboard.add(
-                    *[
-                        types.KeyboardButton(name)
-                        for name in ["На сегодня", "На завтра"]
-                    ]
-                )
-                bot.send_message(
-                    message.chat.id, "Принимай работу!)", reply_markup=keyboard
-                )
-                with open("plot.png", "rb") as photo:
-                    bot.send_document(message.chat.id, photo)
-                if math_part.ERROR_BAR:
-                    for i in range(0, len(a)):
-                        bot.send_message(
-                            message.chat.id,
-                            f"Коэффициенты {i + 1}-ой прямой:\n"
-                            f" a = {a[i]} +- {d_a[i]}\n"
-                            f" b = {b[i]} +- {d_b[i]}",
-                        )
-                with open("plot.pdf", "rb") as photo:
-                    bot.send_document(message.chat.id, photo)
-                os.remove("plot.pdf")
-                os.remove("plot.png")
-                math_part.BOT_PLOT = False
-                if FILE_NAME != "Example.xlsx":
-                    os.remove(FILE_NAME)
-                math_part.TITLE = ""
-                math_part.ERRORS = [0, 0]
-                math_part.ERROR_BAR = False
-            except Exception as e:
-                os.remove(FILE_NAME)
-                print(e)
-                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-                msg = bot.send_message(
-                    message.chat.id,
-                    "Ты точно прислал .xlsx файл как в примере? Давай ещё раз!",
-                    reply_markup=keyboard,
-                )
-                bot.register_next_step_handler(msg, date_mnk)
-    else:
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-        msg = bot.send_message(
-            message.chat.id,
-            "Ты точно прислал .xlsx файл? Давай ещё раз! "
-            "Пришли .xlsx файл с данными, и всё будет готово",
-            reply_markup=keyboard,
-        )
-        bot.register_next_step_handler(msg, date_mnk)
-
-
-@bot.message_handler(func=lambda message: message.text in ["На сегодня", "На завтра"])
-def get_start_schedule(message):
-    """
-    Функция ловит сообщение с текстом "Расписание на сегодня/завтра".
-    Узнает номер дня недели сегодня/завтра и по этому значению обращается в функцию timetable_by_group().
-    :return:
-    """
-    try:
-        student = psg.get_student(message.chat.id)
-    except Exception as e:
-        print("АШИПКА")
-        print(e)
-        bot.send_message(
-            os.environ["ADMIN_1"],
-            f"Посмотри логи у чувака"
-            f" user = {message.from_user} id={message.chat.id}"
-            f" пошла по пизде 706 строчка...",
-        )
-        bot.send_message(
-            os.environ["ADMIN_2"],
-            f"Посмотри логи у чувака"
-            f" user = {message.from_user} id={message.chat.id}"
-            f" пошла по пизде 706 строчка...",
-        )
-        bot.send_message(
-            message.chat.id,
-            "Извини, что-то пошло не так, команда устранения ошибок уже взялась за дело,"
-            " попробуй эту функцию позже) Чтобы проблема решилась быстрее"
-            " ты можешь написать @Error404NF",
-        )
-        return "Что-то пошло по пизде"
-
-    if timetable.timetable.check_group(student[0], student[1]):
-        # список дней для удобной конвертации номеров дней недели (0,1, ..., 6) в их названия
-        week = tuple(
-            [
-                "Понедельник",
-                "Вторник",
-                "Среда",
-                "Четверг",
-                "Пятница",
-                "Суббота",
-                "Воскресенье",
-            ]
-        )
-        today = (
-            datetime.datetime.today().weekday()
-        )  # today - какой сегодня день недели (от 0 до 6)
-        if message.text == "На сегодня":  # расписание на сегодня
-            schedule = timetable.timetable.timetable_by_group(
-                student[1], student[0], week[today]
-            )
-            STRING = ""  # "строка" с расписанием, которую отправляем сообщением
-            for (
-                row
-            ) in (
-                schedule.iterrows()
-            ):  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
-                # время пары - жирный + наклонный шрифт, название пары на следующей строке
-                string: str = (
-                    "<b>" + "<i>" + row[0] + "</i>" + "</b>" + "\n" + row[1][0]
-                )
-                STRING += string + "\n\n"  # между парами пропуск (1 enter)
-            bot.send_message(
-                message.chat.id, STRING, parse_mode="HTML"
-            )  # parse_mode - чтобы читал измененный шрифт
-            keyboard = types.ReplyKeyboardMarkup(
-                resize_keyboard=True
-            )  # кнопки для получения расписания на сегодня или завтра
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Чем ещё я могу помочь?", reply_markup=keyboard
-            )
-        elif message.text == "На завтра":  # расписание на завтра
-            tomorrow = 0  # номер дня завтра, если это воскресенье (6), то уже стоит
-            if today in range(6):  # если не воскресенье, то значение today + 1
-                tomorrow = today + 1
-            # тест на рандомной группе
-            schedule = timetable.timetable.timetable_by_group(
-                student[1], student[0], week[tomorrow]
-            )
-            STRING = ""  # "строка" с расписанием, которую отправляем сообщением
-            for (
-                row
-            ) in (
-                schedule.iterrows()
-            ):  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
-                # время пары - жирный + наклонный шрифт, название пары на следующей строке
-                string: str = (
-                    "<b>" + "<i>" + row[0] + "</i>" + "</b>" + "\n" + row[1][0]
-                )
-                STRING += string + "\n\n"  # между парами пропуск (1 enter)
-            bot.send_message(
-                message.chat.id, STRING, parse_mode="HTML"
-            )  # parse_mode - чтобы читал измененный шрифт
-            keyboard = types.ReplyKeyboardMarkup(
-                resize_keyboard=True
-            )  # кнопки для получения расписания на сегодня или завтра
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Чем ещё я могу помочь?", reply_markup=keyboard
-            )
-    else:
-        bot.send_message(
-            message.chat.id,
-            "Не могу найти расписание для указанных тобой номера курса и группы 😞 "
-            "Нажми /profile чтобы проверить корректность данных.",
-        )
-
-
-@bot.message_handler(commands=["timetable"])
-def get_course(message):
+@dp.message_handler(commands="timetable")
+async def timetable_initiate(message: types.Message):
     """
     Функция ловит сообщение с текстом "/timetable".
-    Отправляет пользователю вопрос о номере курса. Вызывает функцию get_group()
-    :param message: telebot.types.Message
-    :return:
+    Отправляет пользователю вопрос, расписание своей или другой группы ему нужно.
     """
-    if message.text == "/timetable":  # инициализация блока
-        bot.send_message(
-            message.chat.id,
-            "Снова не можешь вспомнить, какая пара следующая? :) " "Ничего, я уже тут!",
-        )
+    await psg.insert_action("timetable", message.chat.id)
+    await Timetable.choose.set()  # ставим состояние Timetable.choose
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await bot.send_message(
+        message.chat.id,
+        "Снова не можешь вспомнить, какая пара следующая?\n" "Ничего, я уже тут! 😉",
+    )
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Личное", "Моя группа"]])
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Другая группа", "Выход"]])
+    await bot.send_message(
+        message.chat.id,
+        "Выбери, пожалуйста, какое расписание тебе нужно)",
+        reply_markup=keyboard,
+    )
+
+
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT
+    or message.text not in ["Личное", "Моя группа", "Другая группа", "Выход"],
+    state=Timetable.choose,
+    content_types=types.message.ContentType.ANY,
+)
+async def timetable_proceed_choose_invalid(message: types.Message):
+    """
+    Функция просит пользователя выбрать вариант из списка ['Личное', 'Моя группа', 'Другая группа', 'Выход'],
+    если сообщение не содержит никакую из этих строк (+ проверка типа сообщения).
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Выбери вариант из предложенных, пожалуйста)")
+
+
+@dp.message_handler(Text(equals=["Другая группа"]), state=Timetable.choose)
+async def timetable_proceed_choose(message: types.Message):
+    """
+    Функция ловит сообщение с текстом 'Другая группа' и отправляет пользователю вопрос о номере группы.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await Timetable.another_group.set()  # изменяем состояние на Timetable.another_group
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(
+        *[types.KeyboardButton(name) for name in ["Выход"]]
+    )  # кнопка для выхода из функции
+    await bot.send_message(
+        message.chat.id,  # просим пользователя ввести номер группы
+        "Не подскажешь номер группы?\n" "(В формате Б00–228 или 777, как в расписании)",
+        reply_markup=keyboard,
+    )
+
+
+@dp.message_handler(state=Timetable.another_group)
+async def timetable_proceed_another_group(message: types.Message, state: FSMContext):
+    """
+    Функция принимает сообщение с номером группы и проверяет его. Если все хорошо, то отправляет
+    пользователю запрос о дне недели. Если произошла какая-то ошибка, то функция просит пользователя
+    ввести номер группы еще раз.
+    """
+    timetable = await psg.send_timetable(another_group=message.text)
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    if timetable[0]:
+        await Timetable.weekday.set()  # изменяем состояние на Timetable.weekday
+        async with state.proxy() as data:
+            data["schedule"] = pickle.loads(timetable[1][0])  # записываем расписание
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
+        keyboard.add(*[types.KeyboardButton(name) for name in ["На неделю"]])
         keyboard.add(
-            *[types.KeyboardButton(name) for name in range(1, 4)]
-        )  # кнопки c номерами курсов
-        keyboard.add(
-            *[types.KeyboardButton(name) for name in [4, 5, "Выход"]]
-        )  # кнопка для выхода из функции
-        msg = bot.send_message(
-            message.chat.id, "Не подскажешь номер курса?", reply_markup=keyboard
+            *[types.KeyboardButton(name) for name in ["Понедельник", "Вторник"]]
         )
-        bot.register_next_step_handler(msg, get_group)
-    elif (
-        message.text == "Ладно, сам посмотрю"
-    ):  # если после ошибки в считывании данных пришло сообщение о выходе:
-        keyboard = types.ReplyKeyboardMarkup(
-            resize_keyboard=True
-        )  # кнопки для получения расписания на сегодня или завтра
-        keyboard.add(
-            *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-        )
-        bot.send_message(
+        keyboard.add(*[types.KeyboardButton(name) for name in ["Среда", "Четверг"]])
+        keyboard.add(*[types.KeyboardButton(name) for name in ["Пятница", "Суббота"]])
+        keyboard.add(*[types.KeyboardButton(name) for name in ["Воскресенье", "Выход"]])
+        await bot.send_message(
             message.chat.id,
-            "Без проблем! " "Но ты это, заходи, если что :)",
+            "Расписание на какой день недели ты хочешь узнать?",
             reply_markup=keyboard,
         )
-        # стикос "Ты заходи есчо"
-        bot.send_sticker(
+    # номера группы нет в базе / произошла какая-то ошибка, связанная с соединением
+    elif not timetable[0] and timetable[1] == "connection_error":
+        await bot.send_message(
             message.chat.id,
-            "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
+            "Что-то не так с соединением, попробуй еще раз позже, пожалуйста)",
+            reply_markup=today_tomorrow_keyboard(),
         )
-    elif (
-        message.text == "Попробую ещё раз"
-    ):  # если после ошибки в считывании данных в других функциях пришло
-        # сообщение попробовать ввести значения еще раз
+        await state.finish()
+    # произошла какая-то ошибка другого рода
+    else:
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(
-            *[types.KeyboardButton(name) for name in range(1, 4)]
-        )  # то же, что и в блоке инициализации
-        keyboard.add(*[types.KeyboardButton(name) for name in [4, 5, "Выход"]])
-        msg = bot.send_message(
-            message.chat.id, "Не подскажешь номер курса?", reply_markup=keyboard
-        )
-        bot.register_next_step_handler(msg, get_group)
-
-
-def get_group(message):
-    """
-    Функция сохраняет номер курса и отправляет пользователю вопрос о номере группы.
-    Вызывает функцию get_weekday().
-    :param message: telebot.types.Message
-    :return:
-    """
-    global COURSE_NUM  # вызываем глобальную переменную с номером курса
-    if (
-        message.content_type == "text"
-    ):  # проверка типа сообщения, является ли оно текстовым, а не файлом
-        if (
-            message.text == "Выход"
-        ):  # если из функции get_course() пришло сообщение о выходе
-            keyboard = types.ReplyKeyboardMarkup(
-                resize_keyboard=True
-            )  # кнопки для получения расписания на сегодня или завтра
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Передумал? Ну ладно...", reply_markup=keyboard
-            )
-            # стикос "Ты заходи есчо"
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
-            )
-        elif message.text in map(str, range(1, 6)):  # если прилетел номер курса
-            COURSE_NUM = int(message.text)  # запоминаем номер курса (число)
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[
-                    types.KeyboardButton(name)
-                    for name in ["Моя группа", "Выход"]  # кнопка для выхода из функции
-                ]
-            )
-            bot.send_message(
-                message.chat.id,  # просим пользователя ввести номер группы
-                "Не подскажешь номер группы?\n"
-                "(В формате Б00–228 или 777, как в расписании)",
-                reply_markup=keyboard,
-            )
-            bot.register_next_step_handler(message, get_weekday)
-        elif (
-            message.text == "Ладно, сам посмотрю"
-        ):  # если после ошибки в считывании данных пришло сообщение о выходе:
-            keyboard = types.ReplyKeyboardMarkup(
-                resize_keyboard=True
-            )  # кнопки для получения расписания на сегодня или завтра
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id,
-                "Без проблем! " "Но ты это, заходи, если что :)",
-                reply_markup=keyboard,
-            )
-            # стикос "Ты заходи есчо"
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
-            )
-        elif (
-            message.text == "Попробую ещё раз"
-        ):  # если после ошибки в считывании данных в других функциях пришло
-            # сообщение попробовать ввести значения еще раз
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[
-                    types.KeyboardButton(name)
-                    for name in ["Моя группа", "Выход"]  # кнопка для выхода из функции
-                ]
-            )
-            bot.send_message(
-                message.chat.id,  # просим пользователя ввести номер группы
-                "Не подскажешь номер группы?\n"
-                "(В формате Б00–228 или 777, как в расписании)",
-                reply_markup=keyboard,
-            )
-            bot.register_next_step_handler(message, get_weekday)
-        else:  # если сообщение не "Выход" и не номер курса, то говорим об ошибке и отправляем в get_course()
-            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            keyboard.add(
-                *[
-                    types.KeyboardButton(name)
-                    for name in [
-                        "Попробую ещё раз",
-                        "Ладно, сам посмотрю",  # первая кнопка - ввод данных заново, вторая - выход
-                    ]
-                ]
-            )
-            msg = bot.send_message(
-                message.chat.id,
-                "Что-то не получилось... Ты мне точно прислал номер курса в правильном "
-                "формате?",
-                reply_markup=keyboard,
-            )
-            bot.register_next_step_handler(msg, get_course)
-    else:  # если сообщение не является текстом, то говорим об ошибке формата и отправляем в get_course()
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(
-            *[
-                types.KeyboardButton(name)
-                for name in ["Попробую ещё раз", "Ладно, сам посмотрю"]
-            ]
-        )
-        msg = bot.send_message(
+        keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
+        await bot.send_message(  # просим пользователя ввести номер группы еще раз
             message.chat.id,
-            "Что-то не получилось... Ты мне точно прислал номер курса в правильном "
-            "формате?",
+            "К сожалению я не знаю такой группы(\n" "Введи номер ещё раз, пожалуйста)",
             reply_markup=keyboard,
         )
-        bot.register_next_step_handler(msg, get_course)
 
 
-def get_weekday(message):
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT,
+    state=Timetable.another_group,
+    content_types=types.message.ContentType.ANY,
+)
+async def timetable_proceed_another_group_invalid_type(message: types.Message):
     """
-    Функция сохраняет номер группы и отправляет кнопки с выбором дня недели.
-    Вызывает функцию get_schedule().
-    :param message: telebot.types.Message
-    :return:
+    Функция просит ввести номер группы заново, если формат ввода неправильный.
     """
-    global GROUP_NUM, COURSE_NUM  # глобальные переменные
-    if message.content_type == "text":  # проверяем, является ли сообщение текстовым
-        if message.text == "Выход":  # если из get_group() прилетело сообщение о выходе
-            keyboard = types.ReplyKeyboardMarkup(
-                resize_keyboard=True
-            )  # кнопки для получения расписания на сегодня или завтра
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Передумал? Ну ладно...", reply_markup=keyboard
-            )
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
-            )
-        elif (
-            message.text == "Ладно, сам посмотрю"
-        ):  # если после ошибки в считывании данных пришло сообщение о выходе:
-            keyboard = types.ReplyKeyboardMarkup(
-                resize_keyboard=True
-            )  # кнопки для получения расписания на сегодня или завтра
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id,
-                "Без проблем! " "Но ты это, заходи, если что :)",
-                reply_markup=keyboard,
-            )
-            # стикос "Ты заходи есчо"
-            bot.send_sticker(
-                message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
-            )
-        elif message.text == "Попробую ещё раз":
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Пришли номер группы в верном формате, пожалуйста)")
+
+
+@dp.message_handler(Text(equals=["Личное", "Моя группа"]), state=Timetable.choose)
+async def timetable_proceed_my_group_custom(message: types.Message, state: FSMContext):
+    """
+    Функция принимает сообщение от пользователя с запросом нужного ему варианта расписания.
+    Отправляет пользователю вопрос о нужном дне недели. В случае ошибки отправляет пользователю
+    сообщение о необходимости редактирования номера группы или личного расписания.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    timetable = (
+        await psg.send_timetable(custom=True, chat_id=message.chat.id)
+        if message.text == "Личное"
+        else await psg.send_timetable(my_group=True, chat_id=message.chat.id)
+    )
+    if timetable[0]:  # если расписание было найдено
+        if timetable[1][0] is not None and bytes(timetable[1][0]) != b"DEFAULT":
+            await Timetable.weekday.set()  # изменяем состояние на Timetable.weekday
+            async with state.proxy() as data:
+                data["schedule"] = pickle.loads(
+                    timetable[1][0]
+                )  # записываем расписание
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
+            keyboard.add(*[types.KeyboardButton(name) for name in ["На неделю"]])
             keyboard.add(
                 *[types.KeyboardButton(name) for name in ["Понедельник", "Вторник"]]
             )
@@ -1326,321 +883,1112 @@ def get_weekday(message):
             keyboard.add(
                 *[types.KeyboardButton(name) for name in ["Пятница", "Суббота"]]
             )
-            keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-            bot.send_message(
+            keyboard.add(
+                *[types.KeyboardButton(name) for name in ["Воскресенье", "Выход"]]
+            )
+            await bot.send_message(
                 message.chat.id,
-                "Расписание на какой день ты хочешь узнать?",
+                "Расписание на какой день недели ты хочешь узнать?",
                 reply_markup=keyboard,
             )
-            bot.register_next_step_handler(message, get_schedule)
-        elif message.text == "Моя группа":
-            GROUP_NUM = psg.get_student(message.chat.id)[0]
-            if timetable.timetable.check_group(GROUP_NUM, COURSE_NUM):
-                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
-                keyboard.add(
-                    *[types.KeyboardButton(name) for name in ["Понедельник", "Вторник"]]
-                )
-                keyboard.add(
-                    *[types.KeyboardButton(name) for name in ["Среда", "Четверг"]]
-                )
-                keyboard.add(
-                    *[types.KeyboardButton(name) for name in ["Пятница", "Суббота"]]
-                )
-                keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-                bot.send_message(
-                    message.chat.id,
-                    "Расписание на какой день ты хочешь узнать?",
-                    reply_markup=keyboard,
-                )
-                bot.register_next_step_handler(message, get_schedule)
-            else:
-                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                keyboard.add(
-                    *[
-                        types.KeyboardButton(name)
-                        for name in ["Попробую ещё раз", "Ладно, сам посмотрю"]
-                    ]
-                )
-                msg = bot.send_message(
-                    message.chat.id,
-                    "Что-то не получилось... Ты мне точно прислал номер группы в правильном"
-                    " формате?",
-                    reply_markup=keyboard,
-                )
-                bot.register_next_step_handler(msg, get_group)
-        else:
-            GROUP_NUM = message.text
-            if timetable.timetable.check_group(GROUP_NUM, COURSE_NUM):
-                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
-                keyboard.add(
-                    *[types.KeyboardButton(name) for name in ["Понедельник", "Вторник"]]
-                )
-                keyboard.add(
-                    *[types.KeyboardButton(name) for name in ["Среда", "Четверг"]]
-                )
-                keyboard.add(
-                    *[types.KeyboardButton(name) for name in ["Пятница", "Суббота"]]
-                )
-                keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
-                bot.send_message(
-                    message.chat.id,
-                    "Расписание на какой день недели ты хочешь узнать?",
-                    reply_markup=keyboard,
-                )
-                bot.register_next_step_handler(message, get_schedule)
-            else:
-                keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                keyboard.add(
-                    *[
-                        types.KeyboardButton(name)
-                        for name in ["Попробую ещё раз", "Ладно, сам посмотрю"]
-                    ]
-                )
-                msg = bot.send_message(
-                    message.chat.id,
-                    "Что-то не получилось... Ты мне точно прислал номер группы в правильном"
-                    " формате?",
-                    reply_markup=keyboard,
-                )
-                bot.register_next_step_handler(msg, get_group)
-    else:  # если сообщение не текстовое, то говорим об ошибке формата, отсылаем в функцию get_group()
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(
-            *[
-                types.KeyboardButton(name)
-                for name in ["Попробую ещё раз", "Ладно, сам посмотрю"]
-            ]
-        )
-        msg = bot.send_message(
-            message.chat.id,
-            "Что-то не получилось... Ты мне точно прислал номера группы в правильном "
-            "формате?",
-            reply_markup=keyboard,
-        )
-        bot.register_next_step_handler(msg, get_group)
-
-
-pd.options.display.max_colwidth = 100
-
-
-def get_schedule(message):
-    """
-    Функция, выдающая расписание на нужный день недели.
-    :param message: telebot.types.Message
-    :return:
-    """
-    global COURSE_NUM, GROUP_NUM
-    if message.content_type == "text":  # проверка типа сообщения - текст или нет
-        if (
-            message.text == "Выход"
-        ):  # если из функции get_group() прилетело сообщение о выходе
-            keyboard = types.ReplyKeyboardMarkup(
-                resize_keyboard=True
-            )  # кнопки для получения расписания на сегодня или завтра
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
-            )
-            bot.send_message(
-                message.chat.id, "Передумал? Ну ладно...", reply_markup=keyboard
-            )
-            bot.send_sticker(
+        elif timetable[1][0] is not None and bytes(timetable[1][0]) == b"DEFAULT":
+            await bot.send_message(  # отправляем расписание
                 message.chat.id,
-                "CAACAgIAAxkBAAIsCV42vjU8mR9P-zoPiyBu_3_eG-wTAAIMDQACkjajC9UvBD6_RUE4GAQ",
+                "В этом семестре нет официального расписания для твоей группы( "
+                "Пожалуйста, измени номер своей группы в /profile 😉",
+                reply_markup=today_tomorrow_keyboard(),
             )
-        elif message.text in [
+            await state.finish()
+        else:
+            await bot.send_message(
+                message.chat.id,
+                "Не могу найти твое личное расписание 😞\n"
+                "Нажми /custom чтобы проверить корректность данных.",
+                reply_markup=today_tomorrow_keyboard(),
+            )
+            await state.finish()
+    # если в базе данных нет этого пользователя
+    elif not timetable[0] and timetable[1] == "empty_result":
+        await bot.send_message(
+            message.chat.id,
+            "Кажется, мы с тобой еще не знакомы... 😢\n" "Cкорей пиши мне /start!",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+        await state.finish()  # в случае ошибки выключаем машину состояний
+    # произошла ошибка
+    else:
+        await bot.send_message(
+            message.chat.id,
+            "Что-то пошло не так, попробуй еще раз позже, пожалуйста)",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+        await state.finish()
+
+
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT
+    or message.text
+    not in [
+        "На неделю",
+        "Понедельник",
+        "Вторник",
+        "Среда",
+        "Четверг",
+        "Пятница",
+        "Суббота",
+        "Воскресенье",
+        "Выход",
+    ],
+    state=Timetable.weekday,
+    content_types=types.message.ContentType.ANY,
+)
+async def timetable_proceed_weekday_invalid(message: types.Message):
+    """
+    Функция просит пользователя выбрать вариант из списка ['На неделю', 'Понедельник', 'Вторник', 'Среда',
+                                                           'Четверг', 'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
+    если сообщение не содержит никакую из этих строк.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Выбери вариант из предложенных, пожалуйста)")
+
+
+@dp.message_handler(
+    Text(
+        equals=[
+            "На неделю",
             "Понедельник",
             "Вторник",
             "Среда",
             "Четверг",
             "Пятница",
             "Суббота",
-        ]:  # если прилетел день недели
-            schedule = timetable.timetable.timetable_by_group(
-                COURSE_NUM, GROUP_NUM, message.text
+            "Воскресенье",
+        ]
+    ),
+    state=Timetable.weekday,
+)
+async def timetable_return_schedule(message: types.Message, state: FSMContext):
+    """
+    Функция отправляет расписание на выбранный день недели.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    async with state.proxy() as data:
+        schedule = data["schedule"]  # берем расписание из памяти
+        data.clear()
+    if message.text != "На неделю":  # расписание на 1 день
+        await bot.send_message(  # отправляем расписание
+            message.chat.id,
+            schedule_string(schedule[message.text].to_frame()),
+            parse_mode="HTML",
+        )
+    else:  # расписание на неделю (на каждый из 7 дней)
+        for day in [
+            "Понедельник",
+            "Вторник",
+            "Среда",
+            "Четверг",
+            "Пятница",
+            "Суббота",
+            "Воскресенье",
+        ]:
+            await bot.send_message(  # отправляем расписание
+                message.chat.id,
+                "<b>"
+                + day.upper()
+                + "</b>"
+                + "\n\n"
+                + schedule_string(schedule[day].to_frame()),
+                parse_mode="HTML",
             )
-            STRING = ""  # проходимся по всем строчкам расписания, записываем в STRING готовое сообщение,
-            # которое отправим пользователю ( см. функцию get_start_schedule() )
-            for row in schedule.iterrows():
-                string: str = (
-                    "<b>" + "<i>" + row[0] + "</i>" + "</b>" + "\n" + row[1][0]
-                )
-                STRING += string + "\n\n"
-            bot.send_message(message.chat.id, STRING, parse_mode="HTML")
-            keyboard = types.ReplyKeyboardMarkup(
-                resize_keyboard=True
-            )  # кнопки для получения расписания на сегодня или завтра
-            keyboard.add(
-                *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await bot.send_message(
+        message.chat.id,
+        "Чем ещё я могу помочь?",
+        reply_markup=today_tomorrow_keyboard(),
+    )
+    await state.finish()  # выключаем машину состояний
+
+
+@dp.message_handler(commands=["exam"])
+# async def exam_initiate(message: types.Message):
+#     """
+#     Функция ловит сообщение с текстом '/exam'.
+#     Отправляет запрос о выборе группы и вызывает функцию get_exam_timetable().
+#     """
+#     await psg.insert_action('exam', message.chat.id)
+#     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+#     await bot.send_message(
+#         message.chat.id,
+#         'Ещё не время... Но ты не забывай...'
+#     )
+#     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
+#     await bot.send_sticker(
+#         message.chat.id,
+#         'CAACAgIAAxkBAAMEXj8IxnJkYATlpAOTkJyLiXH2u0UAAvYfAAKiipYBsZcZ_su45LkYBA'
+#     )
+async def exam_initiate(message: types.Message):
+    """
+    Функция ловит сообщение с текстом '/exam'.
+    Отправляет запрос о выборе группы.
+    """
+    await psg.insert_action("exam", message.chat.id)
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(
+        *[
+            types.KeyboardButton(name)
+            for name in ["Моя группа", "Другая группа", "Выход"]
+        ]
+    )
+    await bot.send_message(
+        message.chat.id,
+        "Это время настало... Выбери, расписание экзаменов"
+        " какой группы ты хочешь посмотреть)",
+        reply_markup=keyboard,
+    )
+    await Exam.choose.set()
+
+
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT
+    or message.text not in ["Моя группа", "Другая группа", "Выход"],
+    state=Exam.choose,
+    content_types=types.message.ContentType.ANY,
+)
+async def exam_proceed_choose_invalid(message: types.Message):
+    """
+    Функция просит пользователя выбрать вариант из списка ['Личное', 'Моя группа', 'Другая группа', 'Выход'],
+    если сообщение не содержит никакую из этих строк (+ проверка типа сообщения).
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Выбери вариант из предложенных, пожалуйста)")
+
+
+@dp.message_handler(Text(equals=["Моя группа"]), state=Exam.choose)
+async def exam_return_my_group_schedule(message: types.Message, state: FSMContext):
+    timetable = await psg.send_exam_timetable(my_group=True, chat_id=message.chat.id)
+    if timetable[0]:  # если расписание было найдено
+        if timetable[1][0] is not None:
+            await bot.send_message(  # отправляем расписание
+                message.chat.id,
+                schedule_string(pickle.loads(timetable[1][0])),
+                parse_mode="HTML",
             )
-            bot.send_message(
-                message.chat.id, "Чем ещё я могу помочь?", reply_markup=keyboard
+            await bot.send_chat_action(
+                message.chat.id, "typing"
+            )  # Отображение "typing"
+            await bot.send_message(
+                message.chat.id,
+                "Чем ещё я могу помочь?",
+                reply_markup=today_tomorrow_keyboard(),
             )
-        else:
+            await state.finish()  # выключаем машину состояний
+        else:  # если расписания этой группы не нашлось
+            await bot.send_message(
+                message.chat.id,
+                "Извини, расписания сессии для твоей группы мы не нашли,"
+                " попробуй еще раз позже, пожалуйста)",
+                reply_markup=today_tomorrow_keyboard(),
+            )
+            await state.finish()
+    # если в базе данных нет этого пользователя
+    elif not timetable[0] and timetable[1] == "empty_result":
+        await bot.send_message(
+            message.chat.id,
+            "Кажется, мы с тобой еще не знакомы... 😢\n" "Cкорей пиши мне /start!",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+        await state.finish()  # в случае ошибки выключаем машину состояний
+    # произошла ошибка
+    else:
+        await bot.send_message(
+            message.chat.id,
+            "Что-то пошло не так, попробуй еще раз позже, пожалуйста)",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+        await state.finish()
+
+
+@dp.message_handler(Text(equals=["Другая группа"]), state=Exam.choose)
+async def exam_proceed_another_group(message: types.Message):
+    """
+    Функция ловит сообщение с текстом 'Другая группа' и отправляет пользователю вопрос о номере группы.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await Exam.another_group.set()  # изменяем состояние на Timetable.another_group
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(
+        *[types.KeyboardButton(name) for name in ["Выход"]]
+    )  # кнопка для выхода из функции
+    await bot.send_message(
+        message.chat.id,  # просим пользователя ввести номер группы
+        "Не подскажешь номер группы?\n" "(В формате Б00–228 или 777, как в расписании)",
+        reply_markup=keyboard,
+    )
+
+
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT,
+    state=Exam.another_group,
+    content_types=types.message.ContentType.ANY,
+)
+async def exam_proceed_another_group_invalid_type(message: types.Message):
+    """
+    Функция просит ввести номер группы заново, если формат ввода неправильный.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Пришли номер группы в верном формате, пожалуйста)")
+
+
+@dp.message_handler(state=Exam.another_group)
+async def exam_proceed_another_group(message: types.Message, state: FSMContext):
+    """
+    Функция принимает сообщение с номером группы и проверяет его. Если все хорошо, то отправляет
+    пользователю расписание. Если произошла какая-то ошибка, то функция просит пользователя
+    ввести номер группы еще раз.
+    """
+    timetable = await psg.send_exam_timetable(another_group=message.text)
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    if timetable[0]:
+        if timetable[1][0] is not None:
+            await bot.send_message(  # отправляем расписание
+                message.chat.id,
+                schedule_string(pickle.loads(timetable[1][0])),
+                parse_mode="HTML",
+            )
+            await bot.send_chat_action(
+                message.chat.id, "typing"
+            )  # Отображение "typing"
+            await bot.send_message(
+                message.chat.id,
+                "Чем ещё я могу помочь?",
+                reply_markup=today_tomorrow_keyboard(),
+            )
+            await state.finish()  # выключаем машину состояний
+        else:  # если расписания этой группы не нашлось
+            await bot.send_message(
+                message.chat.id,
+                "Извини, расписания сессии для твоей группы мы не нашли,"
+                " попробуй еще раз позже, пожалуйста)",
+                reply_markup=today_tomorrow_keyboard(),
+            )
+            await state.finish()
+    # номера группы нет в базе / произошла какая-то ошибка, связанная с соединением
+    elif not timetable[0] and timetable[1] == "connection_error":
+        await bot.send_message(
+            message.chat.id,
+            "Что-то не так с соединением, попробуй еще раз позже, пожалуйста)",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+        await state.finish()
+    # произошла какая-то ошибка другого рода
+    else:
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
+        await bot.send_message(  # просим пользователя ввести номер группы еще раз
+            message.chat.id,
+            "К сожалению я не знаю такой группы(\n" "Введи номер ещё раз, пожалуйста)",
+            reply_markup=keyboard,
+        )
+
+
+@dp.message_handler(commands=["custom"])
+async def custom_initiate(message: types.Message):
+    """
+    Функция ловит сообщение с текстом '/custom'.
+    Если пользователь есть в базе, то функция проверяет наличие личного расписания.
+    В случае отсутствия такового в базе данных отправляет пользователю вопрос, хочет ли он
+    завести такое расписание. Если личное расписание для этого пользователя есть в базе,
+    фукция посылает запрос о выборе дня недели, расписание на который нужно выдать или как-то поменять.
+    """
+    await psg.insert_action("custom", message.chat.id)
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await bot.send_message(
+        message.chat.id,
+        "Хочешь посмотреть личное расписание "
+        "или что-то отредактировать в нем? "
+        "В этом я всегда рад тебе помочь 😉",
+    )
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    timetable = await psg.send_timetable(custom=True, chat_id=message.chat.id)
+    if timetable[0] and timetable[1][0] is not None:  # если пользователь есть в базе
+        await Custom.existing.set()  # изменяем состояние на Custom.existing
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(
+            *[
+                types.KeyboardButton(name)
+                for name in ["Посмотреть", "Изменить", "Выход"]
+            ]
+        )
+        await bot.send_message(  # вопрос, что пользователь хочет сделать с расписанием
+            message.chat.id,
+            "Выбери, пожалуйста, что ты хочешь " "сделать с личным расписанием)",
+            reply_markup=keyboard,
+        )
+    elif (
+        timetable[0] and timetable[1][0] is None
+    ):  # если у пользователя еще нет личного расписания
+        await Custom.new.set()  # изменяем состояние на Custom.new
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(
+            *[
+                types.KeyboardButton(name)
+                for name in ["Давай", "Как-нибудь потом", "Выход"]
+            ]
+        )
+        await bot.send_message(
+            message.chat.id,
+            "У тебя пока еще нет личного расписания 😢\n" "Давай заведем его тебе?",
+            reply_markup=keyboard,
+        )
+    elif not timetable[0] and timetable[1] == "empty_result":
+        await bot.send_message(
+            message.chat.id,
+            "Кажется, мы с тобой еще не знакомы... 😢\n" "Cкорей пиши мне /start!",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+    # произошла ошибка
+    else:
+        await bot.send_message(
+            message.chat.id,
+            "Что-то пошло не так, попробуй еще раз позже, пожалуйста)",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+
+
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT
+    or message.text not in ["Давай", "Как-нибудь потом", "Выход"],
+    state=Custom.new,
+    content_types=types.message.ContentType.ANY,
+)
+async def custom_add_new_invalid(message: types.Message):
+    """
+    Функция просит пользователя выбрать вариант из списка ['Давай', 'Как-нибудь потом', 'Выход'],
+    если сообщение не содержит никакую из этих строк.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Выбери вариант из предложенных, пожалуйста)")
+
+
+@dp.message_handler(Text(equals=["Давай", "Как-нибудь потом"]), state=Custom.new)
+async def custom_add_new(message: types.Message, state: FSMContext):
+    """
+    Функция принимает ответ пользователя, нужно ли ему личное расписание,
+    в случае положительного ответа заводит ему такое расписание.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    if message.text == "Давай":  # положительный ответ
+        update = await psg.create_custom_timetable(message.chat.id)
+        if update[0]:
+            await bot.send_message(  # все нормально обновилось
+                message.chat.id,
+                "Отлично, все получилось 🙃\n"
+                "Теперь ты можешь использовать личное расписание! "
+                "Чтобы вызвать его, напиши /custom.",
+                reply_markup=today_tomorrow_keyboard(),
+            )
+        else:  # произошла какая-то ошибка
+            await bot.send_message(
+                message.chat.id,
+                "Что-то пошло не так, попробуй еще раз позже, пожалуйста)",
+                reply_markup=today_tomorrow_keyboard(),
+            )
+    else:  # отрицательный ответ
+        await bot.send_message(
+            message.chat.id,
+            "Хорошо, но не забывай, что ты всегда можешь вернуться, "
+            "если захочешь опробовать его в деле 😉",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+    await state.finish()  # тупиковая ветка, останавливаем машину состояний
+
+
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT
+    or message.text not in ["Посмотреть", "Изменить", "Выход"],
+    state=Custom.existing,
+    content_types=types.message.ContentType.ANY,
+)
+async def custom_choose_existing_invalid(message: types.Message):
+    """
+    Функция просит пользователя выбрать вариант из списка ['Посмотреть', 'Изменить', 'Выход'],
+    если сообщение не содержит никакую из этих строк.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Выбери вариант из предложенных, пожалуйста)")
+
+
+@dp.message_handler(Text(equals=["Посмотреть", "Изменить"]), state=Custom.existing)
+async def custom_choose_existing(message: types.Message, state: FSMContext):
+    """
+    Функция ловит запрос пользователя о просмотре или изменении личного расписания,
+    отправляет запрос о нужном дне недели.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await Custom.weekday.set()  # изменяем состояние на Custom.weekday
+    async with state.proxy() as data:
+        data["choice"] = message.text  # сохраняем ответ, понадобится дальше
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Понедельник", "Вторник"]])
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Среда", "Четверг"]])
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Пятница", "Суббота"]])
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Воскресенье", "Выход"]])
+    text = (
+        "расписание на который ты хочешь посмотреть)"
+        if message.text == "Посмотреть"
+        else "в расписание на который ты хочешь внести изменения)"
+    )  # в зависимости от ответа выбираем строчку, которую будем отправлять
+    await bot.send_message(
+        message.chat.id,
+        "Выбери, пожалуйста, день недели, " + text,
+        reply_markup=keyboard,
+    )
+
+
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT
+    or message.text
+    not in [
+        "Понедельник",
+        "Вторник",
+        "Среда",
+        "Четверг",
+        "Пятница",
+        "Суббота",
+        "Воскресенье",
+        "Выход",
+    ],
+    state=Custom.weekday,
+    content_types=types.message.ContentType.ANY,
+)
+async def custom_proceed_weekday_invalid(message: types.Message):
+    """
+    Функция просит пользователя выбрать вариант из списка ['Понедельник', 'Вторник', 'Среда', 'Четверг',
+                                                           'Пятница', 'Суббота', 'Воскресенье', 'Выход'],
+    если сообщение не содержит никакую из этих строк.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Выбери вариант из предложенных, пожалуйста)")
+
+
+@dp.message_handler(
+    Text(
+        equals=[
+            "Понедельник",
+            "Вторник",
+            "Среда",
+            "Четверг",
+            "Пятница",
+            "Суббота",
+            "Воскресенье",
+        ]
+    ),
+    state=Custom.weekday,
+)
+async def custom_proceed_weekday(message: types.Message, state: FSMContext):
+    """
+    Функция ловит сообщение с днем недели и, в зависимости от того, что нужно пользователю,
+    либо выдает ему расписание, либо посылает запрос о времени пары, расписание на которую нужно поменять.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    timetable = await psg.send_timetable(custom=True, chat_id=message.chat.id)
+    if timetable[
+        0
+    ]:  # не произошло никакой ошибки (личное расписание точно есть, проверено ранее)
+        schedule = pickle.loads(timetable[1][0])  # расписание на неделю
+        await bot.send_message(  # присылаем текущее состояние расписания
+            message.chat.id,
+            schedule_string(schedule[message.text].to_frame()),
+            parse_mode="HTML",
+        )  # parse_mode - чтобы читал измененный шрифт
+        async with state.proxy() as data:
+            choice = data["choice"]
+            data.clear()
+        if choice == "Посмотреть":  # смотрим на ответ, сохраненный ранее
+            await bot.send_message(  # если пользователю нужно было посмотреть расписание,
+                message.chat.id,  # то это уже сделано
+                "Чем ещё я могу помочь?",
+                reply_markup=today_tomorrow_keyboard(),
+            )
+            await state.finish()  # в этом случае выключаем машину состояний
+        else:  # если польователю нужно было изменить расписание, то спрашиваем, какую пару он хочет поменять
+            await Custom.time.set()  # изменяем состояние на Custom.time
+            async with state.proxy() as data:
+                data["schedule"] = schedule  # сохраняем расписание и день
+                data["day"] = message.text
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             keyboard.add(
                 *[
                     types.KeyboardButton(name)
-                    for name in ["Попробую ещё раз", "Ладно, сам посмотрю"]
+                    for name in ["09:00 – 10:25", "10:45 – 12:10"]
                 ]
             )
-            msg = bot.send_message(
+            keyboard.add(
+                *[
+                    types.KeyboardButton(name)
+                    for name in ["12:20 – 13:45", "13:55 – 15:20"]
+                ]
+            )
+            keyboard.add(
+                *[
+                    types.KeyboardButton(name)
+                    for name in ["15:30 – 16:55", "17:05 – 18:30"]
+                ]
+            )
+            keyboard.add(
+                *[types.KeyboardButton(name) for name in ["18:35 – 20:00", "Выход"]]
+            )
+            await bot.send_message(
                 message.chat.id,
-                "Что-то не получилось... Ты мне точно прислал день недели в правильном "
-                "формате?",
+                "Выбери, пожалуйста, время, расписание "
+                "на которое ты хочешь поменять)",
                 reply_markup=keyboard,
             )
-            bot.register_next_step_handler(msg, get_weekday)
-    else:  # если сообщение не текстовое, то говорим об ошибке формате
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add(
-            *[
-                types.KeyboardButton(name)
-                for name in ["Попробую ещё раз", "Ладно, сам посмотрю"]
-            ]
-        )
-        msg = bot.send_message(
+    else:  # если произошла какая-то ошибка
+        await bot.send_message(
             message.chat.id,
-            "Что-то не получилось... Ты мне точно прислал день недели в правильном "
-            "формате?",
-            reply_markup=keyboard,
+            "Что-то пошло не так, попробуй еще раз позже, пожалуйста)",
+            reply_markup=today_tomorrow_keyboard(),
         )
-        bot.register_next_step_handler(msg, get_weekday)
+        await state.finish()  # останавливаем машину состояний
 
 
-@bot.message_handler(commands=["exam"])
-def ask_group(message):
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT
+    or message.text
+    not in [
+        "09:00 – 10:25",
+        "10:45 – 12:10",
+        "12:20 – 13:45",
+        "13:55 – 15:20",
+        "15:30 – 16:55",
+        "17:05 – 18:30",
+        "18:35 – 20:00",
+        "Выход",
+    ],
+    state=Custom.time,
+    content_types=types.message.ContentType.ANY,
+)
+async def custom_proceed_time_invalid(message: types.Message):
     """
-    Функция ловит сообщение с текстом '/exam'.
-    Отправляет запрос о выборе группы и вызывает функцию get_exam_timetable().
-    :param message: telebot.types.Message
-    :return:
+    Функция просит пользователя выбрать вариант из списка ['09:00 – 10:25', '10:45 – 12:10', '12:20 – 13:45',
+                                                           '13:55 – 15:20', '15:30 – 16:55', '17:05 – 18:30',
+                                                           '18:35 – 20:00', 'Выход'],
+    если сообщение не содержит никакую из этих строк.
     """
-    bot.send_message(message.chat.id, "Ещё не время... Но ты не забывай...")
-    bot.send_sticker(
-        message.chat.id,
-        "CAACAgIAAxkBAAMEXj8IxnJkYATlpAOTkJyLiXH2u0UAAvYfAAKiipYBsZcZ_su45LkYBA",
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Выбери вариант из предложенных, пожалуйста)")
+
+
+@dp.message_handler(
+    Text(
+        equals=[
+            "09:00 – 10:25",
+            "10:45 – 12:10",
+            "12:20 – 13:45",
+            "13:55 – 15:20",
+            "15:30 – 16:55",
+            "17:05 – 18:30",
+            "18:35 – 20:00",
+        ]
+    ),
+    state=Custom.time,
+)
+async def custom_proceed_time(message: types.Message, state: FSMContext):
+    """
+    Функция ловит сообщение со временем пары, расписание на которую нужно изменить,
+    спрашивает у пользователя, на что нужно заменить текущее значение.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await Custom.edit.set()  # изменяем состояние на Custom.edit
+    async with state.proxy() as data:
+        data["time"] = message.text  # сохраняем время пары
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(
+        *[types.KeyboardButton(name) for name in ["Выход"]]
+    )  # кнопка для выхода из функции
+    await bot.send_message(
+        message.chat.id,  # просим пользователя ввести номер группы
+        "Введи, пожалуйста, на что ты хочешь заменить "
+        "это значение) (Можешь присылать мне и смайлики)",
+        reply_markup=keyboard,
     )
 
 
-def get_exam_timetable(message):
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT,
+    state=Custom.edit,
+    content_types=types.message.ContentType.ANY,
+)
+async def custom_proceed_edit_invalid_type(message: types.Message):
     """
-    Функция считывает номер группы, вызывает функцию get_exam_timetable из модуля timetable,
-    отправляет пользователю раписание экзаменов из файла.
-    :param message: telebot.types.Message
-    :return:
+    Функция просит ввести номер группы заново, если формат ввода неправильный.
     """
-    if message.text in texting.texting_symbols.groups:
-        path = os.path.abspath("")
-        timetable.timetable_old.get_exam_timetable(message.text)
-        f = open(f"{path}/timetable/exam.txt")
-        for line in f:
-            bot.send_message(message.chat.id, line)
-        open(f"{path}/timetable/exam.txt", "w").close()
-    else:
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Пришли значение в верном формате, пожалуйста)")
+
+
+@dp.message_handler(state=Custom.edit)
+async def custom_proceed_edit(message: types.Message, state: FSMContext):
+    """
+    Функция принимает строку, на которую нужно поменять текущее значение пары,
+    и сохраняет новое расписание в базе данных.
+    Спрашивает пользователя, хочет ли он изменить что-то еще в расписании на этот день.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    async with state.proxy() as data:
+        schedule = data["schedule"]  # достаем расписание и день
+        day = data["day"]
+        schedule[day].loc[data["time"]] = message.text  # заменяем нужную пару
+        data.clear()
+    # сохраняем новое расписание
+    update = await psg.update_custom_timetable(
+        message.chat.id, pickle.dumps(schedule, protocol=pickle.HIGHEST_PROTOCOL)
+    )
+    if update[0]:
+        await Custom.again.set()  # изменяем состояние на Custom.again
+        async with state.proxy() as data:
+            data[
+                "schedule"
+            ] = schedule  # перезаписываем расписание и день (особенности state.proxy())
+            data["day"] = day
+        await bot.send_message(
+            message.chat.id,
+            "Отлично, все получилось 🙃\n"
+            "Хочешь изменить еще какое-то значение "
+            "в расписании на этот день?",
+        )
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(
-            *[
-                types.KeyboardButton(name)
-                for name in ["Попробую ещё раз", "Ладно, сам посмотрю"]
-            ]
+            *[types.KeyboardButton(name) for name in ["Хочу", "Не хочу", "Выход"]]
         )
-        msg = bot.send_message(
-            message.chat.id,
-            "Что-то не получилось... "
-            "Ты мне точно прислал номер группы в правильном формате ?",
+        await bot.send_message(  # посылаем запрос, хочет ли пользователь изменить
+            message.chat.id,  # в расписании на этот день что-то еще
+            schedule_string(schedule[day].to_frame()),
+            parse_mode="HTML",
             reply_markup=keyboard,
         )
-        bot.register_next_step_handler(msg, ask_group)
-
-
-@bot.message_handler(commands=["god_voice"])
-def get_message_text(message):
-    pers_id = message.chat.id
-    admins = [
-        int(os.environ["ADMIN_1"]),
-        int(os.environ["ADMIN_2"]),
-        int(os.environ["ADMIN_3"]),
-    ]
-    if pers_id in admins:
-        msg = bot.send_message(
-            message.chat.id, 'Пришли мне сообщение в формате "chat_id/message_text"'
+    else:  # если произошла какая-то ошибка
+        await bot.send_message(
+            message.chat.id,
+            "Что-то пошло не так, попробуй еще раз позже, пожалуйста)",
+            reply_markup=today_tomorrow_keyboard(),
         )
-        bot.register_next_step_handler(msg, send_message)
+        await state.finish()
+
+
+@dp.message_handler(
+    lambda message: message.content_type != types.message.ContentType.TEXT
+    or message.text not in ["Хочу", "Не хочу", "Выход"],
+    content_types=types.message.ContentType.ANY,
+    state=Custom.again,
+)
+async def custom_proceed_again_invalid(message: types.Message):
+    """
+    Функция просит выбрать из вариант из предложенных, если формат ввода неправильный.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await message.reply("Выбери вариант из предложенных, пожалуйста)")
+
+
+@dp.message_handler(Text(equals=["Хочу", "Не хочу"]), state=Custom.again)
+async def custom_proceed_again(message: types.Message, state: FSMContext):
+    """
+    Функция ловит ответ от пользователя, хочет ли он продолжить редактирование.
+    Если хочет, то функция задает вопрос про время пары.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    if message.text == "Не хочу":  # отрицательный ответ
+        await bot.send_message(
+            message.chat.id,
+            "Хорошо, но не забывай, что ты всегда можешь вернуться, "
+            "если захочешь что-то изменить в нем 😉",
+            reply_markup=today_tomorrow_keyboard(),
+        )
+        await state.finish()  # останавливаем машину состояний
+    else:  # положительный ответ
+        await Custom.time.set()  # изменяем состояние на Custom.time
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(
+            *[types.KeyboardButton(name) for name in ["09:00 – 10:25", "10:45 – 12:10"]]
+        )
+        keyboard.add(
+            *[types.KeyboardButton(name) for name in ["12:20 – 13:45", "13:55 – 15:20"]]
+        )
+        keyboard.add(
+            *[types.KeyboardButton(name) for name in ["15:30 – 16:55", "17:05 – 18:30"]]
+        )
+        keyboard.add(
+            *[types.KeyboardButton(name) for name in ["18:35 – 20:00", "Выход"]]
+        )
+        await bot.send_message(
+            message.chat.id,
+            "Выбери, пожалуйста, время, расписание " "на которое ты хочешь поменять)",
+            reply_markup=keyboard,
+        )
+
+
+@dp.message_handler(commands="plot")
+async def plot(message: types.Message):
+    """
+    Функция ловит сообщение с текстом '/plot' и отправляет сообщение пользователю с просьбой
+    указать название графика.
+    """
+    await psg.insert_action("plot", message.chat.id)
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await bot.send_message(
+        message.chat.id,
+        "Снова лабки делаешь?) Ох уж эти графики!..."
+        " Сейчас быстренько всё построю, только тебе придётся"
+        " ответить на пару вопросов"
+        "😉 И не засиживайся, ложись спать)",
+    )
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Без названия", "Выход"]])
+    await bot.send_message(
+        message.chat.id,
+        "Как мы назовём график?\n"
+        "Если не хочешь давать ему название, "
+        "то нажми на кнопку ниже 😉",
+        reply_markup=keyboard,
+    )
+    await Plots.title_state.set()
+
+
+@dp.message_handler(
+    lambda message: message.content_type == types.message.ContentType.TEXT,
+    state=Plots.title_state,
+)
+async def title(message: types.Message, state: FSMContext):
+    """
+    Функция записывает название графика присланное пользователем в data storage и отправляет
+    сообщение пользователю с просьбой указать нужно ли строить прямую по мнк.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    async with state.proxy() as data:
+        if message.text == "Без названия":
+            data["title"] = ""
+        else:
+            data["title"] = message.text
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ["✅", "❌", "Выход"]])
+    await bot.send_message(
+        message.chat.id, "Прямую по МНК строим?", reply_markup=keyboard
+    )
+    await Plots.mnk_state.set()
+
+
+# In case some bad input
+@dp.message_handler(
+    state=Plots.title_state, content_types=types.message.ContentType.ANY
+)
+async def title_bad_input(message: types.Message):
+    """
+    В случае неккоректного названия графика, функция просит пользователя повторить ввод.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Без названия"]])
+    await bot.send_message(
+        message.chat.id,
+        "Я тебя не понял... Напиши ещё раз название графика.\n"
+        "Если не хочешь давать ему название, "
+        "то нажми кнопку ниже 😉",
+        reply_markup=keyboard,
+    )
+
+
+@dp.message_handler(Text(equals=["✅", "❌"]), state=Plots.mnk_state)
+async def mnk(message: types.Message, state: FSMContext):
+    """
+    Функция ловит сообщение с одним из символов ['✅', '❌'] и в зависимости от ответа
+    выставляет error_bars_state или plot_state.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    if message.text == "✅":
+        async with state.proxy() as data:
+            data["mnk"] = True
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ["0.0/0.0"]])
+        await bot.send_message(
+            message.chat.id,
+            "Укажи погрешности по осям х и y в "
+            'формате "2.51/2.51", '
+            "если кресты не нужны, то нажми на кнопку ниже.",
+            reply_markup=keyboard,
+        )
+        await Plots.error_bars_state.set()
     else:
-        bot.send_message(
+        async with state.proxy() as data:
+            data["mnk"] = False
+            data["errors"] = [0.0, 0.0]
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
+        with open("files/Example.xlsx", "rb") as example:
+            await bot.send_document(message.chat.id, example)
+        await bot.send_message(
             message.chat.id,
-            "Боюсь, я не совсем понимаю, о чём ты. \n"
-            "Напиши /help, чтобы узнать, что я умею.\n",
+            "Пришли .xlsx файл с данными как в example.xlsx, и всё будет готово.",
+            reply_markup=keyboard,
         )
+        await Plots.plot_state.set()
 
 
-def send_message(message):
+# In case of bad input
+@dp.message_handler(state=Plots.mnk_state, content_types=types.message.ContentType.ANY)
+async def mnk_bad_input(message: types.Message):
+    """
+    В случае если сообщение не содержит ['✅', '❌'], функция просит пользователя повторить ввод.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ["✅", "❌", "Выход"]])
+    await bot.send_message(
+        message.chat.id,
+        "Извини, повтори ещё раз... Прямую по МНК строим?",
+        reply_markup=keyboard,
+    )
+
+
+@dp.message_handler(
+    lambda message: message.content_type == types.message.ContentType.TEXT,
+    state=Plots.error_bars_state,
+)
+async def error_bars(message: types.Message, state: FSMContext):
+    """
+    Функция ловит сообщение с размерами крестов погрешностей и просит прислать excel файл, по которому будет
+    строиться график.
+    """
     try:
-        chat_id = int(message.text.split("/")[0])
-        text = message.text.split("/")[1]
-        bot.send_message(chat_id, text)
-        bot.send_message(message.chat.id, "Готово")
+        await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+        async with state.proxy() as data:
+            data["errors"] = list(map(float, message.text.split("/")))
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
+        with open("files/Example.xlsx", "rb") as expl:
+            await bot.send_document(message.chat.id, expl)
+        await bot.send_message(
+            message.chat.id,
+            "Пришли .xlsx файл с данными как в example.xlsx и всё будет готово.",
+            reply_markup=keyboard,
+        )
+        await Plots.plot_state.set()
     except Exception as e:
-        bot.send_message(message.chat.id, "Попробуй ещё раз")
         print(e)
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ["0.0/0.0"]])
+        await bot.send_message(
+            message.chat.id,
+            "Не могу распознать формат данных( Давай ещё раз. "
+            "Пришли данные для крестов погрешностей по осям х и y в "
+            'формате "2.51/2.51", если кресты не нужны, то'
+            " нажми на кнопку ниже.",
+            reply_markup=keyboard,
+        )
 
 
-@bot.message_handler(content_types=["text"])
-def chatting(message):
+# In case of bad input
+@dp.message_handler(
+    state=Plots.error_bars_state, content_types=types.message.ContentType.ANY
+)
+async def eror_bars_bad_input(message: types.Message):
     """
-    Функция запускается, если пользователь пишет любой незнакомый боту текст.
-    :param message: any text
-    :return: циклично возвращает одно вспомогательное сообщение, два смайлика,
-    две цитаты, одну фотку собаки при последовательной отправке незнакомого текста
+    В случае если сообщение не содержит погрешности в формате "2.51/2.51",
+    функция просит пользователя повторить ввод.
     """
-    global crazy_tokens
-    crazy_tokens += 1
-    if crazy_tokens <= 1:
-        bot.send_message(
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ["0.0/0.0"]])
+    await bot.send_message(
+        message.chat.id,
+        "Ты прислал что-то не то( Давай ещё раз. "
+        "Пришли данные для крестов погрешностей по осям х и y в "
+        'формате "2.51/2.51", если кресты не нужны, то'
+        " нажми на кнопку ниже.",
+        reply_markup=keyboard,
+    )
+
+
+@dp.message_handler(
+    content_types=types.message.ContentTypes.DOCUMENT, state=Plots.plot_state
+)
+async def plot(message: types.Message, state: FSMContext):
+    """
+    Функция ловит сообщение с Excel-файлом, строит график по данным внутри него и присылает сообщение пользователю с
+    коэффициентами прямых (если надо) и pdf и png файлы с изображением графика.
+    """
+    try:
+        await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+        file_id = message.document.file_id
+        file = await bot.get_file(file_id)
+        await bot.download_file(file.file_path, "file.xlsx")
+        async with state.proxy() as data:
+            title = data["title"]
+            errors = data["errors"]
+            mnk = data["mnk"]
+            data.clear()
+        coef = math_part.plots_drawer("file.xlsx", title, errors[0], errors[1], mnk)
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(
+            *[types.KeyboardButton(name) for name in ["На сегодня", "На завтра"]]
+        )
+        await bot.send_message(
+            message.chat.id, "Принимай работу!)", reply_markup=keyboard
+        )
+        with open("plot.png", "rb") as photo:
+            await bot.send_chat_action(
+                message.chat.id, "upload_document"
+            )  # Отображение "upload document"
+            await bot.send_document(message.chat.id, photo)
+        if mnk:
+            for i in range(len(coef)):
+                a, b, d_a, d_b = coef[i]
+                await bot.send_chat_action(
+                    message.chat.id, "typing"
+                )  # Отображение "typing"
+                await bot.send_message(
+                    message.chat.id,
+                    f"Коэффициенты {i + 1}-ой прямой:\n"
+                    f" a = {a} +- {d_a}\n"
+                    f" b = {b} +- {d_b}",
+                )
+        with open("plot.pdf", "rb") as photo:
+            await bot.send_chat_action(
+                message.chat.id, "upload_document"
+            )  # Отображение "upload document"
+            await bot.send_document(message.chat.id, photo)
+        os.remove("plot.pdf")
+        os.remove("plot.png")
+        math_part.BOT_PLOT = False
+        os.remove("file.xlsx")
+        await state.finish()
+    except Exception as e:
+        os.remove("file.xlsx")
+        print(e)
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
+        await bot.send_message(
+            message.chat.id,
+            "Ты точно прислал .xlsx файл как в примере? Давай ещё раз!",
+            reply_markup=keyboard,
+        )
+
+
+# In case of bad input
+@dp.message_handler(content_types=types.message.ContentType.ANY, state=Plots.plot_state)
+async def plot_bad_input(message: types.Message):
+    """
+    В случае некорректного сообщения функция просит пользователя прислать excel-файл ещё раз.
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
+    await bot.send_message(
+        message.chat.id,
+        "Ты точно прислал .xlsx файл? Давай ещё раз! "
+        "Пришли .xlsx файл с данными, и всё будет готово",
+        reply_markup=keyboard,
+    )
+
+
+@dp.message_handler(commands=["stat"])
+async def stat_start(message: types.Message):
+    """
+    Функция присылает сообщение с просьбой выбрать нужную функцию
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(*[types.KeyboardButton(name) for name in ["Frequency", "Unique"]])
+    await bot.send_message(
+        message.chat.id, "Выбери нужную функцию", reply_markup=keyboard
+    )
+    await Stat.choice.set()
+
+
+@dp.message_handler(Text(equals="Unique"), state=Stat.choice)
+async def stat_start(message: types.Message):
+    """
+    Функция присылает сообщение с вопросом о том за какой период вермени нужна статистика
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add(
+        *[
+            types.KeyboardButton(name)
+            for name in ["За сегодня", "За вчера", "За неделю"]
+        ]
+    )
+    await bot.send_message(
+        message.chat.id,
+        "За какой день показать колличество уникальных пользователей",
+        reply_markup=keyboard,
+    )
+    await Stat.unique.set()
+
+
+@dp.message_handler(state=Stat.unique)
+async def stat_start(message: types.Message, state: FSMContext):
+    """
+    Функция присылает сообщением с числом уникальных пользователей за нужный период времени
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    number = stat.uniqe_users(message.text)
+    keyboard = today_tomorrow_keyboard()
+    await bot.send_message(
+        message.chat.id,
+        f"В этот день было {number} уникальных пользователей",
+        reply_markup=keyboard,
+    )
+    await state.finish()
+
+
+@dp.message_handler(Text(equals="Frequency"), state=Stat.choice)
+async def stat_start(message: types.Message, state: FSMContext):
+    """
+    Функция присылает сообщением с частотами использования функций за последнюю неделю
+    """
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await bot.send_message(
+        message.chat.id, "Частота использования функций за последнюю неделю:"
+    )
+    freq = stat.frequency_of_use()
+    text = "\n".join(freq)
+    keyboard = today_tomorrow_keyboard()
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await bot.send_message(message.chat.id, text, reply_markup=keyboard)
+    await state.finish()
+
+
+@dp.message_handler(commands=["mail"])
+async def mailing_start(message):
+    pers_id = message.chat.id
+    admins = [int(os.environ["ADMIN_1"]), int(os.environ["ADMIN_2"])]
+    await bot.send_chat_action(message.chat.id, "typing")
+    if pers_id in admins:
+        await bot.send_message(message.chat.id, "Пришли мне сообщение текст сообщения")
+    else:
+        await bot.send_message(
             message.chat.id,
             "Боюсь, я не совсем понимаю, о чём ты. \n"
             "Напиши /help, чтобы узнать, что я умею.\n",
         )
-    elif crazy_tokens <= 3:
-        bot.send_message(message.chat.id, random.choice(texting.texting_symbols.emoji))
-    elif crazy_tokens <= 5:
-        bot.send_message(message.chat.id, random.choice(texting.texting_symbols.quotes))
-    elif crazy_tokens == 6:
-        doggy = get_image_url()
-        """
-        API_LINK = 'http://api.forismatic.com/api/method=getQuote&format=text&lang=ru'
-        cont = requests.post(API_LINK)
-        print(cont.text)
-        bot.send_message(message.chat.id, quote)
-        """
-
-        bot.send_photo(message.chat.id, photo=doggy)
-        crazy_tokens = 0
+    await Mailing.mailing.set()
 
 
-def get_url():
-    """
-    Функция получает ссылку на картинку собаки
-    :return: ссылка на картинку
-    """
-    contents = requests.get("https://random.dog/woof.json").json()
-    url = contents["url"]
-    return url
+@dp.message_handler(state=Mailing.mailing)
+async def mailing(message: types.Message, state: FSMContext):
+    users = stat.get_user_list()
+    await state.finish()
+    for user in users:
+        try:
+            await bot.send_message(user, message.text)
+        except BotBlocked:
+            print(f"Bot was blocked by user with chat_id = {user}")
+        except TelegramAPIError:
+            print(f"Smth went wrong with user chat_id = {user}")
 
 
-def get_image_url():
-    """
-    Функция проверяет расширение картинки с собакой
-    :return: ссылка на картинку
-    """
-    allowed_extension = ["jpg", "jpeg", "png"]
-    file_extension = ""
-    while file_extension not in allowed_extension:
-        url = get_url()
-        file_extension = re.search("([^.]*)$", url).group(1).lower()
-    return url
-
-
-bot.polling(none_stop=True)
+executor.start_polling(dp, skip_updates=True)
