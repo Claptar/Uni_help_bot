@@ -81,6 +81,7 @@ class Mailing(StatesGroup):
     mailing = State()
 
 
+# TODO: to helpers
 def today_tomorrow_keyboard():
     """
     Кнопки для получения расписания на сегодня или завтра.
@@ -92,6 +93,7 @@ def today_tomorrow_keyboard():
     return keyboard
 
 
+# TODO: to helpers
 def schedule_string(schedule: pd.DataFrame):
     """
     Строка с расписанием, которую отправляет бот.
@@ -109,6 +111,7 @@ def schedule_string(schedule: pd.DataFrame):
     return STRING
 
 
+# TODO: to common module
 @dp.message_handler(Text(equals="Выход"), state="*")
 async def user_exit(message: types.Message, state: FSMContext):
     """
@@ -135,6 +138,7 @@ async def user_exit(message: types.Message, state: FSMContext):
     await state.finish()
 
 
+# TODO: to get_fast_timetable
 @dp.message_handler(Text(equals=["На сегодня", "На завтра"]))
 async def send_today_tomorrow_schedule(message):
     """
@@ -210,7 +214,7 @@ async def send_today_tomorrow_schedule(message):
         elif not group_timetable[0] and group_timetable[1] == "empty_result":
             await bot.send_message(
                 message.chat.id,
-                "Кажется, мы с тобой еще не знакомы... 😢\n" "Скорей пиши мне /start!",
+                "Кажется, мы с тобой еще не знакомы... 😢\nСкорей пиши мне /start!",
                 reply_markup=today_tomorrow_keyboard(),
             )
         # если произошла ошибка
@@ -222,6 +226,7 @@ async def send_today_tomorrow_schedule(message):
             )
 
 
+# TODO: to help button
 @dp.message_handler(commands=["help"])
 async def help_def(message: types.Message):
     """
@@ -234,6 +239,7 @@ async def help_def(message: types.Message):
     await bot.send_message(message.chat.id, text)
 
 
+# TODO: to new_user
 @dp.message_handler(commands="start")
 async def start_initiate(message: types.Message):
     """
@@ -277,6 +283,7 @@ async def start_initiate(message: types.Message):
         )
 
 
+# TODO: to new_user
 @dp.message_handler(state=Start.group)
 async def start_proceed_group(message: types.Message, state: FSMContext):
     """
@@ -327,6 +334,7 @@ async def start_proceed_group(message: types.Message, state: FSMContext):
         await state.finish()
 
 
+# TODO: to new_user
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT,
     content_types=types.message.ContentType.ANY,
@@ -340,6 +348,7 @@ async def start_proceed_group_invalid_type(message: types.Message):
     await message.reply("Пришли номер группы в верном формате, пожалуйста)")
 
 
+# TODO: to new_user
 @dp.message_handler(Text(equals=["Хочу", "Не хочу"]), state=Start.custom)
 async def start_proceed_custom(message: types.Message, state: FSMContext):
     """
@@ -356,7 +365,7 @@ async def start_proceed_custom(message: types.Message, state: FSMContext):
         )
         await bot.send_message(  # в любом случае пишем про /help
             message.chat.id,
-            "А теперь скорее пиши /help, чтобы узнать, " "чем еще я могу помочь тебе!",
+            "А теперь скорее пиши /help, чтобы узнать, чем еще я могу помочь тебе!",
             reply_markup=today_tomorrow_keyboard(),
         )
     elif message.text == "Хочу":  # ответ пользователя положительный
@@ -393,6 +402,7 @@ async def start_proceed_custom(message: types.Message, state: FSMContext):
     await state.finish()  # в любом случае останавливаем машину состояний
 
 
+# TODO: to new_user
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT
     or message.text not in ["Хочу", "Не хочу"],
@@ -407,6 +417,7 @@ async def start_proceed_custom_invalid(message: types.Message):
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
+# TODO: to edit_existing
 @dp.message_handler(commands="profile")
 async def edit_initiate(message: types.Message):
     """
@@ -438,7 +449,7 @@ async def edit_initiate(message: types.Message):
     elif not cur_group[0] and cur_group[1] == "empty_result":
         await bot.send_message(
             message.chat.id,
-            "Кажется, мы с тобой еще не знакомы... 😢\n" "Скорей пиши мне /start!",
+            "Кажется, мы с тобой еще не знакомы... 😢\nСкорей пиши мне /start!",
             reply_markup=today_tomorrow_keyboard(),
         )
     # если произошла ошибка
@@ -450,6 +461,7 @@ async def edit_initiate(message: types.Message):
         )
 
 
+# TODO: to edit_existing
 @dp.message_handler(Text(equals=["Да", "Нет"]), state=Profile.choose)
 async def edit_proceed_choose(message: types.Message, state: FSMContext):
     """
@@ -475,6 +487,7 @@ async def edit_proceed_choose(message: types.Message, state: FSMContext):
         await state.finish()  # выключаем машину состояний
 
 
+# TODO: to edit_existing
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT
     or message.text not in ["Да", "Нет", "Выход"],
@@ -489,6 +502,7 @@ async def edit_proceed_choose_invalid(message: types.Message):
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
+# TODO: to edit_existing
 @dp.message_handler(state=Profile.group)
 async def edit_proceed_group(message: types.Message, state: FSMContext):
     """
@@ -534,6 +548,7 @@ async def edit_proceed_group(message: types.Message, state: FSMContext):
         await state.finish()
 
 
+# TODO: to edit_existing
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT,
     content_types=types.message.ContentType.ANY,
@@ -547,6 +562,7 @@ async def edit_proceed_group_invalid_type(message: types.Message):
     await message.reply("Пришли номер группы в верном формате, пожалуйста)")
 
 
+# TODO: to edit_existing
 @dp.message_handler(Text(equals=["Хочу", "Не хочу"]), state=Profile.custom)
 async def edit_proceed_custom(message: types.Message, state: FSMContext):
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
@@ -579,6 +595,7 @@ async def edit_proceed_custom(message: types.Message, state: FSMContext):
     await state.finish()
 
 
+# TODO: to edit_existing
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT
     or message.text not in ["Хочу", "Не хочу"],
@@ -593,6 +610,7 @@ async def edit_proceed_custom_invalid(message: types.Message):
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
+# TODO: to search_koryavov
 @dp.message_handler(commands="koryavov")
 async def koryavov(message: types.Message):
     """
@@ -618,6 +636,7 @@ async def koryavov(message: types.Message):
     await Koryavov.sem_num_state.set()
 
 
+# TODO: to search_koryavov
 @dp.message_handler(
     lambda message: message.text.isdigit(), state=Koryavov.sem_num_state
 )
@@ -638,6 +657,7 @@ async def sem_num(message: types.Message, state: FSMContext):
 
 
 # If some invalid input
+# TODO: to search_koryavov
 @dp.message_handler(state=Koryavov.sem_num_state)
 async def kor_sem_inv_input(message: types.Message):
     """
@@ -654,6 +674,7 @@ async def kor_sem_inv_input(message: types.Message):
     )
 
 
+# TODO: to search_koryavov
 @dp.message_handler(
     lambda message: math_part.is_digit(message.text) or message.text == "Ещё одну",
     state=Koryavov.task_num_state,
@@ -676,6 +697,7 @@ async def task_page(message: types.Message, state: FSMContext):
 
 
 # If some invalid input
+# TODO: to search_koryavov
 @dp.message_handler(state=Koryavov.task_num_state)
 async def kor_task_inv_input(message: types.Message):
     """
@@ -691,6 +713,7 @@ async def kor_task_inv_input(message: types.Message):
     )
 
 
+# TODO: to search_koryavov
 @dp.message_handler(
     Text(equals=["Ещё одну", "Всё, хватит"]),
     state=Koryavov.finish_state,
@@ -720,6 +743,7 @@ async def kor_finish(message: types.Message, state: FSMContext):
 
 
 # If some invalid input
+# TODO: to search_koryavov
 @dp.message_handler(state=Koryavov.finish_state)
 async def kor_task_inv_input(message: types.Message):
     """
@@ -737,6 +761,7 @@ async def kor_task_inv_input(message: types.Message):
     )
 
 
+# TODO: to get_timetable
 @dp.message_handler(commands="timetable")
 async def timetable_initiate(message: types.Message):
     """
@@ -748,7 +773,7 @@ async def timetable_initiate(message: types.Message):
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     await bot.send_message(
         message.chat.id,
-        "Снова не можешь вспомнить, какая пара следующая?\n" "Ничего, я уже тут! 😉",
+        "Снова не можешь вспомнить, какая пара следующая?\nНичего, я уже тут! 😉",
     )
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -761,6 +786,7 @@ async def timetable_initiate(message: types.Message):
     )
 
 
+# TODO: to get_timetable
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT
     or message.text not in ["Личное", "Моя группа", "Другая группа", "Выход"],
@@ -776,6 +802,7 @@ async def timetable_proceed_choose_invalid(message: types.Message):
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
+# TODO: to get_timetable
 @dp.message_handler(Text(equals=["Другая группа"]), state=Timetable.choose)
 async def timetable_proceed_choose(message: types.Message):
     """
@@ -789,11 +816,12 @@ async def timetable_proceed_choose(message: types.Message):
     )  # кнопка для выхода из функции
     await bot.send_message(
         message.chat.id,  # просим пользователя ввести номер группы
-        "Не подскажешь номер группы?\n" "(В формате Б00–228 или 777, как в расписании)",
+        "Не подскажешь номер группы?\n(В формате Б00–228 или 777, как в расписании)",
         reply_markup=keyboard,
     )
 
 
+# TODO: to get_timetable
 @dp.message_handler(state=Timetable.another_group)
 async def timetable_proceed_another_group(message: types.Message, state: FSMContext):
     """
@@ -835,11 +863,12 @@ async def timetable_proceed_another_group(message: types.Message, state: FSMCont
         keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
         await bot.send_message(  # просим пользователя ввести номер группы еще раз
             message.chat.id,
-            "К сожалению я не знаю такой группы(\n" "Введи номер ещё раз, пожалуйста)",
+            "К сожалению я не знаю такой группы(\nВведи номер ещё раз, пожалуйста)",
             reply_markup=keyboard,
         )
 
 
+# TODO: to get_timetable
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT,
     state=Timetable.another_group,
@@ -853,6 +882,7 @@ async def timetable_proceed_another_group_invalid_type(message: types.Message):
     await message.reply("Пришли номер группы в верном формате, пожалуйста)")
 
 
+# TODO: to get_timetable
 @dp.message_handler(Text(equals=["Личное", "Моя группа"]), state=Timetable.choose)
 async def timetable_proceed_my_group_custom(message: types.Message, state: FSMContext):
     """
@@ -911,7 +941,7 @@ async def timetable_proceed_my_group_custom(message: types.Message, state: FSMCo
     elif not timetable[0] and timetable[1] == "empty_result":
         await bot.send_message(
             message.chat.id,
-            "Кажется, мы с тобой еще не знакомы... 😢\n" "Cкорей пиши мне /start!",
+            "Кажется, мы с тобой еще не знакомы... 😢\nCкорей пиши мне /start!",
             reply_markup=today_tomorrow_keyboard(),
         )
         await state.finish()  # в случае ошибки выключаем машину состояний
@@ -925,6 +955,7 @@ async def timetable_proceed_my_group_custom(message: types.Message, state: FSMCo
         await state.finish()
 
 
+# TODO: to get_timetable
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT
     or message.text
@@ -952,6 +983,7 @@ async def timetable_proceed_weekday_invalid(message: types.Message):
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
+# TODO: to get_timetable
 @dp.message_handler(
     Text(
         equals=[
@@ -1009,6 +1041,7 @@ async def timetable_return_schedule(message: types.Message, state: FSMContext):
     await state.finish()  # выключаем машину состояний
 
 
+# TODO: to get_exam_timetable
 @dp.message_handler(commands=["exam"])
 # async def exam_initiate(message: types.Message):
 #     """
@@ -1049,6 +1082,7 @@ async def exam_initiate(message: types.Message):
     await Exam.choose.set()
 
 
+# TODO: to get_exam_timetable
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT
     or message.text not in ["Моя группа", "Другая группа", "Выход"],
@@ -1064,6 +1098,7 @@ async def exam_proceed_choose_invalid(message: types.Message):
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
+# TODO: to get_exam_timetable
 @dp.message_handler(Text(equals=["Моя группа"]), state=Exam.choose)
 async def exam_return_my_group_schedule(message: types.Message, state: FSMContext):
     timetable = await psg.send_exam_timetable(my_group=True, chat_id=message.chat.id)
@@ -1095,7 +1130,7 @@ async def exam_return_my_group_schedule(message: types.Message, state: FSMContex
     elif not timetable[0] and timetable[1] == "empty_result":
         await bot.send_message(
             message.chat.id,
-            "Кажется, мы с тобой еще не знакомы... 😢\n" "Cкорей пиши мне /start!",
+            "Кажется, мы с тобой еще не знакомы... 😢\nCкорей пиши мне /start!",
             reply_markup=today_tomorrow_keyboard(),
         )
         await state.finish()  # в случае ошибки выключаем машину состояний
@@ -1109,6 +1144,7 @@ async def exam_return_my_group_schedule(message: types.Message, state: FSMContex
         await state.finish()
 
 
+# TODO: to get_exam_timetable
 @dp.message_handler(Text(equals=["Другая группа"]), state=Exam.choose)
 async def exam_proceed_another_group(message: types.Message):
     """
@@ -1122,11 +1158,12 @@ async def exam_proceed_another_group(message: types.Message):
     )  # кнопка для выхода из функции
     await bot.send_message(
         message.chat.id,  # просим пользователя ввести номер группы
-        "Не подскажешь номер группы?\n" "(В формате Б00–228 или 777, как в расписании)",
+        "Не подскажешь номер группы?\n(В формате Б00–228 или 777, как в расписании)",
         reply_markup=keyboard,
     )
 
 
+# TODO: to get_exam_timetable
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT,
     state=Exam.another_group,
@@ -1140,6 +1177,7 @@ async def exam_proceed_another_group_invalid_type(message: types.Message):
     await message.reply("Пришли номер группы в верном формате, пожалуйста)")
 
 
+# TODO: to get_exam_timetable
 @dp.message_handler(state=Exam.another_group)
 async def exam_proceed_another_group(message: types.Message, state: FSMContext):
     """
@@ -1187,11 +1225,12 @@ async def exam_proceed_another_group(message: types.Message, state: FSMContext):
         keyboard.add(*[types.KeyboardButton(name) for name in ["Выход"]])
         await bot.send_message(  # просим пользователя ввести номер группы еще раз
             message.chat.id,
-            "К сожалению я не знаю такой группы(\n" "Введи номер ещё раз, пожалуйста)",
+            "К сожалению я не знаю такой группы(\nВведи номер ещё раз, пожалуйста)",
             reply_markup=keyboard,
         )
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(commands=["custom"])
 async def custom_initiate(message: types.Message):
     """
@@ -1222,7 +1261,7 @@ async def custom_initiate(message: types.Message):
         )
         await bot.send_message(  # вопрос, что пользователь хочет сделать с расписанием
             message.chat.id,
-            "Выбери, пожалуйста, что ты хочешь " "сделать с личным расписанием)",
+            "Выбери, пожалуйста, что ты хочешь сделать с личным расписанием)",
             reply_markup=keyboard,
         )
     elif (
@@ -1238,13 +1277,13 @@ async def custom_initiate(message: types.Message):
         )
         await bot.send_message(
             message.chat.id,
-            "У тебя пока еще нет личного расписания 😢\n" "Давай заведем его тебе?",
+            "У тебя пока еще нет личного расписания 😢\nДавай заведем его тебе?",
             reply_markup=keyboard,
         )
     elif not timetable[0] and timetable[1] == "empty_result":
         await bot.send_message(
             message.chat.id,
-            "Кажется, мы с тобой еще не знакомы... 😢\n" "Cкорей пиши мне /start!",
+            "Кажется, мы с тобой еще не знакомы... 😢\nCкорей пиши мне /start!",
             reply_markup=today_tomorrow_keyboard(),
         )
     # произошла ошибка
@@ -1256,6 +1295,7 @@ async def custom_initiate(message: types.Message):
         )
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT
     or message.text not in ["Давай", "Как-нибудь потом", "Выход"],
@@ -1271,6 +1311,7 @@ async def custom_add_new_invalid(message: types.Message):
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(Text(equals=["Давай", "Как-нибудь потом"]), state=Custom.new)
 async def custom_add_new(message: types.Message, state: FSMContext):
     """
@@ -1304,6 +1345,7 @@ async def custom_add_new(message: types.Message, state: FSMContext):
     await state.finish()  # тупиковая ветка, останавливаем машину состояний
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT
     or message.text not in ["Посмотреть", "Изменить", "Выход"],
@@ -1319,6 +1361,7 @@ async def custom_choose_existing_invalid(message: types.Message):
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(Text(equals=["Посмотреть", "Изменить"]), state=Custom.existing)
 async def custom_choose_existing(message: types.Message, state: FSMContext):
     """
@@ -1347,6 +1390,7 @@ async def custom_choose_existing(message: types.Message, state: FSMContext):
     )
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT
     or message.text
@@ -1373,6 +1417,7 @@ async def custom_proceed_weekday_invalid(message: types.Message):
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(
     Text(
         equals=[
@@ -1455,6 +1500,7 @@ async def custom_proceed_weekday(message: types.Message, state: FSMContext):
         await state.finish()  # останавливаем машину состояний
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT
     or message.text
@@ -1482,6 +1528,7 @@ async def custom_proceed_time_invalid(message: types.Message):
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(
     Text(
         equals=[
@@ -1517,6 +1564,7 @@ async def custom_proceed_time(message: types.Message, state: FSMContext):
     )
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT,
     state=Custom.edit,
@@ -1530,6 +1578,7 @@ async def custom_proceed_edit_invalid_type(message: types.Message):
     await message.reply("Пришли значение в верном формате, пожалуйста)")
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(state=Custom.edit)
 async def custom_proceed_edit(message: types.Message, state: FSMContext):
     """
@@ -1579,6 +1628,7 @@ async def custom_proceed_edit(message: types.Message, state: FSMContext):
         await state.finish()
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(
     lambda message: message.content_type != types.message.ContentType.TEXT
     or message.text not in ["Хочу", "Не хочу", "Выход"],
@@ -1593,6 +1643,7 @@ async def custom_proceed_again_invalid(message: types.Message):
     await message.reply("Выбери вариант из предложенных, пожалуйста)")
 
 
+# TODO: to get_custom_timetable
 @dp.message_handler(Text(equals=["Хочу", "Не хочу"]), state=Custom.again)
 async def custom_proceed_again(message: types.Message, state: FSMContext):
     """
@@ -1625,11 +1676,12 @@ async def custom_proceed_again(message: types.Message, state: FSMContext):
         )
         await bot.send_message(
             message.chat.id,
-            "Выбери, пожалуйста, время, расписание " "на которое ты хочешь поменять)",
+            "Выбери, пожалуйста, время, расписание на которое ты хочешь поменять)",
             reply_markup=keyboard,
         )
 
 
+# TODO: to create_plot
 @dp.message_handler(commands="plot")
 async def plot(message: types.Message):
     """
@@ -1658,6 +1710,7 @@ async def plot(message: types.Message):
     await Plots.title_state.set()
 
 
+# TODO: to create_plot
 @dp.message_handler(
     lambda message: message.content_type == types.message.ContentType.TEXT,
     state=Plots.title_state,
@@ -1682,6 +1735,7 @@ async def title(message: types.Message, state: FSMContext):
 
 
 # In case some bad input
+# TODO: to create_plot
 @dp.message_handler(
     state=Plots.title_state, content_types=types.message.ContentType.ANY
 )
@@ -1701,6 +1755,7 @@ async def title_bad_input(message: types.Message):
     )
 
 
+# TODO: to create_plot
 @dp.message_handler(Text(equals=["✅", "❌"]), state=Plots.mnk_state)
 async def mnk(message: types.Message, state: FSMContext):
     """
@@ -1738,6 +1793,7 @@ async def mnk(message: types.Message, state: FSMContext):
 
 
 # In case of bad input
+# TODO: to create_plot
 @dp.message_handler(state=Plots.mnk_state, content_types=types.message.ContentType.ANY)
 async def mnk_bad_input(message: types.Message):
     """
@@ -1753,6 +1809,7 @@ async def mnk_bad_input(message: types.Message):
     )
 
 
+# TODO: to create_plot
 @dp.message_handler(
     lambda message: message.content_type == types.message.ContentType.TEXT,
     state=Plots.error_bars_state,
@@ -1791,6 +1848,7 @@ async def error_bars(message: types.Message, state: FSMContext):
 
 
 # In case of bad input
+# TODO: to create_plot
 @dp.message_handler(
     state=Plots.error_bars_state, content_types=types.message.ContentType.ANY
 )
@@ -1812,6 +1870,8 @@ async def eror_bars_bad_input(message: types.Message):
     )
 
 
+# TODO: to create_plot
+# TODO: remove redundant plot function
 @dp.message_handler(
     content_types=types.message.ContentTypes.DOCUMENT, state=Plots.plot_state
 )
@@ -1878,6 +1938,7 @@ async def plot(message: types.Message, state: FSMContext):
 
 
 # In case of bad input
+# TODO: to create_plot
 @dp.message_handler(content_types=types.message.ContentType.ANY, state=Plots.plot_state)
 async def plot_bad_input(message: types.Message):
     """
@@ -1894,6 +1955,7 @@ async def plot_bad_input(message: types.Message):
     )
 
 
+# TODO: to get_stat
 @dp.message_handler(commands=["stat"])
 async def stat_start(message: types.Message):
     """
@@ -1908,6 +1970,7 @@ async def stat_start(message: types.Message):
     await Stat.choice.set()
 
 
+# TODO: to get_stat
 @dp.message_handler(Text(equals="Unique"), state=Stat.choice)
 async def stat_start(message: types.Message):
     """
@@ -1929,6 +1992,7 @@ async def stat_start(message: types.Message):
     await Stat.unique.set()
 
 
+# TODO: to get_stat
 @dp.message_handler(state=Stat.unique)
 async def stat_start(message: types.Message, state: FSMContext):
     """
@@ -1945,6 +2009,7 @@ async def stat_start(message: types.Message, state: FSMContext):
     await state.finish()
 
 
+# TODO: to get_stat
 @dp.message_handler(Text(equals="Frequency"), state=Stat.choice)
 async def stat_start(message: types.Message, state: FSMContext):
     """
@@ -1962,6 +2027,7 @@ async def stat_start(message: types.Message, state: FSMContext):
     await state.finish()
 
 
+# TODO: to post_mail
 @dp.message_handler(commands=["mail"])
 async def mailing_start(message):
     pers_id = message.chat.id
@@ -1978,6 +2044,7 @@ async def mailing_start(message):
     await Mailing.mailing.set()
 
 
+# TODO: to post_mail
 @dp.message_handler(state=Mailing.mailing)
 async def mailing(message: types.Message, state: FSMContext):
     users = stat.get_user_list()

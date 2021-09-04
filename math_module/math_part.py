@@ -8,6 +8,7 @@ import pandas as pd
 import sympy as sp
 
 # Переменная, которая хранит путь к директории
+# TODO: переписать с помощью pathlib.Path
 PATH = os.path.abspath("")
 
 
@@ -17,6 +18,7 @@ def is_digit(string):
     :param string: Подозреваемая строка
     :return: bool
     """
+    # TODO: s.replace('.','',1).isdigit()
     if string.isdigit():
         return True
     else:
@@ -33,6 +35,7 @@ def data_conv(data_file):
     :param data_file: название файла
     :return: [x,y]
     """
+    # TODO: можно переписать с помощью xlrd
     data = pd.read_excel(data_file, header=None, skiprows=1)
     # Получение столбца с информацией о графиках без NaN объектов
     info = data[0].dropna().values
