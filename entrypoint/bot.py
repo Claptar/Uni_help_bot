@@ -1043,43 +1043,42 @@ async def timetable_return_schedule(message: types.Message, state: FSMContext):
 
 # TODO: to get_exam_timetable
 @dp.message_handler(commands=["exam"])
-# async def exam_initiate(message: types.Message):
-#     """
-#     Функция ловит сообщение с текстом '/exam'.
-#     Отправляет запрос о выборе группы и вызывает функцию get_exam_timetable().
-#     """
-#     await psg.insert_action('exam', message.chat.id)
-#     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
-#     await bot.send_message(
-#         message.chat.id,
-#         'Ещё не время... Но ты не забывай...'
-#     )
-#     await bot.send_chat_action(message.chat.id, 'typing')  # Отображение "typing"
-#     await bot.send_sticker(
-#         message.chat.id,
-#         'CAACAgIAAxkBAAMEXj8IxnJkYATlpAOTkJyLiXH2u0UAAvYfAAKiipYBsZcZ_su45LkYBA'
-#     )
 async def exam_initiate(message: types.Message):
     """
     Функция ловит сообщение с текстом '/exam'.
-    Отправляет запрос о выборе группы.
+    Заглушка на время семестра (нет расписания сессии).
     """
     await psg.insert_action("exam", message.chat.id)
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(
-        *[
-            types.KeyboardButton(name)
-            for name in ["Моя группа", "Другая группа", "Выход"]
-        ]
-    )
-    await bot.send_message(
+    await bot.send_message(message.chat.id, "Ещё не время... Но ты не забывай...")
+    await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+    await bot.send_sticker(
         message.chat.id,
-        "Это время настало... Выбери, расписание экзаменов"
-        " какой группы ты хочешь посмотреть)",
-        reply_markup=keyboard,
+        "CAACAgIAAxkBAAMEXj8IxnJkYATlpAOTkJyLiXH2u0UAAvYfAAKiipYBsZcZ_su45LkYBA",
     )
-    await Exam.choose.set()
+
+
+# async def exam_initiate(message: types.Message):
+#     """
+#     Функция ловит сообщение с текстом '/exam'.
+#     Отправляет запрос о выборе группы.
+#     """
+#     await psg.insert_action("exam", message.chat.id)
+#     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
+#     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+#     keyboard.add(
+#         *[
+#             types.KeyboardButton(name)
+#             for name in ["Моя группа", "Другая группа", "Выход"]
+#         ]
+#     )
+#     await bot.send_message(
+#         message.chat.id,
+#         "Это время настало... Выбери, расписание экзаменов"
+#         " какой группы ты хочешь посмотреть)",
+#         reply_markup=keyboard,
+#     )
+#     await Exam.choose.set()
 
 
 # TODO: to get_exam_timetable
