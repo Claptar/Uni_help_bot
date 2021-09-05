@@ -12,7 +12,6 @@ DBNAME = os.environ["DATABASE"]
 USER = os.environ["USER"]
 PASS = os.environ["PASS"]
 HOST = os.environ["HOST"]
-# PORT = os.environ['PORT']
 
 if (
     sys.version_info[0] == 3

@@ -1,1 +1,1 @@
-bot: python3 entrypoint/bot.py
+bot: python3 entrypoint.py

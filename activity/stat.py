@@ -29,7 +29,7 @@ def get_user_list():
     return df["chat_id"].values
 
 
-def uniqe_users(time):
+def unique_users(time):
     """
     Функция возвращает количество уникальных пользователей за день (сегодняшний или вчерашний)
     :return:
