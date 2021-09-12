@@ -1,4 +1,4 @@
-from activity import stat
+from handlers_utils.activity import unique_users, frequency_of_use
 from create_env import bot
 from ...helpers import today_tomorrow_keyboard
 from ...states import Stat
@@ -45,7 +45,7 @@ async def number_of_unique_users(message: types.Message, state: FSMContext):
     Функция присылает сообщением с числом уникальных пользователей за нужный период времени
     """
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
-    number = stat.unique_users(message.text)
+    number = unique_users(message.text)
     keyboard = today_tomorrow_keyboard()
     await bot.send_message(
         message.chat.id,
@@ -63,7 +63,7 @@ async def function_usage_frequencies(message: types.Message, state: FSMContext):
     await bot.send_message(
         message.chat.id, "Частота использования функций за последнюю неделю:"
     )
-    freq = stat.frequency_of_use()
+    freq = frequency_of_use()
     text = "\n".join(freq)
     keyboard = today_tomorrow_keyboard()
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"

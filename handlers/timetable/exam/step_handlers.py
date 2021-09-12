@@ -1,12 +1,10 @@
 from create_env import bot
-from data_constructor import psg
+from database_queries import insert_action, send_exam_timetable
 from ...helpers import schedule_string, today_tomorrow_keyboard
 from ...states import Exam
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters import Text
-import pickle
 
 
 async def initiate(message: types.Message):
@@ -14,7 +12,7 @@ async def initiate(message: types.Message):
     Функция ловит сообщение с текстом '/exam'.
     Заглушка на время семестра (нет расписания сессии).
     """
-    await psg.insert_action("exam", message.chat.id)
+    await insert_action("exam", message.chat.id)
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     await bot.send_message(message.chat.id, "Ещё не время... Но ты не забывай...")
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
@@ -29,7 +27,7 @@ async def initiate(message: types.Message):
 #     Функция ловит сообщение с текстом '/exam'.
 #     Отправляет запрос о выборе группы.
 #     """
-#     await psg.insert_action("exam", message.chat.id)
+#     await insert_action("exam", message.chat.id)
 #     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
 #     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
 #     keyboard.add(
@@ -48,12 +46,12 @@ async def initiate(message: types.Message):
 
 
 async def choose_my_group_and_send_schedule(message: types.Message, state: FSMContext):
-    timetable = await psg.send_exam_timetable(my_group=True, chat_id=message.chat.id)
+    timetable = await send_exam_timetable(my_group=True, chat_id=message.chat.id)
     if timetable[0]:  # если расписание было найдено
         if timetable[1][0] is not None:
             await bot.send_message(  # отправляем расписание
                 message.chat.id,
-                schedule_string(pickle.loads(timetable[1][0])),
+                schedule_string(timetable[1][0]),
                 parse_mode="HTML",
             )
             await bot.send_chat_action(
@@ -114,13 +112,13 @@ async def another_group_send_schedule(message: types.Message, state: FSMContext)
     пользователю расписание. Если произошла какая-то ошибка, то функция просит пользователя
     ввести номер группы еще раз.
     """
-    timetable = await psg.send_exam_timetable(another_group=message.text)
+    timetable = await send_exam_timetable(another_group=message.text)
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     if timetable[0]:
         if timetable[1][0] is not None:
             await bot.send_message(  # отправляем расписание
                 message.chat.id,
-                schedule_string(pickle.loads(timetable[1][0])),
+                schedule_string(timetable[1][0]),
                 parse_mode="HTML",
             )
             await bot.send_chat_action(

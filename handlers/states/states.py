@@ -16,3 +16,4 @@ Plots = generate_state(
 )
 Stat = generate_state("Stat", ("choice", "unique", "frequency"))
 Mailing = generate_state("Mailing", ("mailing",))
+DeleteMsg = generate_state("DeleteMsg", ("proceed",))

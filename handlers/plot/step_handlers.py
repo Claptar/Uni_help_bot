@@ -1,6 +1,6 @@
 from create_env import bot
-from data_constructor import psg
-from math_module import math_part
+from database_queries import insert_action
+from handlers_utils.math_module import math_part
 from ..states import Plots
 
 import os
@@ -14,7 +14,7 @@ async def initiate(message: types.Message):
     Функция ловит сообщение с текстом '/plot' и отправляет сообщение пользователю с просьбой
     указать название графика.
     """
-    await psg.insert_action("plot", message.chat.id)
+    await insert_action("plot", message.chat.id)
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     await bot.send_message(
         message.chat.id,

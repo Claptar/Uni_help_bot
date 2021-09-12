@@ -8,7 +8,7 @@ from .step_handlers import (
 
 from create_env import dp
 from ..states import Koryavov
-from math_module import math_part
+from handlers_utils.math_module import math_part
 
 from aiogram.dispatcher.filters import Text
 

@@ -1,9 +1,12 @@
 from create_env import bot
-from data_constructor import psg
+from database_queries import (
+    insert_action,
+    send_timetable,
+    create_custom_timetable,
+    update_custom_timetable,
+)
 from ...helpers import schedule_string, today_tomorrow_keyboard
 from ...states import Custom
-
-import pickle
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
@@ -17,7 +20,7 @@ async def initiate(message: types.Message):
     завести такое расписание. Если личное расписание для этого пользователя есть в базе,
     фукция посылает запрос о выборе дня недели, расписание на который нужно выдать или как-то поменять.
     """
-    await psg.insert_action("custom", message.chat.id)
+    await insert_action("custom", message.chat.id)
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     await bot.send_message(
         message.chat.id,
@@ -26,7 +29,7 @@ async def initiate(message: types.Message):
         "В этом я всегда рад тебе помочь 😉",
     )
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
-    timetable = await psg.send_timetable(custom=True, chat_id=message.chat.id)
+    timetable = await send_timetable(custom=True, chat_id=message.chat.id)
     if timetable[0] and timetable[1][0] is not None:  # если пользователь есть в базе
         await Custom.existing.set()  # изменяем состояние на Custom.existing
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -79,7 +82,7 @@ async def new_proceed(message: types.Message, state: FSMContext):
     """
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     if message.text == "Давай":  # положительный ответ
-        update = await psg.create_custom_timetable(message.chat.id)
+        update = await create_custom_timetable(message.chat.id)
         if update[0]:
             await bot.send_message(  # все нормально обновилось
                 message.chat.id,
@@ -137,14 +140,14 @@ async def weekday_proceed(message: types.Message, state: FSMContext):
     либо выдает ему расписание, либо посылает запрос о времени пары, расписание на которую нужно поменять.
     """
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
-    timetable = await psg.send_timetable(custom=True, chat_id=message.chat.id)
+    timetable = await send_timetable(custom=True, chat_id=message.chat.id)
     if timetable[
         0
     ]:  # не произошло никакой ошибки (личное расписание точно есть, проверено ранее)
-        schedule = pickle.loads(timetable[1][0])  # расписание на неделю
+        schedule = timetable[1][0]  # расписание на неделю
         await bot.send_message(  # присылаем текущее состояние расписания
             message.chat.id,
-            schedule_string(schedule[message.text].to_frame()),
+            schedule_string(schedule[message.text]),
             parse_mode="HTML",
         )  # parse_mode - чтобы читал измененный шрифт
         async with state.proxy() as data:
@@ -230,12 +233,10 @@ async def edit_proceed(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         schedule = data["schedule"]  # достаем расписание и день
         day = data["day"]
-        schedule[day].loc[data["time"]] = message.text  # заменяем нужную пару
+        schedule[day][data["time"]] = message.text  # заменяем нужную пару
         data.clear()
     # сохраняем новое расписание
-    update = await psg.update_custom_timetable(
-        message.chat.id, pickle.dumps(schedule, protocol=pickle.HIGHEST_PROTOCOL)
-    )
+    update = await update_custom_timetable(message.chat.id, schedule)
     if update[0]:
         await Custom.again.set()  # изменяем состояние на Custom.again
         async with state.proxy() as data:
@@ -255,7 +256,7 @@ async def edit_proceed(message: types.Message, state: FSMContext):
         )
         await bot.send_message(  # посылаем запрос, хочет ли пользователь изменить
             message.chat.id,  # в расписании на этот день что-то еще
-            schedule_string(schedule[day].to_frame()),
+            schedule_string(schedule[day]),
             parse_mode="HTML",
             reply_markup=keyboard,
         )

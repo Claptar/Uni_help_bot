@@ -1,7 +1,7 @@
 from aiogram import types
 from aiogram.dispatcher.storage import FSMContext
 
-from data_constructor import psg
+from database_queries import insert_action
 from create_env import bot
 from ..helpers import today_tomorrow_keyboard
 
@@ -10,7 +10,7 @@ async def exit_user(message: types.Message, state: FSMContext):
     """
     Функция, выполняющая выход по желанию пользователя (на любой стадии).
     """
-    await psg.insert_action("exit", message.chat.id)
+    await insert_action("exit", message.chat.id)
     current_state = (
         await state.get_state()
     )  # проверка, что запущено хотя бы какое-то из состояний
@@ -35,7 +35,7 @@ async def help_user(message: types.Message):
     """
     Функция ловит сообщение с командой '/help' и присылает описание комманд бота.
     """
-    await psg.insert_action("help", message.chat.id)
+    await insert_action("help", message.chat.id)
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     with open("files/help.txt", encoding="utf-8", mode="r") as f:
         text = f.read()

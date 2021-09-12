@@ -1,5 +1,10 @@
 from create_env import bot
-from data_constructor import psg
+from database_queries import (
+    insert_action,
+    check_user_group,
+    update_user,
+    create_custom_timetable,
+)
 from ..helpers import today_tomorrow_keyboard
 from ..states import Profile
 
@@ -13,8 +18,8 @@ async def initiate(message: types.Message):
     Функция ловит сообщение с командой '/profile' и спрашивает у пользователя,
     хочет ли он изменить группу, закрепленную за ним.
     """
-    await psg.insert_action("profile", message.chat.id)
-    cur_group = await psg.check_user_group(message.chat.id)
+    await insert_action("profile", message.chat.id)
+    cur_group = await check_user_group(message.chat.id)
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     if cur_group[0]:
         await Profile.choose.set()  # изменяем состояние на Profile.choose
@@ -84,7 +89,7 @@ async def group_proceed(message: types.Message, state: FSMContext):
     """
     # получилось обновить номер группы, запрос о изменении личного расписания
     group = "ALUMNI" if message.text == "Уже не учусь" else message.text
-    update = await psg.update_user(message.chat.id, group)
+    update = await update_user(message.chat.id, group)
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     if update[0]:
         await Profile.custom.set()  # изменяем состояние на Profile.custom
@@ -128,7 +133,7 @@ async def custom_proceed(message: types.Message, state: FSMContext):
     elif (
         message.text == "Хочу"
     ):  # если пришел положительный ответ, то изменяем личное расписание
-        update = await psg.create_custom_timetable(message.chat.id)
+        update = await create_custom_timetable(message.chat.id)
         if update[0]:
             await bot.send_message(
                 message.chat.id,

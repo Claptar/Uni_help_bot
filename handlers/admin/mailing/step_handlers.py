@@ -1,4 +1,4 @@
-from activity import stat
+from handlers_utils.activity import get_user_list
 from create_env import bot
 from ...states import Mailing
 
@@ -25,7 +25,7 @@ async def initiate(message):
 
 
 async def message_send(message: types.Message, state: FSMContext):
-    users = stat.get_user_list()
+    users = get_user_list()
     await state.finish()
     for user in users:
         try:

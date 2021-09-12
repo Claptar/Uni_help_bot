@@ -1,5 +1,6 @@
+from typing import Dict
+
 from aiogram import types
-import pandas as pd
 
 
 def today_tomorrow_keyboard():
@@ -13,18 +14,19 @@ def today_tomorrow_keyboard():
     return keyboard
 
 
-def schedule_string(schedule: pd.DataFrame):
+def schedule_string(schedule: Dict[str, str]):
     """
     Строка с расписанием, которую отправляет бот.
     ВАЖНО! parse_mode='HTML' - чтобы читалcя измененный шрифт.
     """
     STRING = ""  # "строка" с расписанием, которую отправляем сообщением
     for (
-        row
+        time,
+        pair,
     ) in (
-        schedule.iterrows()
+        schedule.items()
     ):  # проходимся по строкам расписания, приплюсовываем их в общую "строку"
         # время пары - жирный + наклонный шрифт, название пары на следующей строке
-        string: str = "<b>" + "<i>" + row[0] + "</i>" + "</b>" + "\n" + row[1][0]
+        string: str = "<b>" + "<i>" + time + "</i>" + "</b>" + "\n" + pair
         STRING += string + "\n\n"  # между парами пропуск (1 enter)
     return STRING

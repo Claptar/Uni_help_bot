@@ -8,4 +8,5 @@ from .states import (
     Plots,
     Stat,
     Mailing,
+    DeleteMsg,
 )

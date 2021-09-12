@@ -1,8 +1,7 @@
 from create_env import bot
-from data_constructor import psg
+from database_queries import insert_action
+from handlers_utils.koryavov import kor_page
 from ..helpers import today_tomorrow_keyboard
-from koryavov import kor
-from math_module import math_part
 from ..states import Koryavov
 
 from aiogram import types
@@ -14,7 +13,7 @@ async def initiate(message: types.Message):
     Функция ловит сообщение с текстом /koryavov.
     Отправляет пользователю сообщение с просьбой выбрать интересующий его номер семестра курса общей физики
     """
-    await psg.insert_action("koryavov", message.chat.id)
+    await insert_action("koryavov", message.chat.id)
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(
@@ -59,7 +58,7 @@ async def task_number_proceed(message: types.Message, state: FSMContext):
     await bot.send_chat_action(message.chat.id, "typing")
     async with state.proxy() as data:
         sem_num = int(data["sem_num"])
-    reply = "Информация взята с сайта mipt1.ru \n\n" + kor.kor_page(sem_num, task_num)
+    reply = "Информация взята с сайта mipt1.ru \n\n" + kor_page(sem_num, task_num)
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in ["Ещё одну", "Всё, хватит"]])
     await bot.send_message(message.chat.id, reply, reply_markup=keyboard)

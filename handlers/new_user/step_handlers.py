@@ -1,5 +1,10 @@
 from create_env import bot
-from data_constructor import psg
+from database_queries import (
+    insert_action,
+    check_user_group,
+    insert_user,
+    create_custom_timetable,
+)
 from ..helpers import today_tomorrow_keyboard
 from ..states import Start
 
@@ -11,7 +16,7 @@ async def initiate(message: types.Message):
     """
     Функция ловит сообщение с командой '/start' и приветствует пользователя.
     """
-    group = await psg.check_user_group(message.chat.id)
+    group = await check_user_group(message.chat.id)
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     if group[0]:  # если пользователь уже есть в базе данных
         await bot.send_message(
@@ -28,7 +33,7 @@ async def initiate(message: types.Message):
             "Можешь рассказать мне немного о себе, "
             "чтобы я знал, чем могу тебе помочь?",
         )
-        await psg.insert_action(
+        await insert_action(
             "start", message.chat.id
         )  # Запись события о новом пользователе
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -65,10 +70,8 @@ async def group_proceed(message: types.Message, state: FSMContext):
             "Отлично, вот мы и познакомились 🙃",
         )
     )
-    insert = await psg.insert_user(message.chat.id, group)
-    if insert[0]:  # группа есть в базе, добавление пользователя прошло успешно
-        # async with state.proxy() as data:
-        #     data['group'] = group
+    insert = await insert_user(message.chat.id, group)
+    if insert[0]:  # группа есть в базе, добавление пользователя прошло успешн
         await Start.custom.set()  # меняем состояние на Start.custom
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add(*[types.KeyboardButton(name) for name in ["Хочу", "Не хочу"]])
@@ -121,7 +124,7 @@ async def custom_proceed(message: types.Message, state: FSMContext):
         #     group = data['group']
         # если номер группы верный (по идее должно быть выполнено)
         # и добавление заготовки расписания прошло успешно
-        update = await psg.create_custom_timetable(message.chat.id)
+        update = await create_custom_timetable(message.chat.id)
         if update[0]:
             await bot.send_message(
                 message.chat.id,

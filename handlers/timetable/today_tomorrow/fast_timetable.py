@@ -1,9 +1,8 @@
 from datetime import datetime
-import pickle
 from pytz import timezone
 
 from create_env import bot
-from data_constructor import psg
+from database_queries import insert_action, send_timetable
 from ...helpers import schedule_string, today_tomorrow_keyboard
 
 
@@ -24,7 +23,7 @@ async def send_today_tomorrow_schedule(message):
                                        |
                               CONN_ERR or OTHER_ERR — Попробуй позже, пожалуйста
     """
-    await psg.insert_action("to/yes", message.chat.id)
+    await insert_action("to/yes", message.chat.id)
     # список дней для удобной конвертации номеров дней недели (0, 1, ..., 6) в их названия
     week = tuple(
         [
@@ -45,21 +44,19 @@ async def send_today_tomorrow_schedule(message):
     day = (
         today if message.text == "На сегодня" else tomorrow
     )  # выбор дня в зависимости от запроса
-    custom_timetable = await psg.send_timetable(custom=True, chat_id=message.chat.id)
+    custom_timetable = await send_timetable(custom=True, chat_id=message.chat.id)
     # проверка, есть ли у этого пользователя личное расписание в базе данных (+ не произошло ли ошибок)
     if custom_timetable[0] and custom_timetable[1][0] is not None:
-        schedule = pickle.loads(custom_timetable[1][0])[week[day]].to_frame()
+        schedule = custom_timetable[1][0][week[day]]
         await bot.send_message(  # отправляем расписание
             message.chat.id, schedule_string(schedule), parse_mode="HTML"
         )
     # если у этого пользователя нет личного расписания в базе данных или произошла ошибка при запросе
     # личного расписания, то пробуем отправить расписание группы
     else:
-        group_timetable = await psg.send_timetable(
-            my_group=True, chat_id=message.chat.id
-        )
+        group_timetable = await send_timetable(my_group=True, chat_id=message.chat.id)
         if group_timetable[0]:  # если пользователь есть в базе
-            if bytes(group_timetable[1][0]) == b"DEFAULT":
+            if group_timetable[1][0] == "DEFAULT":
                 await bot.send_message(  # отправляем расписание
                     message.chat.id,
                     "В этом семестре нет официального расписания для твоей группы( "
@@ -68,7 +65,7 @@ async def send_today_tomorrow_schedule(message):
                     reply_markup=today_tomorrow_keyboard(),
                 )
             else:
-                schedule = pickle.loads(group_timetable[1][0])[week[day]].to_frame()
+                schedule = group_timetable[1][0][week[day]]
                 await bot.send_message(  # отправляем расписание
                     message.chat.id, schedule_string(schedule), parse_mode="HTML"
                 )

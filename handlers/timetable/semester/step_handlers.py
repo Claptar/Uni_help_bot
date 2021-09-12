@@ -1,9 +1,7 @@
 from create_env import bot
-from data_constructor import psg
+from database_queries import insert_action, send_timetable
 from ...helpers import schedule_string, today_tomorrow_keyboard
 from ...states import Timetable
-
-import pickle
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
@@ -14,7 +12,7 @@ async def initiate(message: types.Message):
     Функция ловит сообщение с текстом "/timetable".
     Отправляет пользователю вопрос, расписание своей или другой группы ему нужно.
     """
-    await psg.insert_action("timetable", message.chat.id)
+    await insert_action("timetable", message.chat.id)
     await Timetable.choose.set()  # ставим состояние Timetable.choose
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     await bot.send_message(
@@ -59,17 +57,15 @@ async def choose_my_group_custom_type_proceed(
     """
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     timetable = (
-        await psg.send_timetable(custom=True, chat_id=message.chat.id)
+        await send_timetable(custom=True, chat_id=message.chat.id)
         if message.text == "Личное"
-        else await psg.send_timetable(my_group=True, chat_id=message.chat.id)
+        else await send_timetable(my_group=True, chat_id=message.chat.id)
     )
     if timetable[0]:  # если расписание было найдено
-        if timetable[1][0] is not None and bytes(timetable[1][0]) != b"DEFAULT":
+        if timetable[1][0] is not None and timetable[1][0] != "DEFAULT":
             await Timetable.weekday.set()  # изменяем состояние на Timetable.weekday
             async with state.proxy() as data:
-                data["schedule"] = pickle.loads(
-                    timetable[1][0]
-                )  # записываем расписание
+                data["schedule"] = timetable[1][0]  # записываем расписание
             keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
             # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
             keyboard.add(*[types.KeyboardButton(name) for name in ["На неделю"]])
@@ -88,7 +84,7 @@ async def choose_my_group_custom_type_proceed(
                 "Расписание на какой день недели ты хочешь узнать?",
                 reply_markup=keyboard,
             )
-        elif timetable[1][0] is not None and bytes(timetable[1][0]) == b"DEFAULT":
+        elif timetable[1][0] is not None and timetable[1][0] == "DEFAULT":
             await bot.send_message(  # отправляем расписание
                 message.chat.id,
                 "В этом семестре нет официального расписания для твоей группы( "
@@ -97,12 +93,20 @@ async def choose_my_group_custom_type_proceed(
             )
             await state.finish()
         else:
-            await bot.send_message(
-                message.chat.id,
-                "Не могу найти твое личное расписание 😞\n"
-                "Нажми /custom чтобы проверить корректность данных.",
-                reply_markup=today_tomorrow_keyboard(),
-            )
+            if message.text == "Личное":
+                await bot.send_message(
+                    message.chat.id,
+                    "Не могу найти твое личное расписание 😞\n"
+                    "Нажми /custom чтобы проверить корректность данных.",
+                    reply_markup=today_tomorrow_keyboard(),
+                )
+            else:
+                await bot.send_message(
+                    message.chat.id,
+                    "Не могу найти расписание твоей группы 😞\n"
+                    "Нажми /profile чтобы проверить корректность данных.",
+                    reply_markup=today_tomorrow_keyboard(),
+                )
             await state.finish()
     # если в базе данных нет этого пользователя
     elif not timetable[0] and timetable[1] == "empty_result":
@@ -128,12 +132,12 @@ async def another_type_group_number_proceed(message: types.Message, state: FSMCo
     пользователю запрос о дне недели. Если произошла какая-то ошибка, то функция просит пользователя
     ввести номер группы еще раз.
     """
-    timetable = await psg.send_timetable(another_group=message.text)
+    timetable = await send_timetable(another_group=message.text)
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
     if timetable[0]:
         await Timetable.weekday.set()  # изменяем состояние на Timetable.weekday
         async with state.proxy() as data:
-            data["schedule"] = pickle.loads(timetable[1][0])  # записываем расписание
+            data["schedule"] = timetable[1][0]  # записываем расписание
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         # дни недели для тыков и кнопка для выхода (строки выбраны по размеру слов)
         keyboard.add(*[types.KeyboardButton(name) for name in ["На неделю"]])
@@ -178,7 +182,7 @@ async def weekday_proceed_and_schedule_send(message: types.Message, state: FSMCo
     if message.text != "На неделю":  # расписание на 1 день
         await bot.send_message(  # отправляем расписание
             message.chat.id,
-            schedule_string(schedule[message.text].to_frame()),
+            schedule_string(schedule[message.text]),
             parse_mode="HTML",
         )
     else:  # расписание на неделю (на каждый из 7 дней)
@@ -193,11 +197,7 @@ async def weekday_proceed_and_schedule_send(message: types.Message, state: FSMCo
         ]:
             await bot.send_message(  # отправляем расписание
                 message.chat.id,
-                "<b>"
-                + day.upper()
-                + "</b>"
-                + "\n\n"
-                + schedule_string(schedule[day].to_frame()),
+                "<b>" + day.upper() + "</b>" + "\n\n" + schedule_string(schedule[day]),
                 parse_mode="HTML",
             )
     await bot.send_chat_action(message.chat.id, "typing")  # Отображение "typing"
