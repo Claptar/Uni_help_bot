@@ -69,7 +69,7 @@ def get_all_timetable_from_file(table: Worksheet) -> Iterator[Tuple]:
     :return:
     """
     for j in range(3, table.max_column + 1):  # смотрим на значения по столбцам
-        group_name = table.cell(5, j).value  # номер группы
+        group_name = table.cell(2, j).value  # номер группы
         if group_name in {
             "Дни",
             "Часы",
@@ -78,10 +78,9 @@ def get_all_timetable_from_file(table: Worksheet) -> Iterator[Tuple]:
         # иначе если столбец - это номер группы, то составляем для него расписание
         elif group_name is not None:
             group_name = str(group_name).strip()
-            # group - словарь с расписанием для группы
             global blank_timetable
             timetable = deepcopy(blank_timetable)
-            for k in range(6, table.max_row + 1):  # проходимся по столбцу
+            for k in range(3, table.max_row + 1):  # проходимся по столбцу
                 # если клетки относятся ко дню недели (не разделители)
                 day, hours, pair = get_value_merged(table, table.cell(k, 1)), None, None
                 if day in timetable:
